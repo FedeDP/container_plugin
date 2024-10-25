@@ -1,0 +1,7 @@
+*.so
+*.a
+*.o
+.vscode
+.idea
+build*
+libcontainer.so

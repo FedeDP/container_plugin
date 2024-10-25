@@ -1,0 +1,10 @@
+# Base Falco yaml to be used to validate the plugin
+
+load_plugins: [container]
+
+plugins:
+  - name: container
+    library_path: libcontainer.so
+
+stdout_output:
+  enabled: true
