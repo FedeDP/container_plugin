@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 #include <utility>
-
+#include <re2/re2.h>
 #include "container_info.h"
 
 std::vector<std::string> sinsp_container_info::container_health_probe::probe_type_names =
@@ -99,11 +99,11 @@ const sinsp_container_info::container_mount_info *sinsp_container_info::mount_by
 const sinsp_container_info::container_mount_info *sinsp_container_info::mount_by_source(
         const std::string &source) const {
     // note: linear search
+    re2::RE2 pattern(source, re2::RE2::POSIX);
     for(auto &mntinfo : m_mounts) {
-        // TODO drop and use re2
-        /*if(sinsp_utils::glob_match(source.c_str(), mntinfo.m_source.c_str())) {
+        if(re2::RE2::PartialMatch(mntinfo.m_source.c_str(), pattern)) {
             return &mntinfo;
-        }*/
+        }
     }
 
     return NULL;
@@ -112,11 +112,11 @@ const sinsp_container_info::container_mount_info *sinsp_container_info::mount_by
 const sinsp_container_info::container_mount_info *sinsp_container_info::mount_by_dest(
         const std::string &dest) const {
     // note: linear search
+    re2::RE2 pattern(dest, re2::RE2::POSIX);
     for(auto &mntinfo : m_mounts) {
-        // TODO drop and use re2
-        /*if(sinsp_utils::glob_match(dest.c_str(), mntinfo.m_dest.c_str())) {
+        if(re2::RE2::PartialMatch(mntinfo.m_dest.c_str(), pattern)) {
             return &mntinfo;
-        }*/
+        }
     }
 
     return NULL;

@@ -20,14 +20,7 @@ limitations under the License.
 #include "plugin.h"
 #include "worker.h"
 
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <unordered_map>
-#include <sstream>
 #include <re2/re2.h>
-#include <fstream>
-#include <filesystem>
 
 // This is the regex needed to extract the container_id from the cgroup
 static re2::RE2 pattern(RGX_CONTAINER, re2::RE2::POSIX);

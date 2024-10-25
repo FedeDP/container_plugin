@@ -100,7 +100,5 @@ sudo apt update -y
 sudo apt install -y cmake build-essential autoconf libtool pkg-config
 git clone https://github.com/falcosecurity/plugins.git
 cd plugins/container
-mkdir build && cd build
-cmake ..
-make container -j10
+make libcontainer.so
 ```
