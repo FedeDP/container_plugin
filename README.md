@@ -11,7 +11,7 @@ The `container` plugin enhances the Falco syscall source by providing additional
 ### Functionality
 
 The plugin itself reimplements all the container-related logic that was already present in libs under the form of a plugin, that can be attached to any source.  
-Moreover, it aims to fix the issues present in the current implementation, trying to be as quick as possible to gather container metadata information, to avoid losing 
+Moreover, it aims to fix issues present in the current implementation, trying to be as quick as possible to gather container metadata information, to avoid losing 
 a single event metadata.
 
 ## Capabilities
@@ -19,20 +19,21 @@ a single event metadata.
 The `container` plugin implements 3 capabilities:
 
 * `extraction` -> to extract `container.X` related fields
-* `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files)
+* `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork events
 * `async` -> to generate events with container infos
 
 ## Architecture
 
 The `container` plugin is split into 2 modules:
-* a C++ shared object that implements `extraction` and `parsing` capability, and holds the cache map
-* a GO static object (linked inside the C++ shared object) that implements `async` capability and the worker logic to retrieve new containers' metadata
+* a C++ shared object that implements the 3 capabilities and holds the cache map
+* a GO static library (linked inside the C++ shared object) that implements the worker logic to retrieve new containers' metadata
 
-Once the GO worker finds a new container, it immediately generates an `async` event that is then parsed by the C++ side,
-to enrich its own internal state cache.
-Once the extraction is requested for a new threadinfo, if the threadinfo has still no `container_id` foreign key,
-the container_id is extracted through a regex by looking at the `cgroups` from the threadinfo, then it gets stored as foreign key.
-Finally, the container_id is then used as key to access our plugin's internal container metadata cache, and the requested infos extracted.
+Once the GO worker finds a new container, it immediately generates an `async` event through a callback that is passed by the C++ side, to enrich its own internal state cache.
+
+Every time a clone/fork event gets parsed (ie: a new thread is created in the system), we attach to its thread table entry
+the information about the container_id, extracted through a regex by looking at the `cgroups` field, in a foreign key.
+
+Once the extraction is requested for a threadinfo, the container_id is then used as key to access our plugin's internal container metadata cache, and the requested infos extracted.
 
 ### Plugin official name
 
@@ -103,5 +104,3 @@ mkdir build && cd build
 cmake ..
 make container -j10
 ```
-
-To run local tests follow the steps [here](https://github.com/falcosecurity/plugins/blob/main/plugins/container/test/README.md)
