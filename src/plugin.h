@@ -18,24 +18,13 @@ limitations under the License.
 #include "plugin_only_consts.h"
 #include "shared_with_tests_consts.h"
 #include "container_info.h"
-#include <thread>
-#include <atomic>
-#include <chrono>
 #include <unordered_map>
-#include <sstream>
-
-struct sinsp_param
-{
-    uint16_t param_len;
-    uint8_t* param_pointer;
-};
 
 class my_plugin
 {
 public:
     // Keep this aligned with `get_fields`
-    enum ContainerFields
-    {
+    enum ContainerFields {
         TYPE_CONTAINER_ID,
         TYPE_CONTAINER_FULL_CONTAINER_ID,
         TYPE_CONTAINER_NAME,
@@ -72,96 +61,53 @@ public:
 
     virtual ~my_plugin() = default;
 
-    std::string get_name() { return PLUGIN_NAME; }
-
-    std::string get_version() { return PLUGIN_VERSION; }
-
-    std::string get_description() { return PLUGIN_DESCRIPTION; }
-
-    std::string get_contact() { return PLUGIN_CONTACT; }
-
-    std::string get_required_api_version()
-    {
-        return PLUGIN_REQUIRED_API_VERSION;
-    }
-
-    std::string get_last_error() { return m_lasterr; }
-
-    void destroy() { SPDLOG_DEBUG("detach the plugin"); }
-
+    std::string get_name();
+    std::string get_version();
+    std::string get_description();
+    std::string get_contact();
+    std::string get_required_api_version();
+    std::string get_last_error();
+    void destroy();
     falcosecurity::init_schema get_init_schema();
-
     void parse_init_config(nlohmann::json& config_json);
-
     bool init(falcosecurity::init_input& in);
-
-    std::string inline compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr);
 
     //////////////////////////
     // Async capability
     //////////////////////////
 
-    std::vector<std::string> get_async_events() { return ASYNC_EVENT_NAMES; }
-
-    std::vector<std::string> get_async_event_sources()
-    {
-        return ASYNC_EVENT_SOURCES;
-    }
-
-    bool start_async_events(
-            std::shared_ptr<falcosecurity::async_event_handler_factory> f);
-
+    std::vector<std::string> get_async_events();
+    std::vector<std::string> get_async_event_sources();
+    bool start_async_events(std::shared_ptr<falcosecurity::async_event_handler_factory> f);
     bool stop_async_events() noexcept;
-
-    void async_thread_loop(
-            std::unique_ptr<falcosecurity::async_event_handler> h) noexcept;
 
     //////////////////////////
     // Extract capability
     //////////////////////////
 
-    std::vector<std::string> get_extract_event_sources()
-    {
-        return EXTRACT_EVENT_SOURCES;
-    }
-
+    std::vector<std::string> get_extract_event_sources();
     std::vector<falcosecurity::field_info> get_fields();
-
     bool extract(const falcosecurity::extract_fields_input& in);
 
     //////////////////////////
     // Parse capability
     //////////////////////////
 
-    // We need to parse only the async events produced by this plugin. The async
-    // events produced by this plugin are injected in the syscall event source,
-    // so here we need to parse events coming from the "syscall" source.
-    // We will select specific events to parse through the
-    // `get_parse_event_types` API.
-    std::vector<std::string> get_parse_event_sources()
-    {
-        return PARSE_EVENT_SOURCES;
-    }
-
-    std::vector<falcosecurity::event_type> get_parse_event_types()
-    {
-        return PARSE_EVENT_CODES;
-    }
-
-    bool inline parse_async_event(const falcosecurity::parse_event_input& in);
-    bool inline parse_container_event(const falcosecurity::parse_event_input& in);
-    bool inline parse_container_json_event(const falcosecurity::parse_event_input& in);
-    bool inline parse_new_process_event(const falcosecurity::parse_event_input& in);
+    std::vector<std::string> get_parse_event_sources();
+    std::vector<falcosecurity::event_type> get_parse_event_types();
+    bool parse_async_event(const falcosecurity::parse_event_input& in);
+    bool parse_container_event(const falcosecurity::parse_event_input& in);
+    bool parse_container_json_event(const falcosecurity::parse_event_input& in);
+    bool parse_new_process_event(const falcosecurity::parse_event_input& in);
     bool parse_event(const falcosecurity::parse_event_input& in);
 
-private:
-    // Async thread
-    std::thread m_async_thread;
-    std::atomic<bool> m_async_thread_quit;
-    std::condition_variable m_cv;
-    std::mutex m_mu;
+    //////////////////////////
+    // Helpers
+    //////////////////////////
+    std::string compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr);
 
-    // State tables
+private:
+    // State table
     std::unordered_map<std::string, sinsp_container_info> m_containers;
 
     // Last error of the plugin
@@ -175,8 +121,3 @@ private:
     // Accessors to the thread table "container_id" foreign key field
     falcosecurity::table_field m_container_id_field;
 };
-
-FALCOSECURITY_PLUGIN(my_plugin);
-FALCOSECURITY_PLUGIN_FIELD_EXTRACTION(my_plugin);
-FALCOSECURITY_PLUGIN_ASYNC_EVENTS(my_plugin);
-FALCOSECURITY_PLUGIN_EVENT_PARSING(my_plugin);
