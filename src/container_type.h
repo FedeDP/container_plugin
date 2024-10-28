@@ -17,3 +17,40 @@ enum sinsp_container_type {
     // Default value, may be changed if necessary
     CT_UNKNOWN = 0xffff
 };
+
+static std::string inline to_string(enum sinsp_container_type ct) {
+    switch(ct) {
+    case CT_DOCKER:
+        return "docker";
+        break;
+    case CT_LXC:
+        return "lxc";
+        break;
+    case CT_LIBVIRT_LXC:
+        return "libvirt-lxc";
+        break;
+    case CT_MESOS:
+        return "mesos";
+        break;
+    case CT_CRI:
+        return "cri";
+        break;
+    case CT_CONTAINERD:
+        return "containerd";
+        break;
+    case CT_CRIO:
+        return "cri-o";
+        break;
+    case CT_RKT:
+        return "rkt";
+        break;
+    case CT_BPM:
+        return "bpm";
+        break;
+    case CT_PODMAN:
+        return "podman";
+        break;
+    default:
+        return "";
+    }
+}

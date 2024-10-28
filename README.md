@@ -42,10 +42,35 @@ Once the extraction is requested for a threadinfo, the container_id is then used
 ### Supported Fields
 
 <!-- README-PLUGIN-FIELDS -->
-| NAME                        |      TYPE       |      ARG      | DESCRIPTION         |
-|-----------------------------|-----------------|---------------|---------------------|
-| `container.id`              | `string`        | None          | Container ID.       |
-| `container.name`            | `string`        | None          | Container name.     |
+| NAME                          | TYPE      | ARG                  | DESCRIPTION                          |
+|-------------------------------|-----------|----------------------|--------------------------------------|
+| `container.id`                | `string`  | None                 | Container ID.                        |
+| `container.full_id`           | `string`  | None                 | Container ID.                        |
+| `container.name`              | `string`  | None                 | Container name.                      |
+| `container.image`             | `string`  | None                 | Image name.                          |
+| `container.image.id`          | `string`  | None                 | Image ID.                            |
+| `container.type`              | `string`  | None                 | Type.                                |
+| `container.privileged`        | `bool`    | None                 | Privileged.                          |
+| `container.mounts`            | `string`  | None                 | Mounts.                              |
+| `container.mount`             | `string`  | Idx or Key, Required | Mount.                               |
+| `container.mount.source`      | `string`  | Idx or Key, Required | Mount Source.                        |
+| `container.mount.dest`        | `string`  | Idx or Key, Required | Mount Destination.                   |
+| `container.mount.mode`        | `string`  | Idx or Key, Required | Mount Mode.                          |
+| `container.mount.rdwr`        | `string`  | Idx or Key, Required | Mount Read/Write.                    |
+| `container.mount.propagation` | `string`  | Idx or Key, Required | Mount Propagation.                   |
+| `container.image.repository`  | `string`  | None                 | Repository.                          |
+| `container.image.tag`         | `string`  | None                 | Image Tag.                           |
+| `container.image.digest`      | `string`  | None                 | Registry Digest.                     |
+| `container.healthcheck`       | `string`  | None                 | Health Check.                        |
+| `container.liveness_probe`    | `string`  | None                 | Liveness.                            |
+| `container.readiness_probe`   | `string`  | None                 | Readiness.                           |
+| `container.start_ts`          | `abstime` | None                 | Container start.                     |
+| `container.duration`          | `reltime` | None                 | Container duration.                  |
+| `container.ip`                | `string`  | None                 | Container IP.                        |
+| `container.cni.json`          | `string`  | None                 | Container's / pod's CNI result json. |
+| `container.host_pid`          | `bool`    | None                 | Host PID Namespace.                  |
+| `container.host_network`      | `bool`    | None                 | Host Network Namespace.              |
+| `container.host_ipc`          | `bool`    | None                 | Host IPC Namespace.                  |
 <!-- /README-PLUGIN-FIELDS -->
 
 ## Usage
