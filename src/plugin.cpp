@@ -148,7 +148,7 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         return false;
     }
 
-    m_containers[HOST_CONTAINER_ID] = sinsp_container_info::host_container_info();
+    m_containers[HOST_CONTAINER_ID] = container_info::host_container_info();
     return true;
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-enum sinsp_container_type {
+enum container_type {
     CT_DOCKER = 0,
     CT_LXC = 1,
     CT_LIBVIRT_LXC = 2,
@@ -18,7 +18,7 @@ enum sinsp_container_type {
     CT_UNKNOWN = 0xffff
 };
 
-static std::string inline to_string(enum sinsp_container_type ct) {
+static std::string inline to_string(enum container_type ct) {
     switch(ct) {
     case CT_DOCKER:
         return "docker";

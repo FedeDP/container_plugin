@@ -11,7 +11,7 @@
 #include <json/json.h>
 #include <nlohmann/json.hpp>
 
-class sinsp_container_info {
+class container_info {
 public:
     class container_port_mapping {
     public:
@@ -114,7 +114,7 @@ public:
         std::vector<std::string> m_health_probe_args;
     };
 
-    sinsp_container_info():
+    container_info():
             m_type(CT_UNKNOWN),
             m_container_ip(0),
             m_privileged(false),
@@ -133,8 +133,8 @@ public:
             m_size_rw_bytes(-1) {}
 
     void clear() {
-        this->~sinsp_container_info();
-        new(this) sinsp_container_info();
+        this->~container_info();
+        new(this) container_info();
     }
 
     const std::vector<std::string> &get_env() const { return m_env; }
@@ -146,16 +146,16 @@ public:
     bool is_pod_sandbox() const { return m_is_pod_sandbox; }
 
     // static utilities to build a container_info
-    static sinsp_container_info host_container_info() {
-        auto host_info = sinsp_container_info();
+    static container_info host_container_info() {
+        auto host_info = container_info();
         host_info.m_id = "host";
         host_info.m_full_id = "host";
         host_info.m_name = "host";
         return host_info;
     }
 
-    static sinsp_container_info from_json(nlohmann::json &json) {
-        auto host_info = sinsp_container_info();
+    static container_info from_json(nlohmann::json &json) {
+        auto host_info = container_info();
         // TODO implement logic
         return host_info;
     }
@@ -165,7 +165,7 @@ public:
 
     std::string m_id;
     std::string m_full_id;
-    sinsp_container_type m_type;
+    container_type m_type;
     std::string m_name;
     std::string m_image;
     std::string m_imageid;

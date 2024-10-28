@@ -69,11 +69,11 @@ bool my_plugin::parse_async_event(
     }
     auto json_event = nlohmann::json::parse(std::string(json_charbuf_pointer));
 
-    auto container_info = sinsp_container_info::from_json(json_event);
+    auto cinfo = container_info::from_json(json_event);
     if (added) {
-        m_containers[container_info.m_id] = container_info;
+        m_containers[cinfo.m_id] = cinfo;
     } else {
-        m_containers.erase(container_info.m_id);
+        m_containers.erase(cinfo.m_id);
     }
     return true;
 }
@@ -87,16 +87,16 @@ bool my_plugin::parse_container_event(
     auto image_param = get_syscall_evt_param(evt.get_buf(), 3);
 
     std::string id = (char*)id_param.param_pointer;
-    sinsp_container_type tp = *((sinsp_container_type*)type_param.param_pointer);
+    container_type tp = *((container_type*)type_param.param_pointer);
     std::string name = (char*)name_param.param_pointer;
     std::string image = (char*)image_param.param_pointer;
 
-    auto container_info = sinsp_container_info();
-    container_info.m_id = id;
-    container_info.m_type = tp;
-    container_info.m_name = name;
-    container_info.m_image = image;
-    m_containers[id] = container_info;
+    auto cinfo = container_info();
+    cinfo.m_id = id;
+    cinfo.m_type = tp;
+    cinfo.m_name = name;
+    cinfo.m_image = image;
+    m_containers[id] = cinfo;
     return true;
 }
 
@@ -108,8 +108,8 @@ bool my_plugin::parse_container_json_event(
     std::string json_str = (char *)json_param.param_pointer;
     auto json_event = nlohmann::json::parse(json_str);
 
-    auto container_info = sinsp_container_info::from_json(json_event);
-    m_containers[container_info.m_id] = container_info;
+    auto cinfo = container_info::from_json(json_event);
+    m_containers[cinfo.m_id] = cinfo;
     return true;
 }
 

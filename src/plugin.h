@@ -76,7 +76,7 @@ public:
 
 private:
     // State table
-    std::unordered_map<std::string, sinsp_container_info> m_containers;
+    std::unordered_map<std::string, container_info> m_containers;
 
     // Last error of the plugin
     std::string m_lasterr;

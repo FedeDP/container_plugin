@@ -208,36 +208,36 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         return false;
     }
 
-    auto container_info = it->second;
+    auto cinfo = it->second;
     auto& req = in.get_extract_request();
     const auto field_id = req.get_field_id();
     switch(field_id)
     {
         case TYPE_CONTAINER_ID:
-            req.set_value(container_info.m_id);
+            req.set_value(cinfo.m_id);
             break;
         case TYPE_CONTAINER_FULL_CONTAINER_ID:
-            req.set_value(container_info.m_full_id);
+            req.set_value(cinfo.m_full_id);
             break;
         case TYPE_CONTAINER_NAME:
-            req.set_value(container_info.m_name);
+            req.set_value(cinfo.m_name);
             break;
         case TYPE_CONTAINER_IMAGE:
-            req.set_value(container_info.m_image);
+            req.set_value(cinfo.m_image);
             break;
         case TYPE_CONTAINER_IMAGE_ID:
-            req.set_value(container_info.m_imageid);
+            req.set_value(cinfo.m_imageid);
             break;
         case TYPE_CONTAINER_TYPE:
-            req.set_value(to_string(container_info.m_type));
+            req.set_value(to_string(cinfo.m_type));
             break;
         case TYPE_CONTAINER_PRIVILEGED:
-            req.set_value(container_info.m_privileged);
+            req.set_value(cinfo.m_privileged);
             break;
         case TYPE_CONTAINER_MOUNTS: {
             std::string tstr;
             bool first = true;
-            for (auto &mntinfo: container_info.m_mounts) {
+            for (auto &mntinfo: cinfo.m_mounts) {
                 if (first) {
                     first = false;
                 } else {
@@ -254,13 +254,13 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         case TYPE_CONTAINER_MOUNT_MODE:
         case TYPE_CONTAINER_MOUNT_RDWR:
         case TYPE_CONTAINER_MOUNT_PROPAGATION: {
-            const sinsp_container_info::container_mount_info *mntinfo;
+            const container_info::container_mount_info *mntinfo;
             auto arg_id = req.get_arg_index();
             if (arg_id != -1) {
-                mntinfo = container_info.mount_by_idx(arg_id);
+                mntinfo = cinfo.mount_by_idx(arg_id);
             } else {
                 auto arg_key = req.get_arg_key();
-                mntinfo = container_info.mount_by_source(arg_key);
+                mntinfo = cinfo.mount_by_source(arg_key);
             }
             if (mntinfo) {
                 std::string tstr;
@@ -289,29 +289,29 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         }
         case TYPE_CONTAINER_IMAGE_REPOSITORY:
-            req.set_value(container_info.m_imagerepo);
+            req.set_value(cinfo.m_imagerepo);
             break;
         case TYPE_CONTAINER_IMAGE_TAG:
-            req.set_value(container_info.m_imagetag);
+            req.set_value(cinfo.m_imagetag);
             break;
         case TYPE_CONTAINER_IMAGE_DIGEST:
-            req.set_value(container_info.m_imagedigest);
+            req.set_value(cinfo.m_imagedigest);
             break;
         case TYPE_CONTAINER_HEALTHCHECK:
         case TYPE_CONTAINER_LIVENESS_PROBE:
         case TYPE_CONTAINER_READINESS_PROBE: {
             std::string tstr = "NONE";
             bool set = false;
-            for(auto &probe : container_info.m_health_probes) {
+            for(auto &probe : cinfo.m_health_probes) {
                 if((field_id == TYPE_CONTAINER_HEALTHCHECK &&
                     probe.m_probe_type ==
-                    sinsp_container_info::container_health_probe::PT_HEALTHCHECK) ||
+                    container_info::container_health_probe::PT_HEALTHCHECK) ||
                    (field_id == TYPE_CONTAINER_LIVENESS_PROBE &&
                     probe.m_probe_type ==
-                    sinsp_container_info::container_health_probe::PT_LIVENESS_PROBE) ||
+                    container_info::container_health_probe::PT_LIVENESS_PROBE) ||
                    (field_id == TYPE_CONTAINER_READINESS_PROBE &&
                     probe.m_probe_type ==
-                    sinsp_container_info::container_health_probe::PT_READINESS_PROBE)) {
+                    container_info::container_health_probe::PT_READINESS_PROBE)) {
                     tstr = probe.m_health_probe_exe;
 
                     for(auto &arg : probe.m_health_probe_args) {
@@ -336,23 +336,23 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         case TYPE_CONTAINER_IP_ADDR: {
             uint32_t
-            val = htonl(container_info.m_container_ip);
+            val = htonl(cinfo.m_container_ip);
             char addrbuff[100];
             inet_ntop(AF_INET, &val, addrbuff, sizeof(addrbuff));
             req.set_value(addrbuff);
             break;
         }
         case TYPE_CONTAINER_CNIRESULT:
-            req.set_value(container_info.m_pod_sandbox_cniresult);
+            req.set_value(cinfo.m_pod_sandbox_cniresult);
             break;
         case TYPE_CONTAINER_HOST_PID:
-            req.set_value(container_info.m_host_pid);
+            req.set_value(cinfo.m_host_pid);
             break;
         case TYPE_CONTAINER_HOST_NETWORK:
-            req.set_value(container_info.m_host_network);
+            req.set_value(cinfo.m_host_network);
             break;
         case TYPE_CONTAINER_HOST_IPC:
-            req.set_value(container_info.m_host_ipc);
+            req.set_value(cinfo.m_host_ipc);
             break;
         default:
             SPDLOG_ERROR(
