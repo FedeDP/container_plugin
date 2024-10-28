@@ -1,8 +1,9 @@
 package main
 
-// typedef void (*async_cb)(const char *json);
-// extern void makeCallback(const char *json, async_cb cb) {
-//     cb(json);
+// #include <stdbool.h>
+// typedef void (*async_cb)(const char *json, bool added);
+// extern void makeCallback(const char *json, bool added, async_cb cb) {
+//     cb(json, added);
 // }
 import "C"
 
@@ -10,7 +11,7 @@ import (
     "context"
 )
 
-type asyncCb func(string)
+type asyncCb func(string, bool)
 
 func workerLoop(ctx context.Context, cb asyncCb) {
     for {
@@ -19,7 +20,7 @@ func workerLoop(ctx context.Context, cb asyncCb) {
           return
         }
     }
-    cb("test")
+    cb("test", true)
 }
 
 func main() {

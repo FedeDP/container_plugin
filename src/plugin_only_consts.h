@@ -24,8 +24,8 @@ limitations under the License.
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
-// Regex to extract the pod uid from cgroups
-#define RGX_CONTAINER "(container[a-z0-9]{8}[-_][a-z0-9]{4}[-_][a-z0-9]{4}[-_][a-z0-9]{4}[-_][a-z0-9]{12})"
+// Regex to extract the container_id from cgroups
+#define RGX_CONTAINER "([0-9|a-f|A-F]){64}"
 
 #define HOST_CONTAINER_ID "host"
 

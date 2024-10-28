@@ -22,10 +22,11 @@ limitations under the License.
 /////////////////////////
 // Async capability
 /////////////////////////
-#define ASYNC_EVENT_NAME "container"
+#define ASYNC_EVENT_NAME_ADDED "container_added"
+#define ASYNC_EVENT_NAME_REMOVED "container_removed"
 #define ASYNC_EVENT_NAMES                                                      \
     {                                                                          \
-        ASYNC_EVENT_NAME                                                       \
+        ASYNC_EVENT_NAME_ADDED, ASYNC_EVENT_NAME_REMOVED                       \
     }
 #define ASYNC_EVENT_SOURCES                                                    \
     {                                                                          \

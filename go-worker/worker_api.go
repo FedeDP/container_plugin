@@ -1,7 +1,8 @@
 package main
 
-// typedef void (*async_cb)(const char *json);
-// void makeCallback(const char *json, cb async_cb);
+// #include <stdbool.h>
+// typedef void (*async_cb)(const char *json, bool added);
+// void makeCallback(const char *json, bool added, cb async_cb);
 import "C"
 
 import (
@@ -20,11 +21,11 @@ func StartWorker(cb C.async_cb) {
     ctx, ctxCancel = context.WithCancel(context.Background())
 
     // See https://github.com/enobufs/go-calls-c-pointer/blob/master/counter_api.go
-    goCb := func(containerJson string) {
+    goCb := func(containerJson string, added bool) {
     	// Go cannot call C-function pointers.. Instead, use
     	// a C-function to have it call the function pointer.
     	cstr := C.CString(str)
-   		C.makeCallback(cstr, cb)
+   		C.makeCallback(cstr, added, cb)
    		C.free(unsafe.Pointer(cstr))
    	}
 
