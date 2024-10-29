@@ -7,5 +7,5 @@ FetchContent_Declare(
   GIT_TAG v1.12.0)
 
 FetchContent_MakeAvailable(spdlog)
-set(SPDLOG_INLCUDE "${spdlog_SOURCE_DIR}/include")
-message(STATUS "Using spdlog include at '${SPDLOG_INLCUDE}'")
+set(SPDLOG_INCLUDE "${spdlog_SOURCE_DIR}/include")
+message(STATUS "Using spdlog include at '${SPDLOG_INCLUDE}'")

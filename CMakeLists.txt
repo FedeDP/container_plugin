@@ -37,7 +37,7 @@ pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
 # project includes
 target_include_directories(
-        container PRIVATE ${PLUGIN_SDK_INLCUDE} ${SPDLOG_INLCUDE} ${RE2_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS})
+        container PRIVATE ${PLUGIN_SDK_INCLUDE} ${SPDLOG_INCLUDE} ${RE2_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS} ${WORKER_INCLUDE})
 
 # project linked libraries
 target_link_libraries(container PRIVATE ${RE2_LIBRARIES} ${JSON_LIBRARIES} ${WORKER_LIB})

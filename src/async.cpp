@@ -1,5 +1,5 @@
 #include "plugin.h"
-#include "worker.h"
+#include <libworker.h>
 
 //////////////////////////
 // Async capability

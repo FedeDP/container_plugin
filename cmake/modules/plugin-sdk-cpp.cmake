@@ -9,5 +9,5 @@ FetchContent_Declare(
   GIT_TAG 68377c243f916bd48333751ad25cd6d263b3ea2e) # HEAD of https://github.com/falcosecurity/plugin-sdk-cpp/pull/41
 
 FetchContent_MakeAvailable(plugin-sdk-cpp)
-set(PLUGIN_SDK_INLCUDE "${plugin-sdk-cpp_SOURCE_DIR}/include")
-message(STATUS "Using plugin-sdk-cpp include at '${PLUGIN_SDK_INLCUDE}'")
+set(PLUGIN_SDK_INCLUDE "${plugin-sdk-cpp_SOURCE_DIR}/include")
+message(STATUS "Using plugin-sdk-cpp include at '${PLUGIN_SDK_INCLUDE}'")
