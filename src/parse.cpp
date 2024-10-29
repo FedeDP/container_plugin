@@ -75,6 +75,14 @@ bool my_plugin::parse_async_event(
     } else {
         m_containers.erase(cinfo.m_id);
     }
+    // Update n_containers metric
+    m_metrics.at(0).set_value(m_containers.size() - 1);
+
+    // Update n_missing metric
+    auto val = m_metrics.at(1).value.u64;
+    if (!cinfo.m_is_pod_sandbox && cinfo.m_image.empty()) {
+        m_metrics.at(1).set_value(val + 1);
+    }
     return true;
 }
 

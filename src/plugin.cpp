@@ -151,7 +151,19 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         return false;
     }
 
+    // Initialize dummy "host" fake container entry
     m_containers[HOST_CONTAINER_ID] = container_info::host_container_info();
+
+
+    // Initialize metrics
+    falcosecurity::metric n_container(METRIC_N_CONTAINERS);
+    n_container.set_value(0);
+    m_metrics.push_back(n_container);
+
+    falcosecurity::metric n_missing(METRIC_N_MISSING);
+    n_missing.set_value(0);
+    m_metrics.push_back(n_missing);
+
     return true;
 }
 
@@ -201,6 +213,10 @@ std::string my_plugin::compute_container_id_for_thread(int64_t thread_id, const 
         container_id = HOST_CONTAINER_ID;
     }
     return container_id;
+}
+
+const std::vector<falcosecurity::metric>& my_plugin::get_metrics() {
+    return m_metrics;
 }
 
 FALCOSECURITY_PLUGIN(my_plugin);

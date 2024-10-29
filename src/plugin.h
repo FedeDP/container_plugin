@@ -39,6 +39,7 @@ public:
     falcosecurity::init_schema get_init_schema();
     void parse_init_config(nlohmann::json& config_json);
     bool init(falcosecurity::init_input& in);
+    const std::vector<falcosecurity::metric>& get_metrics();
 
     //////////////////////////
     // Async capability
@@ -77,6 +78,8 @@ public:
 private:
     // State table
     std::unordered_map<std::string, container_info> m_containers;
+
+    std::vector<falcosecurity::metric> m_metrics;
 
     // Last error of the plugin
     std::string m_lasterr;

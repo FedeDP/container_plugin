@@ -72,6 +72,12 @@ limitations under the License.
 #define PIDNS_INIT_START_TS_FIELD_NAME "pidns_init_start_ts"
 
 /////////////////////////
+// Metrics
+/////////////////////////
+#define METRIC_N_CONTAINERS "n_containers"
+#define METRIC_N_MISSING "n_missing_container_images"
+
+/////////////////////////
 // Generic plugin consts
 /////////////////////////
 #define PLUGIN_NAME "container"
