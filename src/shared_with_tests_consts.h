@@ -69,6 +69,7 @@ limitations under the License.
 #define CGROUPS_TABLE_NAME "cgroups"
 #define CGROUP_SECOND_FIELD_NAME "second"
 #define CONTAINER_ID_FIELD_NAME "container_id"
+#define PIDNS_INIT_START_TS_FIELD_NAME "pidns_init_start_ts"
 
 /////////////////////////
 // Generic plugin consts

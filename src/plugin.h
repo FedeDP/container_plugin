@@ -82,6 +82,8 @@ private:
     std::string m_lasterr;
     // Accessor to the thread table
     falcosecurity::table m_threads_table;
+    // Accessors to the thread table "pidns_init_start_ts" field
+    falcosecurity::table_field m_threads_field_pidns_init_start_ts;
     // Accessors to the thread table "cgroups" table
     falcosecurity::table_field m_threads_field_cgroups;
     // Accessors to the thread table "cgroups" "second" field, ie: the cgroups path

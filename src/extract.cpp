@@ -169,21 +169,23 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
 }
 
 bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
-    int64_t thread_id = in.get_event_reader().get_tid();
+    const auto evt_reader = in.get_event_reader();
+    int64_t thread_id = evt_reader.get_tid();
     if(thread_id <= 0)
     {
         SPDLOG_INFO("unknown thread id for event num '{}' with type '{}'",
-                    in.get_event_reader().get_num(),
-                    int32_t(in.get_event_reader().get_type()));
+                    evt_reader.get_num(),
+                    int32_t(evt_reader.get_type()));
         return false;
     }
 
-    std::string container_id = "";
+    std::string container_id;
+    falcosecurity::table_entry thread_entry;
+    auto tr = in.get_table_reader();
     try
     {
-        auto& tr = in.get_table_reader();
         // retrieve the thread entry associated with this thread id
-        auto thread_entry = m_threads_table.get_entry(tr, thread_id);
+        thread_entry = m_threads_table.get_entry(tr, thread_id);
         // retrieve container_id from the entry
         m_container_id_field.read_value(tr, thread_entry, container_id);
         if (container_id == "") {
@@ -329,11 +331,18 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         }
         case TYPE_CONTAINER_START_TS:
-            // TODO...uses tinfo :/
+        case TYPE_CONTAINER_DURATION: {
+            uint64_t pidns_init_start_ts;
+            m_threads_field_pidns_init_start_ts.read_value(tr, thread_entry, pidns_init_start_ts);
+            if (pidns_init_start_ts != 0) {
+                if (field_id == TYPE_CONTAINER_START_TS) {
+                    req.set_value(pidns_init_start_ts);
+                } else {
+                    req.set_value(evt_reader.get_ts() - pidns_init_start_ts);
+                }
+            }
             break;
-        case TYPE_CONTAINER_DURATION:
-            // TODO...uses tinfo :/
-            break;
+        }
         case TYPE_CONTAINER_IP_ADDR: {
             uint32_t
             val = htonl(cinfo.m_container_ip);

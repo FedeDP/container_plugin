@@ -128,6 +128,9 @@ bool my_plugin::init(falcosecurity::init_input& in) {
     try {
         m_threads_table = t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);
 
+        m_threads_field_pidns_init_start_ts = m_threads_table.get_field(
+                t.fields(), PIDNS_INIT_START_TS_FIELD_NAME, st::SS_PLUGIN_ST_UINT64);
+
         // get the 'cgroups' field accessor from the thread table
         m_threads_field_cgroups = m_threads_table.get_field(
                 t.fields(), CGROUPS_TABLE_NAME, st::SS_PLUGIN_ST_TABLE);
