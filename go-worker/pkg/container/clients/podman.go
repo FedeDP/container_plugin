@@ -3,13 +3,13 @@ package clients
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/containers/podman/v5/libpod/events"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
-	"github.com/containers/podman/v5/pkg/domain/entities"
-	"github.com/containers/podman/v5/pkg/domain/infra"
+	"github.com/containers/podman/v5/pkg/bindings/system"
+	"github.com/containers/podman/v5/pkg/domain/entities/types"
+	"github.com/docker/docker/api/types/events"
 	"os"
+	"reflect"
 )
 
 type PodmanClient struct {
@@ -67,39 +67,64 @@ func (pc *PodmanClient) List(_ context.Context) ([]Event, error) {
 }
 
 func (pc *PodmanClient) Listen(ctx context.Context) (<-chan Event, error) {
-	// FIXME
-	return nil, nil
-	evCh := make(chan *events.Event)
 	outCh := make(chan Event)
-	engine, err := infra.NewContainerEngine(&entities.PodmanConfig{
-		EngineMode: entities.ABIMode,
-	})
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, err
+
+	// We need to use a reflect.SelectCase here since
+	// we will need to select a variable number of channels,+
+	// depending on how many podman contexts are found in the system.
+	cases := make([]reflect.SelectCase, len(pc.ctxs)+1) // for the ctx.Done case
+
+	stream := true
+	filters := map[string][]string{
+		"type": {string(events.ContainerEventType)},
+		"event": {
+			string(events.ActionCreate),
+			string(events.ActionRemove),
+		},
 	}
-	go func() {
-		defer close(evCh)
-		// Blocking, read all events from podman
-		_ = engine.Events(ctx, entities.EventsOptions{
-			EventChan: evCh,
-			Filter:    nil,
-			Stream:    true,
-		})
-	}()
+	for i, c := range pc.ctxs {
+		evChn := make(chan types.Event)
+		// producers
+		go func(ch chan types.Event) {
+			_ = system.Events(c, ch, nil, &system.EventsOptions{
+				Filters: filters,
+				Stream:  &stream,
+			})
+		}(evChn)
+
+		cases[i] = reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(evChn),
+		}
+	}
+
+	// Emplace back case for `ctx.Done` channel
+	cases[len(pc.ctxs)] = reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: reflect.ValueOf(ctx.Done()),
+	}
+
+	// consumer/adapter/producer
 	go func() {
 		defer close(outCh)
 		// Blocking: convert all events from podman to json strings
 		// and send them to the main loop until the channel is closed
-		for t := range evCh {
-			outCh <- Event{
-				Info: Info{
-					Type:  "podman",
-					ID:    t.ID,
-					Image: t.Image,
-					State: t.Status.String(),
-				},
-				IsCreate: t.Status == events.Create,
+		for {
+			chosen, val, _ := reflect.Select(cases)
+			if chosen == len(pc.ctxs) {
+				// ctx.Done!
+				return
+			} else {
+				ev, _ := val.Interface().(types.Event)
+				outCh <- Event{
+					Info: Info{
+						Type:  "podman",
+						ID:    ev.Actor.ID,
+						Image: ev.Actor.Attributes["image"],
+						State: string(ev.Action),
+					},
+					IsCreate: ev.Action == events.ActionCreate,
+				}
 			}
 		}
 	}()
