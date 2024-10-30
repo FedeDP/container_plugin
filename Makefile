@@ -25,7 +25,7 @@ build-dir:
 	mkdir -p build
 
 worker: build-dir
-	cd go-worker && go build -v -o ../build/libworker.a -buildmode=c-archive .
+	cd go-worker && make lib && cp libworker.* ../build/
 
 # This Makefile requires CMake installed on the system
 $(OUTPUT): build-dir worker

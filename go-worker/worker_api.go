@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"fmt"
 	"github.com/FedeDP/container-worker/pkg/container"
 	"github.com/FedeDP/container-worker/pkg/container/clients"
 	"sync"
@@ -16,7 +17,6 @@ import "C"
 
 import (
 	"context"
-	"encoding/json"
 )
 
 var (
@@ -31,33 +31,32 @@ func StartWorker(cb C.async_cb) {
 
 	// See https://github.com/enobufs/go-calls-c-pointer/blob/master/counter_api.go
 	goCb := func(containerJson string, added bool) {
-		// Go cannot call C-function pointers.. Instead, use
-		// a C-function to have it call the function pointer.
-		cstr := C.CString(containerJson)
-		cbool := C.bool(added)
-		C.makeCallback(cstr, cbool, cb)
+		if containerJson == "" {
+			return
+		}
+		if cb != nil {
+			// Go cannot call C-function pointers.. Instead, use
+			// a C-function to have it call the function pointer.
+			cstr := C.CString(containerJson)
+			cbool := C.bool(added)
+			C.makeCallback(cstr, cbool, cb)
+		} else {
+			fmt.Println(containerJson, "added:", added)
+		}
 	}
 
-	listeners := make([]clients.Listener, 0, container.CtPodman+1)
+	containerClients := make([]clients.Client, container.CtPodman+1)
 	for i := container.CtDocker; i <= container.CtPodman; i++ {
 		cl, err := i.ToClient(ctx)
 		if err != nil {
 			continue
 		}
-		listener, err := cl.Listener(ctx)
-		if err != nil {
-			continue
-		}
-		listeners[i] = listener
+		containerClients[i] = cl
 		// List all pre-existing containers and run `goCb` on all of them
 		containers, err := cl.List(ctx)
 		if err == nil {
 			for _, ctr := range containers {
-				jsonStr, err := json.Marshal(ctr)
-				if err != nil {
-					continue
-				}
-				goCb(string(jsonStr), true)
+				goCb(ctr.String(), true)
 			}
 		}
 	}
@@ -66,7 +65,7 @@ func StartWorker(cb C.async_cb) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		workerLoop(ctx, goCb, listeners)
+		workerLoop(ctx, goCb, containerClients)
 	}()
 }
 

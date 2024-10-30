@@ -10,20 +10,17 @@ type Type int32
 
 const (
 	CtDocker     Type = 0
-	CtLxc        Type = 1
-	CtLibvirtLxc Type = 2
-	CtMesos      Type = 3
-	CtRkt        Type = 4 // deprecated
-	CtCustom     Type = 5
+	CtLxc        Type = 1 // cgroup match only
+	CtLibvirtLxc Type = 2 // cgroup match only
+	CtMesos      Type = 3 // deprecated
+	CtRkt        Type = 4 // cgroup match only
+	CtCustom     Type = 5 // cgroup match only
 	CtCri        Type = 6
 	CtContainerd Type = 7
 	CtCrio       Type = 8
-	CtBpm        Type = 9
-	CtStatic     Type = 10
+	CtBpm        Type = 9  // cgroup match only
+	CtStatic     Type = 10 // cgroup match only
 	CtPodman     Type = 11
-
-	// Default value, may be changed if necessary
-	CtUnknown Type = 0xfff
 )
 
 func (ct Type) String() string {

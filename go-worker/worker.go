@@ -1,6 +1,9 @@
 package main
 
-import "github.com/FedeDP/container-worker/pkg/container"
+import (
+	"github.com/FedeDP/container-worker/pkg/container"
+	"github.com/FedeDP/container-worker/pkg/container/clients"
+)
 
 /*
 #include <stdbool.h>
@@ -15,32 +18,40 @@ import "C"
 
 import (
 	"context"
-	"github.com/FedeDP/container-worker/pkg/container/clients"
 )
 
 type asyncCb func(string, bool)
 
-func workerLoop(ctx context.Context, cb asyncCb, listeners []clients.Listener) {
+func workerLoop(ctx context.Context, cb asyncCb, containerClients []clients.Client) {
+	var (
+		evt clients.Event
+		err error
+	)
+
+	channels := make([]<-chan clients.Event, len(containerClients))
+	for i, client := range containerClients {
+		if client != nil {
+			channels[i], err = client.Listen(ctx)
+			if err != nil {
+				continue
+			}
+		}
+	}
+
 	for {
 		select {
-		case <-listeners[container.CtDocker]:
-		case <-listeners[container.CtLxc]:
-		case <-listeners[container.CtLibvirtLxc]:
-		case <-listeners[container.CtMesos]:
-		case <-listeners[container.CtCri]:
-		case <-listeners[container.CtContainerd]:
-		case <-listeners[container.CtCrio]:
-		case <-listeners[container.CtBpm]:
-		case <-listeners[container.CtPodman]:
-			cb("json here", true)
-			break
+		case evt = <-channels[container.CtDocker]:
+			cb(evt.String(), evt.IsCreate)
+		case evt = <-channels[container.CtCri]:
+			cb(evt.String(), evt.IsCreate)
+		case evt = <-channels[container.CtContainerd]:
+			cb(evt.String(), evt.IsCreate)
+		case evt = <-channels[container.CtCrio]:
+			cb(evt.String(), evt.IsCreate)
+		case evt = <-channels[container.CtPodman]:
+			cb(evt.String(), evt.IsCreate)
 		case <-ctx.Done():
 			return
 		}
 	}
-}
-
-func main() {
-	// Noop, required to make CGO happy: `-buildmode=c-*` requires exactly one
-	// main package, which in turn needs a `main` function`.
 }

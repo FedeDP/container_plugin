@@ -2,17 +2,30 @@ package clients
 
 import (
 	"context"
+	"encoding/json"
 )
 
 type Info struct {
+	Type  string `json:"type"`
 	ID    string `json:"id"`
 	Image string `json:"image"`
 	State string `json:"state"`
 }
 
-type Client interface {
-	List(ctx context.Context) ([]Info, error)
-	Listener(ctx context.Context) (Listener, error)
+type Event struct {
+	Info
+	IsCreate bool
 }
 
-type Listener <-chan string
+func (i *Info) String() string {
+	str, err := json.Marshal(i)
+	if err != nil {
+		return ""
+	}
+	return string(str)
+}
+
+type Client interface {
+	List(ctx context.Context) ([]Event, error)
+	Listen(ctx context.Context) (<-chan Event, error)
+}
