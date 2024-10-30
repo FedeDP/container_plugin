@@ -3,7 +3,6 @@ package main
 import "C"
 import (
 	"github.com/FedeDP/container-worker/pkg/container"
-	"github.com/FedeDP/container-worker/pkg/container/clients"
 	"sync"
 )
 
@@ -40,15 +39,15 @@ func StartWorker(cb C.async_cb) {
 		C.makeCallback(cstr, cbool, cb)
 	}
 
-	containerClients := make([]clients.Client, container.CtPodman+1)
-	for i := container.CtDocker; i <= container.CtPodman; i++ {
-		cl, err := i.ToClient(ctx)
+	containerEngines := make([]container.Engine, 0)
+	for _, engine := range container.Engines {
+		err := engine.Init(ctx)
 		if err != nil {
 			continue
 		}
-		containerClients[i] = cl
+		containerEngines = append(containerEngines, engine)
 		// List all pre-existing containers and run `goCb` on all of them
-		containers, err := cl.List(ctx)
+		containers, err := engine.List(ctx)
 		if err == nil {
 			for _, ctr := range containers {
 				goCb(ctr.String(), true)
@@ -60,7 +59,7 @@ func StartWorker(cb C.async_cb) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		workerLoop(ctx, goCb, containerClients)
+		workerLoop(ctx, goCb, containerEngines)
 	}()
 }
 

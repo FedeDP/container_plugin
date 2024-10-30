@@ -1,4 +1,4 @@
-package clients
+package container
 
 import (
 	"context"
@@ -12,11 +12,17 @@ import (
 	"reflect"
 )
 
-type PodmanClient struct {
+const typePodman Type = "podman"
+
+func init() {
+	Engines[typePodman] = &podmanEngine{}
+}
+
+type podmanEngine struct {
 	ctxs []context.Context
 }
 
-func NewPodmanClient(ctx context.Context) (Client, error) {
+func (pc *podmanEngine) Init(ctx context.Context) error {
 	podmanContexts := make([]context.Context, 0)
 	// Get root podman socket location
 	rootSocket := "unix:///run/podman/podman.sock"
@@ -37,14 +43,13 @@ func NewPodmanClient(ctx context.Context) (Client, error) {
 	}
 
 	if len(podmanContexts) == 0 {
-		return nil, errors.New("no podman context found")
+		return errors.New("no podman context found")
 	}
-	return &PodmanClient{
-		ctxs: podmanContexts,
-	}, nil
+	pc.ctxs = podmanContexts
+	return nil
 }
 
-func (pc *PodmanClient) List(_ context.Context) ([]Event, error) {
+func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 	evts := make([]Event, 0)
 	for _, ctx := range pc.ctxs {
 		cList, err := containers.List(ctx, &containers.ListOptions{})
@@ -54,7 +59,7 @@ func (pc *PodmanClient) List(_ context.Context) ([]Event, error) {
 		for _, c := range cList {
 			evts = append(evts, Event{
 				Info: Info{
-					Type:  "podman",
+					Type:  string(typePodman),
 					ID:    c.ID,
 					Image: c.Image,
 					State: c.State,
@@ -66,11 +71,11 @@ func (pc *PodmanClient) List(_ context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (pc *PodmanClient) Listen(ctx context.Context) (<-chan Event, error) {
+func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
 	outCh := make(chan Event)
 
 	// We need to use a reflect.SelectCase here since
-	// we will need to select a variable number of channels,+
+	// we will need to select a variable number of channels,
 	// depending on how many podman contexts are found in the system.
 	cases := make([]reflect.SelectCase, len(pc.ctxs)+1) // for the ctx.Done case
 
@@ -118,7 +123,7 @@ func (pc *PodmanClient) Listen(ctx context.Context) (<-chan Event, error) {
 				ev, _ := val.Interface().(types.Event)
 				outCh <- Event{
 					Info: Info{
-						Type:  "podman",
+						Type:  string(typePodman),
 						ID:    ev.Actor.ID,
 						Image: ev.Actor.Attributes["image"],
 						State: string(ev.Action),

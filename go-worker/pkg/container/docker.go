@@ -1,4 +1,4 @@
-package clients
+package container
 
 import (
 	"context"
@@ -8,21 +8,26 @@ import (
 	"github.com/docker/docker/client"
 )
 
-type DockerClient struct {
+const typeDocker Type = "docker"
+
+func init() {
+	Engines[typeDocker] = &dockerEngine{}
+}
+
+type dockerEngine struct {
 	*client.Client
 }
 
-func NewDockerClient(_ context.Context) (Client, error) {
+func (dc *dockerEngine) Init(_ context.Context) error {
 	cl, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	dCl := &DockerClient{cl}
-	return dCl, nil
+	dc.Client = cl
+	return nil
 }
 
-func (dc *DockerClient) List(ctx context.Context) ([]Event, error) {
+func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 	containers, err := dc.ContainerList(ctx, container.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -34,7 +39,7 @@ func (dc *DockerClient) List(ctx context.Context) ([]Event, error) {
 		evts[idx] = Event{
 			IsCreate: true,
 			Info: Info{
-				Type:  "docker",
+				Type:  string(typeDocker),
 				ID:    ctr.ID,
 				Image: ctr.Image,
 				State: ctr.State,
@@ -45,7 +50,7 @@ func (dc *DockerClient) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (dc *DockerClient) Listen(ctx context.Context) (<-chan Event, error) {
+func (dc *dockerEngine) Listen(ctx context.Context) (<-chan Event, error) {
 	outCh := make(chan Event)
 
 	flts := filters.NewArgs()
@@ -58,7 +63,7 @@ func (dc *DockerClient) Listen(ctx context.Context) (<-chan Event, error) {
 		for msg := range msgs {
 			outCh <- Event{
 				Info: Info{
-					Type:  "docker",
+					Type:  string(typeDocker),
 					ID:    msg.Actor.ID,
 					Image: msg.Actor.Attributes["image"],
 					State: string(msg.Action),
