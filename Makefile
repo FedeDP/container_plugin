@@ -20,6 +20,7 @@ all: $(OUTPUT)
 
 clean:
 	rm -rf build $(OUTPUT)
+	cd go-worker && make clean
 
 build-dir:
 	mkdir -p build

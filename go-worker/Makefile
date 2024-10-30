@@ -7,3 +7,6 @@ lib:
 .PHONY: exe
 exe:
 	go build -tags exe -v -o worker  .
+
+clean:
+	rm -rf worker libworker.a libworker.h
