@@ -2,6 +2,15 @@
 
 package main
 
+/*
+#include <stdio.h>
+#include <stdbool.h>
+void echo_cb(const char *json, bool added) {
+	printf("Added: %d, Json: %s\n", added, json);
+}
+*/
+import "C"
+
 import (
 	"fmt"
 	"os"
@@ -11,7 +20,7 @@ import (
 
 func main() {
 	fmt.Println("Starting worker")
-	StartWorker(nil)
+	StartWorker((*[0]byte)(C.echo_cb))
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)

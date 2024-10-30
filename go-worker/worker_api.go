@@ -2,7 +2,6 @@ package main
 
 import "C"
 import (
-	"fmt"
 	"github.com/FedeDP/container-worker/pkg/container"
 	"github.com/FedeDP/container-worker/pkg/container/clients"
 	"sync"
@@ -34,15 +33,11 @@ func StartWorker(cb C.async_cb) {
 		if containerJson == "" {
 			return
 		}
-		if cb != nil {
-			// Go cannot call C-function pointers.. Instead, use
-			// a C-function to have it call the function pointer.
-			cstr := C.CString(containerJson)
-			cbool := C.bool(added)
-			C.makeCallback(cstr, cbool, cb)
-		} else {
-			fmt.Println(containerJson, "added:", added)
-		}
+		// Go cannot call C-function pointers.. Instead, use
+		// a C-function to have it call the function pointer.
+		cstr := C.CString(containerJson)
+		cbool := C.bool(added)
+		C.makeCallback(cstr, cbool, cb)
 	}
 
 	containerClients := make([]clients.Client, container.CtPodman+1)
