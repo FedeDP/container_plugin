@@ -42,7 +42,6 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 				Type:  string(typeDocker),
 				ID:    ctr.ID,
 				Image: ctr.Image,
-				State: ctr.State,
 			},
 		}
 		idx++
@@ -66,7 +65,6 @@ func (dc *dockerEngine) Listen(ctx context.Context) (<-chan Event, error) {
 					Type:  string(typeDocker),
 					ID:    msg.Actor.ID,
 					Image: msg.Actor.Attributes["image"],
-					State: string(msg.Action),
 				},
 				IsCreate: msg.Action == events.ActionCreate,
 			}

@@ -62,7 +62,6 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 					Type:  string(typePodman),
 					ID:    c.ID,
 					Image: c.Image,
-					State: c.State,
 				},
 				IsCreate: true,
 			})
@@ -126,7 +125,6 @@ func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
 						Type:  string(typePodman),
 						ID:    ev.Actor.ID,
 						Image: ev.Actor.Attributes["image"],
-						State: string(ev.Action),
 					},
 					IsCreate: ev.Action == events.ActionCreate,
 				}

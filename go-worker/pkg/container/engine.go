@@ -14,7 +14,6 @@ type Info struct {
 	Type  string `json:"type"`
 	ID    string `json:"id"`
 	Image string `json:"image"`
-	State string `json:"state"`
 }
 
 type Event struct {
