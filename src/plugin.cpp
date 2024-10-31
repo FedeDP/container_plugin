@@ -17,6 +17,11 @@ limitations under the License.
 
 #include "plugin.h"
 #include <re2/re2.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+using nlohmann::json;
 
 //////////////////////////
 // General plugin API
@@ -73,23 +78,141 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
 			],
 			"title": "The plugin logging verbosity",
 			"description": "The verbosity that the plugin will use when printing logs."
-		}
+		},
+        "engines": {
+            "$ref": "#/definitions/Engines",
+            "title": "The plugin per-engine configuration",
+			"description": "Allows to disable/enable each engine and customize sockets where available."
+        }
 	},
+    "definitions": {
+        "Engines": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "docker": {
+                    "$ref": "#/definitions/SocketsContainer"
+                },
+                "podman": {
+                    "$ref": "#/definitions/SocketsContainer"
+                },
+                "containerd": {
+                    "$ref": "#/definitions/SocketsContainer"
+                },
+                "cri": {
+                    "$ref": "#/definitions/SocketsContainer"
+                },
+                "lxc": {
+                    "$ref": "#/definitions/SimpleContainer"
+                },
+                "libvirt_lxc": {
+                    "$ref": "#/definitions/SimpleContainer"
+                },
+                "bpm": {
+                    "$ref": "#/definitions/SimpleContainer"
+                }
+            },
+            "required": [
+                "bpm",
+                "containerd",
+                "cri",
+                "docker",
+                "libvirt_lxc",
+                "lxc",
+                "podman"
+            ],
+            "title": "Engines"
+        },
+        "SimpleContainer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "enabled"
+            ],
+            "title": "SimpleContainer"
+        },
+        "SocketsContainer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "sockets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "enabled",
+                "sockets"
+            ],
+            "title": "SocketsContainer"
+        }
+    },
 	"additionalProperties": false,
 	"type": "object"
 })";
     return init_schema;
 }
 
+void from_json(const json& j, SimpleEngine& engine) {
+    engine.enabled = j.value("enabled", true);
+}
+
+void from_json(const json& j, SocketsEngine& engine) {
+    engine.enabled = j.value("enabled", true);
+    engine.sockets = j.value("sockets", std::vector<std::string>{});
+}
+
+void from_json(const json& j, PluginConfig& cfg) {
+    cfg.verbosity = j.value("verbosity", "info");
+    cfg.bpm = j.value("bpm", SimpleEngine{});
+    cfg.lxc = j.value("lxc", SimpleEngine{});
+    cfg.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});
+
+    cfg.docker = j.value("docker", SocketsEngine{});
+    if (cfg.docker.sockets.empty()) {
+        cfg.docker.sockets.emplace_back("/var/run/docker.sock");
+    }
+
+    cfg.podman = j.value("podman", SocketsEngine{});
+    if (cfg.podman.sockets.empty()) {
+        cfg.podman.sockets.emplace_back("/run/podman/podman.sock");
+        for (const auto & entry : fs::directory_iterator("/run/user")) {
+            if (entry.is_directory()) {
+                if (std::filesystem::exists(entry.path().string() + "/podman/podman.sock")) {
+                    cfg.podman.sockets.emplace_back(entry.path().string() + "/podman/podman.sock");
+                }
+            }
+        }
+    }
+
+    cfg.cri = j.value("cri", SocketsEngine{});
+    if (cfg.cri.sockets.empty()) {
+        cfg.cri.sockets.emplace_back("/run/crio/crio.sock");
+        cfg.cri.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
+    }
+
+    cfg.containerd = j.value("containerd", SocketsEngine{});
+    if (cfg.containerd.sockets.empty()) {
+        cfg.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
+    }
+}
+
 void my_plugin::parse_init_config(nlohmann::json& config_json) {
+    m_cfg = config_json.get<PluginConfig>();
     // Verbosity, the default verbosity is already set in the 'init' method
-    if(config_json.contains(nlohmann::json::json_pointer(VERBOSITY_PATH)))
-    {
+    if (m_cfg.verbosity != "info") {
         // If the user specified a verbosity we override the actual one (`info`)
-        std::string verbosity;
-        config_json.at(nlohmann::json::json_pointer(VERBOSITY_PATH))
-                .get_to(verbosity);
-        spdlog::set_level(spdlog::level::from_str(verbosity));
+        spdlog::set_level(spdlog::level::from_str(m_cfg.verbosity));
     }
 }
 

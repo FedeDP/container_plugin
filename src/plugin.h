@@ -20,6 +20,34 @@ limitations under the License.
 #include "container_info.h"
 #include <unordered_map>
 
+struct SimpleEngine {
+    bool enabled;
+
+    SimpleEngine() {
+        enabled = true;
+    }
+};
+
+struct SocketsEngine {
+    bool enabled;
+    std::vector<std::string> sockets;
+
+    SocketsEngine() {
+        enabled = true;
+    }
+};
+
+struct PluginConfig {
+    std::string verbosity;
+    SimpleEngine bpm;
+    SimpleEngine lxc;
+    SimpleEngine libvirt_lxc;
+    SocketsEngine docker;
+    SocketsEngine podman;
+    SocketsEngine cri;
+    SocketsEngine containerd;
+};
+
 class my_plugin
 {
 public:
@@ -80,6 +108,8 @@ private:
     std::unordered_map<std::string, container_info> m_containers;
 
     std::vector<falcosecurity::metric> m_metrics;
+
+    PluginConfig m_cfg;
 
     // Last error of the plugin
     std::string m_lasterr;

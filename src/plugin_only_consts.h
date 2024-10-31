@@ -17,7 +17,6 @@ limitations under the License.
 
 #pragma once
 
-/// todo!: According to perf tests we could compile out some logs
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 #include <falcosecurity/sdk.h>
