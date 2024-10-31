@@ -52,7 +52,8 @@ func (pc *podmanEngine) Init(ctx context.Context) error {
 func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 	evts := make([]Event, 0)
 	for _, ctx := range pc.ctxs {
-		cList, err := containers.List(ctx, &containers.ListOptions{})
+		all := true
+		cList, err := containers.List(ctx, &containers.ListOptions{All: &all})
 		if err != nil {
 			continue
 		}

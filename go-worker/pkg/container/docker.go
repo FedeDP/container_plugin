@@ -28,14 +28,13 @@ func (dc *dockerEngine) Init(_ context.Context) error {
 }
 
 func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
-	containers, err := dc.ContainerList(ctx, container.ListOptions{})
+	containers, err := dc.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		return nil, err
 	}
 
 	evts := make([]Event, len(containers))
-	idx := 0
-	for _, ctr := range containers {
+	for idx, ctr := range containers {
 		evts[idx] = Event{
 			IsCreate: true,
 			Info: Info{
@@ -44,7 +43,6 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 				Image: ctr.Image,
 			},
 		}
-		idx++
 	}
 	return evts, nil
 }
