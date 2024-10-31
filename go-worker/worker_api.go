@@ -2,12 +2,14 @@ package main
 
 import "C"
 import (
+	"encoding/json"
 	"github.com/FedeDP/container-worker/pkg/container"
 	"sync"
 )
 
 /*
 #include <stdbool.h>
+typedef const char cchar_t;
 typedef void (*async_cb)(const char *json, bool added);
 void makeCallback(const char *json, bool added, async_cb cb);
 */
@@ -23,9 +25,15 @@ var (
 )
 
 //export StartWorker
-func StartWorker(cb C.async_cb) {
+func StartWorker(cb C.async_cb, initCfg *C.cchar_t) bool {
 	var ctx context.Context
 	ctx, ctxCancel = context.WithCancel(context.Background())
+
+	var cfg map[string]container.SocketsEngine
+	err := json.Unmarshal([]byte(C.GoString(initCfg)), &cfg)
+	if err != nil {
+		return false
+	}
 
 	// See https://github.com/enobufs/go-calls-c-pointer/blob/master/counter_api.go
 	goCb := func(containerJson string, added bool) {
@@ -40,19 +48,29 @@ func StartWorker(cb C.async_cb) {
 	}
 
 	containerEngines := make([]container.Engine, 0)
-	for _, engine := range container.Engines {
-		err := engine.Init(ctx)
-		if err != nil {
+	for engineName, engineGen := range container.EngineGenerators {
+		engineCfg, ok := cfg[string(engineName)]
+		if !ok || !engineCfg.Enabled {
 			continue
 		}
-		containerEngines = append(containerEngines, engine)
-		// List all pre-existing containers and run `goCb` on all of them
-		containers, err := engine.List(ctx)
-		if err == nil {
-			for _, ctr := range containers {
-				goCb(ctr.String(), true)
+		// For each specified socket, start an engine
+		for _, socket := range engineCfg.Sockets {
+			engine, err := engineGen(ctx, socket)
+			if err != nil {
+				continue
+			}
+			containerEngines = append(containerEngines, engine)
+			// List all pre-existing containers and run `goCb` on all of them
+			containers, err := engine.List(ctx)
+			if err == nil {
+				for _, ctr := range containers {
+					goCb(ctr.String(), true)
+				}
 			}
 		}
+	}
+	if len(containerEngines) == 0 {
+		return false
 	}
 
 	// Start worker goroutine
@@ -61,6 +79,7 @@ func StartWorker(cb C.async_cb) {
 		defer wg.Done()
 		workerLoop(ctx, goCb, containerEngines)
 	}()
+	return true
 }
 
 //export StopWorker

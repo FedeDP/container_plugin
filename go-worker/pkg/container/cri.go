@@ -11,7 +11,7 @@ import (
 const typeCri Type = "cri"
 
 func init() {
-	Engines[typeCri] = &criEngine{}
+	EngineGenerators[typeCri] = newCriEngine
 }
 
 type criEngine struct {
@@ -27,18 +27,19 @@ func getRuntime(runtime string) string {
 	return string(typeCri)
 }
 
-func (c *criEngine) Init(ctx context.Context) error {
-	client, err := remote.NewRemoteRuntimeService("/run/containerd/containerd.sock", 5*time.Second, nil, nil)
+func newCriEngine(ctx context.Context, socket string) (Engine, error) {
+	client, err := remote.NewRemoteRuntimeService(socket, 5*time.Second, nil, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	version, err := client.Version(ctx, "")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	c.client = client
-	c.runtime = getRuntime(version.RuntimeName)
-	return nil
+	return &criEngine{
+		client:  client,
+		runtime: getRuntime(version.RuntimeName),
+	}, nil
 }
 
 func (c *criEngine) List(ctx context.Context) ([]Event, error) {

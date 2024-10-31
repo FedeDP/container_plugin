@@ -11,20 +11,19 @@ import (
 const typeContainerd Type = "containerd"
 
 func init() {
-	Engines[typeContainerd] = &containerdEngine{}
+	EngineGenerators[typeContainerd] = newContainerdEngine
 }
 
 type containerdEngine struct {
 	client *containerd.Client
 }
 
-func (c *containerdEngine) Init(_ context.Context) error {
-	client, err := containerd.New("/run/containerd/containerd.sock")
+func newContainerdEngine(_ context.Context, socket string) (Engine, error) {
+	client, err := containerd.New(socket)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	c.client = client
-	return nil
+	return &containerdEngine{client: client}, nil
 }
 
 func (c *containerdEngine) List(ctx context.Context) ([]Event, error) {

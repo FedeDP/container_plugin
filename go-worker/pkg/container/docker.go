@@ -11,20 +11,21 @@ import (
 const typeDocker Type = "docker"
 
 func init() {
-	Engines[typeDocker] = &dockerEngine{}
+	EngineGenerators[typeDocker] = newDockerEngine
 }
 
 type dockerEngine struct {
 	*client.Client
 }
 
-func (dc *dockerEngine) Init(_ context.Context) error {
-	cl, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func newDockerEngine(_ context.Context, socket string) (Engine, error) {
+	cl, err := client.NewClientWithOpts(client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+		client.WithHost(enforceUnixProtocolIfEmpty(socket)))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	dc.Client = cl
-	return nil
+	return &dockerEngine{cl}, nil
 }
 
 func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {

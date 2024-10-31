@@ -19,8 +19,44 @@ import (
 )
 
 func main() {
+	initCfg := `
+   {
+      "containerd":{
+         "enabled":true,
+         "sockets":[
+            "/run/containerd/containerd.sock"
+         ]
+      },
+      "cri":{
+         "enabled":true,
+         "sockets":[
+            "/run/crio/crio.sock",
+			"/run/k3s/containerd/containerd.sock"
+         ]
+      },
+      "docker":{
+         "enabled":true,
+         "sockets":[
+            "/var/run/docker.sock"
+         ]
+      },
+      "podman":{
+         "enabled":true,
+         "sockets":[
+            "/run/podman/podman.sock", 
+			"/run/user/1000/podman/podman.sock"
+         ]
+      }
+   }`
+	if len(os.Args) > 1 {
+		initCfg = os.Args[1]
+	}
 	fmt.Println("Starting worker")
-	StartWorker((*[0]byte)(C.echo_cb))
+	cstr := C.CString(initCfg)
+	if !StartWorker((*[0]byte)(C.echo_cb), cstr) {
+		fmt.Println("Failed to start worker; nothing configured?")
+		os.Exit(1)
+	}
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)

@@ -5,6 +5,8 @@
 // Async capability
 //////////////////////////
 
+using nlohmann::json;
+
 static std::unique_ptr<falcosecurity::async_event_handler> s_async_handler;
 
 std::vector<std::string> my_plugin::get_async_events() {
@@ -29,14 +31,50 @@ static void generate_async_event(const char *json, bool added) {
     s_async_handler->push();
 }
 
+void to_json(json& j, const PluginConfig& cfg)
+{
+    j = json{
+            {
+                    "docker",
+                                 {
+                                         {"enabled", cfg.docker.enabled },
+                                         {"sockets", cfg.docker.sockets }
+                                 }
+            },
+            {
+                    "podman",
+                                 {
+                                         {"enabled", cfg.podman.enabled },
+                                         {"sockets", cfg.podman.sockets }
+                                 }
+            },
+            {
+                    "cri",
+                                 {
+                                         {"enabled", cfg.cri.enabled },
+                                         {"sockets", cfg.cri.sockets }
+                                 }
+            },
+            {
+                    "containerd",
+                                 {
+                                         {"enabled", cfg.containerd.enabled },
+                                         {"sockets", cfg.containerd.sockets }
+                                 }
+            }
+    };
+}
+
+
 // We need this API to start the async thread when the
 // `set_async_event_handler` plugin API will be called.
 bool my_plugin::start_async_events(
         std::shared_ptr<falcosecurity::async_event_handler_factory> f) {
     s_async_handler = f->new_handler();
     // Implemented by GO worker.go
-    StartWorker(generate_async_event);
-    return true;
+
+    json j(m_cfg);
+    return StartWorker(generate_async_event, j.dump().c_str());
 }
 
 // We need this API to stop the async thread when the
