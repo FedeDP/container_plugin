@@ -73,6 +73,14 @@ Once the extraction is requested for a threadinfo, the container_id is then used
 | `container.host_ipc`          | `bool`    | None                 | Host IPC Namespace.                  |
 <!-- /README-PLUGIN-FIELDS -->
 
+## Requirements
+
+* `containerd` >= 1.7 (https://kubernetes.io/docs/tasks/administer-cluster/switch-to-evented-pleg/, https://github.com/containerd/containerd/pull/7073)
+* `cri-o` >= 1.26 (https://kubernetes.io/docs/tasks/administer-cluster/switch-to-evented-pleg/)
+* `podman` >= v2.0.0 (https://github.com/containers/podman/commit/165aef7766953cd0c0589ffa1abc25022a905adb)
+
+One can customize those sockets through init config; moreover, one can disable each engine individually.
+
 ## Usage
 
 ### Configuration
@@ -85,18 +93,39 @@ Here's an example of configuration of `falco.yaml`:
 plugins:
   - name: container
     # path to the plugin .so file
-    library_path: libcontainer.so      
+    library_path: libcontainer.so
+    init_config:
+      # verbosity level for the plugin logger
+      verbosity: warning # (optional, default: info)
+      engines:
+        docker:
+          enabled: true
+          sockets: ['/var/run/docker.sock']
+        podman:
+          enabled: true
+          sockets: ['/run/podman/podman.sock', '/run/user/1000/podman/podman.sock']
+        containerd:
+          enabled: true
+          sockets: ['/run/containerd/containerd.sock']
+        cri:
+          enabled: true
+          sockets: ['/run/crio/crio.sock']
+        lxc:
+          enabled: false
+        libvirt_lxc:
+          enabled: false
+        bpm:
+          enabled: false  
 
 load_plugins: [container]
 ```
 
-**Initialization Config**:
+**Default Sockets**:
 
-See the [configuration](#configuration) section above.
-
-**Open Parameters**:
-
-The plugin doesn't have open params
+* Docker: `/var/run/docker.sock`
+* Podman: `/run/podman/podman.sock` for root, + `/run/user/$uid/podman/podman.sock` for each user in the system
+* Containerd: `/run/containerd/containerd.sock`
+* Cri: [`/run/crio/crio.sock`, `/run/k3s/containerd/containerd.sock`]
 
 ### Rules
 
@@ -127,3 +156,6 @@ git clone https://github.com/falcosecurity/plugins.git
 cd plugins/container
 make libcontainer.so
 ```
+
+You can also run `make exe` from withing the `go-worker` folder to build a `worker` executable,
+to test the go-worker implementation.
