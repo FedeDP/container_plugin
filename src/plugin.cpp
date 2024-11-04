@@ -198,12 +198,12 @@ void from_json(const json& j, PluginConfig& cfg) {
     cfg.cri = j.value("cri", SocketsEngine{});
     if (cfg.cri.sockets.empty()) {
         cfg.cri.sockets.emplace_back("/run/crio/crio.sock");
-        cfg.cri.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
     }
 
     cfg.containerd = j.value("containerd", SocketsEngine{});
     if (cfg.containerd.sockets.empty()) {
         cfg.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
+        cfg.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
     }
 }
 

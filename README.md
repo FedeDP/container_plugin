@@ -1,5 +1,16 @@
 # Container metadata enrichment Plugin
 
+## TODO
+
+- [ ] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
+- [ ] Drop jsoncpp dep from container_info.cpp and use nlohmann since it is already in use by the plugin-sdk-cpp
+- [ ] properly send correct json with all info from go-worker
+- [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
+- [ ] Use re2 bundled instead of system one
+
+- [ ] remove all container-related code from sinsp
+- [ ] test, test, test
+
 ## Experimental
 
 Consider this plugin as experimental until it reaches version `1.0.0`. By 'experimental' we mean that, although the plugin is functional and tested, it is currently in active development and may undergo changes in behavior as necessary, without prioritizing backward compatibility.
@@ -18,22 +29,21 @@ a single event metadata.
 
 The `container` plugin implements 3 capabilities:
 
-* `extraction` -> to extract `container.X` related fields
-* `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork events
+* `extraction` -> to extract `container.X` fields
+* `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork/execve events
 * `async` -> to generate events with container infos
 
 ## Architecture
 
 The `container` plugin is split into 2 modules:
-* a C++ shared object that implements the 3 capabilities and holds the cache map
-* a GO static library (linked inside the C++ shared object) that implements the worker logic to retrieve new containers' metadata
+* a [C++ shared object](src) that implements the 3 capabilities and holds the cache map `<container_id,container_info>`
+* a [GO static library](go-worker) (linked inside the C++ shared object) that implements the worker logic to retrieve new containers' metadata leveraging existing SDKs
 
-Once the GO worker finds a new container, it immediately generates an `async` event through a callback that is passed by the C++ side, to enrich its own internal state cache.
-
-Every time a clone/fork event gets parsed (ie: a new thread is created in the system), we attach to its thread table entry
-the information about the container_id, extracted through a regex by looking at the `cgroups` field, in a foreign key.
-
-Once the extraction is requested for a threadinfo, the container_id is then used as key to access our plugin's internal container metadata cache, and the requested infos extracted.
+As soon as the plugin starts, the go-worker gets started as part of the `async` capability, passing to it plugin init config and a C++ callback to generate async events. 
+Whenever the GO worker finds a new container, it immediately generates an `async` event through the aforementioned callback.
+The `async` event is then received by the C++ side as part of the `parsing` capability, and it enriches its own internal state cache.
+Every time a clone/fork/execve event gets parsed, we attach to its thread table entry the information about the container_id, extracted through a regex by looking at the `cgroups` field, in a foreign key.
+Once the extraction is requested for a thread, the container_id is then used as key to access our plugin's internal container metadata cache, and the requested infos extracted.
 
 ### Plugin official name
 
@@ -79,8 +89,6 @@ Once the extraction is requested for a threadinfo, the container_id is then used
 * `cri-o` >= 1.26 (https://kubernetes.io/docs/tasks/administer-cluster/switch-to-evented-pleg/)
 * `podman` >= v2.0.0 (https://github.com/containers/podman/commit/165aef7766953cd0c0589ffa1abc25022a905adb)
 
-One can customize those sockets through init config; moreover, one can disable each engine individually.
-
 ## Usage
 
 ### Configuration
@@ -124,12 +132,12 @@ load_plugins: [container]
 
 * Docker: `/var/run/docker.sock`
 * Podman: `/run/podman/podman.sock` for root, + `/run/user/$uid/podman/podman.sock` for each user in the system
-* Containerd: `/run/containerd/containerd.sock`
-* Cri: [`/run/crio/crio.sock`, `/run/k3s/containerd/containerd.sock`]
+* Containerd: [`/run/containerd/containerd.sock`, `/run/k3s/containerd/containerd.sock`]
+* Cri: `/run/crio/crio.sock`
 
 ### Rules
 
-This plugin doesn't provide any custom rule, you can use the default Falco ruleset and add the necessary `container` fields. A very simple example rule can be found [here](https://github.com/falcosecurity/plugins/blob/main/plugins/k8smeta/test/rules/example_rule.yaml).
+This plugin doesn't provide any custom rule, you can use the default Falco ruleset and add the necessary `container` fields.
 Note: leveraging latest plugin SDK features, the plugin itself will expose certain fields as suggested output fields:
 * `container.id`
 * `container.name`
@@ -157,5 +165,4 @@ cd plugins/container
 make libcontainer.so
 ```
 
-You can also run `make exe` from withing the `go-worker` folder to build a `worker` executable,
-to test the go-worker implementation.
+You can also run `make exe` from withing the `go-worker` folder to build a `worker` executable to test the go-worker implementation.
