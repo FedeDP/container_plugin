@@ -8,6 +8,7 @@
   - [ ] drop `new proc` parsers
 
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
+  - [ ] keep same json that was sent by libs: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/parsers.cpp#L4692
   - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
   - [ ] somehow make rid of re2 dep in `mount_by_source` and `mount_by_dest` to drop the dep
 

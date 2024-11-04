@@ -151,21 +151,41 @@ public:
         host_info.m_id = "host";
         host_info.m_full_id = "host";
         host_info.m_name = "host";
-        host_info.m_type = CT_UNKNOWN;
         return host_info;
     }
 
-    static container_info from_json(nlohmann::json &json) {
-        auto host_info = container_info();
-        // TODO implement logic
-        return host_info;
+    static container_info from_json(nlohmann::json &root) {
+        auto info = container_info();
+        // TODO implement logic.
+        // See https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/parsers.cpp#L4672
+        return info;
     }
 
     std::string to_json() {
         nlohmann::json j;
-        j["container_id"] = m_id;
+        j["id"] = m_id;
         j["type"] = m_type;
-        return j.dump();
+        if (!m_full_id.empty()) {
+            j["full_id"] = m_full_id;
+        }
+        if (!m_image.empty()) {
+            j["image"] = m_image;
+        }
+        if (!m_name.empty()) {
+            j["name"] = m_name;
+        }
+        if (!m_imagerepo.empty()) {
+            j["imagerepo"] = m_imagerepo;
+        }
+        if (!m_imagetag.empty()) {
+            j["imagetag"] = m_imagetag;
+        }
+        if (!m_imagedigest.empty()) {
+            j["imagedigest"] = m_imagedigest;
+        }
+        nlohmann::json root;
+        root["container"] = j;
+        return root.dump();
     }
 
     // Match a process against the set of health probes

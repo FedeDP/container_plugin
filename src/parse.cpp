@@ -75,6 +75,7 @@ bool my_plugin::parse_async_event(
     } else {
         m_containers.erase(cinfo.m_id);
     }
+
     // Update n_containers metric
     m_metrics.at(0).set_value(m_containers.size() - 1);
 
