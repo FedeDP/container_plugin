@@ -2,15 +2,32 @@
 
 ## TODO
 
+### Plugin
 - [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
-- [ ] allow plugin API to access state table in write mode in extractor and drop `new proc` parsers
-- [ ] Drop jsoncpp dep from container_info.cpp and use nlohmann since it is already in use by the plugin-sdk-cpp
-- [ ] properly send correct json with all info from go-worker
-- [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
-- [ ] Use re2 bundled instead of system one
+- [ ] allow plugin API to access state table in write mode in extractor
+  - [ ] drop `new proc` parsers
 
-- [ ] remove all container-related code from sinsp
-- [ ] test, test, test
+- [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
+  - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
+
+- [ ] properly send json with all info from go-worker
+- [ ] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
+  - [ ] drop re2 dep since it was only used for the fake container_id_regex
+  - [ ] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
+- [ ] fixup CRI `GetContainerEvents()` (not sending any event) ??
+
+### Falco
+
+- [ ] double check %container.info: https://github.com/falcosecurity/falco/blob/master/userspace/engine/rule_loader_compiler.cpp#L38
+    - [ ] set to empty the `s_default_extra_fmt` for `%container.info` in falco rule_loader_compiler
+    - [x] the plugin will enforce `container.id and container.name` in output through the new plugin API
+- [ ] if container plugin is not loaded but a rule requires `container.*` fields, register a stub plugin (like we do in tests) 
+that just returns "n/a", "", "host": since default Falco rules use container fields, we need a way to ensure that they load fine even if container plugin is not loaded
+
+### Libs
+
+- [ ] remove all container-related code from sinsp to be able to inject the plugin
+- [ ] all Libs container-related tests? Will need to run sinsp with the external plugin!
 
 ## Experimental
 
