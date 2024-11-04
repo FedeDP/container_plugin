@@ -16,6 +16,8 @@
   - [ ] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
 - [ ] fixup CRI `GetContainerEvents()` (not sending any event) ??
 
+- [x] parameterize `get_fields` fields to allow to change PLUGIN_NAME for testing purposes
+
 ### Falco
 
 - [ ] double check %container.info: https://github.com/falcosecurity/falco/blob/master/userspace/engine/rule_loader_compiler.cpp#L38

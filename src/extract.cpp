@@ -45,7 +45,7 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
     using ft = falcosecurity::field_value_type;
     // Use an array to perform a static_assert one the size.
     const falcosecurity::field_info fields[] = {
-            {ft::FTYPE_STRING, "container.id", "Container ID",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".id", "Container ID",
                     "The truncated container ID (first 12 characters), e.g. 3ad7b26ded6d is extracted from "
                     "the Linux cgroups by Falco within the kernel. Consequently, this field is reliably "
                     "available and serves as the lookup key for Falco's synchronous or asynchronous requests "
@@ -55,34 +55,34 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "Kubernetes, pod sandbox container processes can exist where `container.id` matches "
                     "`k8s.pod.sandbox_id`, lacking other 'container.*' details.",
                       {}, false, {}, true}, // use as suggested output format
-            {ft::FTYPE_STRING, "container.full_id", "Container ID",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".full_id", "Container ID",
                     "The full container ID, e.g. "
                     "3ad7b26ded6d8e7b23da7d48fe889434573036c27ae5a74837233de441c3601e. In contrast to "
                     "`container.id`, we enrich this field as part of the container engine enrichment. In "
                     "instances of userspace container engine lookup delays, this field may not be available "
                     "yet."},
-            {ft::FTYPE_STRING, "container.name", "Container Name",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".name", "Container Name",
                     "The container name. In instances of userspace container engine lookup delays, this field "
                     "may not be available yet. One important aspect to be aware of is that if the process "
                     "occurs on the host, meaning not in the container PID namespace, this field is set to a "
                     "string called 'host'."
                     , {}, false, {}, true}, // use as suggested output format
-            {ft::FTYPE_STRING, "container.image", "Image Name",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".image", "Image Name",
                     "The container image name (e.g. falcosecurity/falco:latest for docker). In instances of "
                     "userspace container engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.image.id", "Image ID",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".image.id", "Image ID",
                     "The container image id (e.g. 6f7e2741b66b). In instances of userspace container engine "
                     "lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.type", "Type",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".type", "Type",
                     "The container type, e.g. docker, cri-o, containerd etc."},
-            {ft::FTYPE_BOOL, "container.privileged", "Privileged",
+            {ft::FTYPE_BOOL, PLUGIN_NAME  ".privileged", "Privileged",
                     "'true' for containers running as privileged, 'false' otherwise. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.mounts", "Mounts",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mounts", "Mounts",
                     "A space-separated list of mount information. Each item in the list has the format "
                     "'source:dest:mode:rdrw:propagation'. In instances of userspace container engine lookup "
                     "delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.mount", "Mount",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mount", "Mount",
                     "Information about a single mount, specified by number (e.g. container.mount[0]) or mount "
                     "source (container.mount[/usr/local]). The pathname can be a glob "
                     "(container.mount[/usr/local/*]), in which case the first matching mount will be "
@@ -90,65 +90,65 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "is no mount with the specified index or matching the provided source, returns the string "
                     "\"none\" instead of a NULL value. In instances of userspace container engine lookup "
                     "delays, this field may not be available yet.", falcosecurity::field_arg()},
-            {ft::FTYPE_STRING, "container.mount.source", "Mount Source",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mount.source", "Mount Source",
                     "The mount source, specified by number (e.g. container.mount.source[0]) or mount "
                     "destination (container.mount.source[/host/lib/modules]). The pathname can be a glob. In "
                     "instances of userspace container engine lookup delays, this field may not be available "
                     "yet.", falcosecurity::field_arg()},
-            {ft::FTYPE_STRING, "container.mount.dest", "Mount Destination",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mount.dest", "Mount Destination",
                     "The mount destination, specified by number (e.g. container.mount.dest[0]) or mount "
                     "source (container.mount.dest[/lib/modules]). The pathname can be a glob. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet.",
                     falcosecurity::field_arg()},
-            {ft::FTYPE_STRING, "container.mount.mode", "Mount Mode",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mount.mode", "Mount Mode",
                     "The mount mode, specified by number (e.g. container.mount.mode[0]) or mount source "
                     "(container.mount.mode[/usr/local]). The pathname can be a glob. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet.",
                     falcosecurity::field_arg()},
-            {ft::FTYPE_STRING, "container.mount.rdwr", "Mount Read/Write",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mount.rdwr", "Mount Read/Write",
                     "The mount rdwr value, specified by number (e.g. container.mount.rdwr[0]) or mount source "
                     "(container.mount.rdwr[/usr/local]). The pathname can be a glob. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet.",
                     falcosecurity::field_arg()},
-            {ft::FTYPE_STRING, "container.mount.propagation", "Mount Propagation",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".mount.propagation", "Mount Propagation",
                     "The mount propagation value, specified by number (e.g. container.mount.propagation[0]) "
                     "or mount source (container.mount.propagation[/usr/local]). The pathname can be a glob. "
                     "In instances of userspace container engine lookup delays, this field may not be "
                     "available yet.", falcosecurity::field_arg()},
-            {ft::FTYPE_STRING, "container.image.repository", "Repository",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".image.repository", "Repository",
                     "The container image repository (e.g. falcosecurity/falco). In instances of userspace "
                     "container engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.image.tag", "Image Tag",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".image.tag", "Image Tag",
                     "The container image tag (e.g. stable, latest). In instances of userspace container "
                     "engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.image.digest", "Registry Digest",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".image.digest", "Registry Digest",
                     "The container image registry digest (e.g. "
                     "sha256:d977378f890d445c15e51795296e4e5062f109ce6da83e0a355fc4ad8699d27). In instances of "
                     "userspace container engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.healthcheck", "Health Check",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".healthcheck", "Health Check",
                     "The container's health check. Will be the null value (\"N/A\") if no healthcheck "
                     "configured, \"NONE\" if configured but explicitly not created, and the healthcheck "
                     "command line otherwise. In instances of userspace container engine lookup delays, this "
                     "field may not be available yet."},
-            {ft::FTYPE_STRING, "container.liveness_probe", "Liveness",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".liveness_probe", "Liveness",
                     "The container's liveness probe. Will be the null value (\"N/A\") if no liveness probe "
                     "configured, the liveness probe command line otherwise. In instances of userspace "
                     "container engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.readiness_probe", "Readiness",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".readiness_probe", "Readiness",
                     "The container's readiness probe. Will be the null value (\"N/A\") if no readiness probe "
                     "configured, the readiness probe command line otherwise. In instances of userspace "
                     "container engine lookup delays, this field may not be available yet."},
-            {ft::FTYPE_ABSTIME, "container.start_ts", "Container Start",
+            {ft::FTYPE_ABSTIME, PLUGIN_NAME  ".start_ts", "Container Start",
                     "Container start as epoch timestamp in nanoseconds based on proc.pidns_init_start_ts and "
                     "extracted in the kernel and not from the container runtime socket / container engine."},
-            {ft::FTYPE_RELTIME, "container.duration", "Container Duration",
+            {ft::FTYPE_RELTIME, PLUGIN_NAME  ".duration", "Container Duration",
                     "Number of nanoseconds since container.start_ts."},
-            {ft::FTYPE_STRING, "container.ip", "Container ip address",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".ip", "Container ip address",
                     "The container's / pod's primary ip address as retrieved from the container engine. Only "
                     "ipv4 addresses are tracked. Consider container.cni.json (CRI use case) for logging ip "
                     "addresses for each network interface. In instances of userspace container engine lookup "
                     "delays, this field may not be available yet."},
-            {ft::FTYPE_STRING, "container.cni.json", "Container's / pod's CNI result json",
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".cni.json", "Container's / pod's CNI result json",
                     "The container's / pod's CNI result field from the respective pod status info. It "
                     "contains ip addresses for each network interface exposed as unparsed escaped JSON "
                     "string. Supported for CRI container engine (containerd, cri-o runtimes), optimized for "
@@ -156,11 +156,11 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "ipv6, dual-stack support) for each network interface (multi-interface support). In "
                     "instances of userspace container engine lookup delays, this field may not be available "
                     "yet."},
-            {ft::FTYPE_BOOL, "container.host_pid", "Host PID Namespace",
+            {ft::FTYPE_BOOL, PLUGIN_NAME  ".host_pid", "Host PID Namespace",
                     "'true' if the container is running in the host PID namespace, 'false' otherwise."},
-            {ft::FTYPE_BOOL, "container.host_network", "Host Network Namespace",
+            {ft::FTYPE_BOOL, PLUGIN_NAME  ".host_network", "Host Network Namespace",
                     "'true' if the container is running in the host network namespace, 'false' otherwise."},
-            {ft::FTYPE_BOOL, "container.host_ipc", "Host IPC Namespace",
+            {ft::FTYPE_BOOL, PLUGIN_NAME  ".host_ipc", "Host IPC Namespace",
                     "'true' if the container is running in the host IPC namespace, 'false' otherwise."},
     };
     const int fields_size = sizeof(fields) / sizeof(fields[0]);
