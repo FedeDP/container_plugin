@@ -9,14 +9,17 @@
 
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
   - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
+  - [ ] somehow make rid of re2 dep in `mount_by_source` and `mount_by_dest` to drop the dep
 
 - [ ] properly send json with all info from go-worker
-- [ ] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
-  - [ ] drop re2 dep since it was only used for the fake container_id_regex
-  - [ ] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
-- [ ] fixup CRI `GetContainerEvents()` (not sending any event) ??
+
+- [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
+  - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
+  - [x] add support for hidden (ie: non-documented) "static" container matcher in init config
 
 - [x] parameterize `get_fields` fields to allow to change PLUGIN_NAME for testing purposes
+
+- [ ] fixup CRI `GetContainerEvents()` (not sending any event) ??
 
 ### Falco
 

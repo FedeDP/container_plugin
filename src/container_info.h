@@ -151,6 +151,7 @@ public:
         host_info.m_id = "host";
         host_info.m_full_id = "host";
         host_info.m_name = "host";
+        host_info.m_type = CT_UNKNOWN;
         return host_info;
     }
 
@@ -158,6 +159,13 @@ public:
         auto host_info = container_info();
         // TODO implement logic
         return host_info;
+    }
+
+    std::string to_json() {
+        nlohmann::json j;
+        j["container_id"] = m_id;
+        j["type"] = m_type;
+        return j.dump();
     }
 
     // Match a process against the set of health probes

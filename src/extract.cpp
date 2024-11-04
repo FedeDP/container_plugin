@@ -191,8 +191,9 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         if (container_id == "") {
             // This should only happen in case a clone/fork was lost
             // and our parse_new_process_event() callback was not called.
-            // In this (rare) case, compute now the container_id given the thread cgroups
-            container_id = compute_container_id_for_thread(thread_id, tr);
+            // Nothing we can do.
+            SPDLOG_DEBUG("the plugin has no container_id info for the thread id '{}'", thread_id);
+            return false;
         }
     }
     catch(falcosecurity::plugin_exception e)

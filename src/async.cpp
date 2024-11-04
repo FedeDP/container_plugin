@@ -1,5 +1,6 @@
 #include "plugin.h"
 #include <libworker.h>
+#include <mutex>
 
 //////////////////////////
 // Async capability
@@ -8,6 +9,7 @@
 using nlohmann::json;
 
 static std::unique_ptr<falcosecurity::async_event_handler> s_async_handler;
+static std::mutex s_async_handler_mutex;
 
 std::vector<std::string> my_plugin::get_async_events() {
     return ASYNC_EVENT_NAMES;
@@ -17,7 +19,7 @@ std::vector<std::string> my_plugin::get_async_event_sources() {
     return ASYNC_EVENT_SOURCES;
 }
 
-static void generate_async_event(const char *json, bool added) {
+void generate_async_event(const char *json, bool added) {
     falcosecurity::events::asyncevent_e_encoder enc;
     enc.set_tid(1);
     std::string msg = json;
@@ -27,10 +29,14 @@ static void generate_async_event(const char *json, bool added) {
         enc.set_name(ASYNC_EVENT_NAME_REMOVED);
     }
     enc.set_data((void*)msg.c_str(), msg.size() + 1);
+
+    // Here below we use the global static variable; make sure to avoid concurrent usages.
+    const std::lock_guard<std::mutex> lock(s_async_handler_mutex);
     enc.encode(s_async_handler->writer());
     s_async_handler->push();
 }
 
+// Build the json object to be passed to the go-worker as init config.
 void to_json(json& j, const PluginConfig& cfg)
 {
     j = json{

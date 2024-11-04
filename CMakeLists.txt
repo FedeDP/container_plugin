@@ -15,8 +15,9 @@ include(go-worker)
 include(spdlog)
 include(plugin-sdk-cpp)
 
+file(GLOB_RECURSE SOURCES src/*.cpp)
+
 # project target
-file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 add_library(container SHARED ${SOURCES})
 set_target_properties(container PROPERTIES CXX_EXTENSIONS OFF)
 

@@ -121,6 +121,44 @@ bool my_plugin::parse_container_json_event(
     return true;
 }
 
+
+std::string my_plugin::compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr, container_info **info) {
+    // retrieve tid cgroups, compute container_id and store it.
+    std::string container_id;
+    using st = falcosecurity::state_value_type;
+
+    // retrieve the thread entry associated with this thread id
+    auto thread_entry = m_threads_table.get_entry(tr, thread_id);
+
+    // get the fd table of the thread
+    auto cgroups_table = m_threads_table.get_subtable(
+            tr, m_threads_field_cgroups, thread_entry,
+            st::SS_PLUGIN_ST_UINT64);
+
+    cgroups_table.iterate_entries(
+            tr,
+            [&](const falcosecurity::table_entry& e)
+            {
+                // read the "second" field (aka: the cgroup path)
+                // from the current entry of the cgroups table
+                std::string cgroup;
+                m_cgroups_field_second.read_value(tr, e, cgroup);
+
+                if(!cgroup.empty()) {
+                    if (m_mgr->match_cgroup(cgroup, container_id, info)) {
+                        return false; // stop iterating
+                    }
+                }
+                return true;
+            }
+    );
+    if (container_id == "") {
+        // Could not find any matching container_id; HOST!
+        container_id = HOST_CONTAINER_ID;
+    }
+    return container_id;
+}
+
 bool my_plugin::parse_new_process_event(
         const falcosecurity::parse_event_input& in) {
     // get tid
@@ -135,7 +173,9 @@ bool my_plugin::parse_new_process_event(
 
     // compute container_id from tid->cgroups
     auto& tr = in.get_table_reader();
-    auto container_id = compute_container_id_for_thread(thread_id, tr);
+
+    container_info *info = nullptr;
+    auto container_id = compute_container_id_for_thread(thread_id, tr, &info);
 
     // store container_id
     auto& tw = in.get_table_writer();
@@ -143,6 +183,14 @@ bool my_plugin::parse_new_process_event(
     auto thread_entry = m_threads_table.get_entry(tr, thread_id);
     m_container_id_field.write_value(tw, thread_entry,
                                      (const char*)container_id.c_str());
+
+    if (info != nullptr) {
+        // Since the matcher also returned a container_info,
+        // it means we do not expect to receive any metadata from the go-worker,
+        // since the engine has no listener SDK.
+        // Just send the event now.
+        generate_async_event(info->to_json().c_str(), true);
+    }
     return true;
 }
 

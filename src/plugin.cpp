@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 #include "plugin.h"
-#include <re2/re2.h>
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -26,9 +25,6 @@ using nlohmann::json;
 //////////////////////////
 // General plugin API
 //////////////////////////
-
-// This is the regex needed to extract the container_id from the cgroup
-static re2::RE2 pattern(RGX_CONTAINER, re2::RE2::POSIX);
 
 std::string my_plugin::get_name() {
     return PLUGIN_NAME;
@@ -110,6 +106,9 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
                 },
                 "bpm": {
                     "$ref": "#/definitions/SimpleContainer"
+                },
+                "static": {
+                    "$ref": "#/definitions/StaticContainer"
                 }
             },
             "required": [
@@ -122,6 +121,10 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
                 "podman"
             ],
             "title": "Engines"
+        },
+        "nonEmptyString": {
+            "type": "string",
+            "minLength": 1
         },
         "SimpleContainer": {
             "type": "object",
@@ -155,12 +158,44 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
                 "sockets"
             ],
             "title": "SocketsContainer"
+        },
+        "StaticContainer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "container_id": {
+                    "$ref": "#/definitions/nonEmptyString"
+                },
+                "container_name": {
+                    "$ref": "#/definitions/nonEmptyString"
+                },
+                "container_image": {
+                    "$ref": "#/definitions/nonEmptyString"
+                }
+            },
+            "required": [
+                "enabled",
+                "container_id",
+                "container_name",
+                "container_image"
+            ],
+            "title": "StaticContainer"
         }
     },
 	"additionalProperties": false,
 	"type": "object"
 })";
     return init_schema;
+}
+
+void from_json(const json& j, StaticEngine& engine) {
+    engine.enabled = j.value("enabled", false);
+    engine.name = j.value("container_name", "");
+    engine.id = j.value("container_id", "");
+    engine.image = j.value("container_image", "");
 }
 
 void from_json(const json& j, SimpleEngine& engine) {
@@ -177,6 +212,7 @@ void from_json(const json& j, PluginConfig& cfg) {
     cfg.bpm = j.value("bpm", SimpleEngine{});
     cfg.lxc = j.value("lxc", SimpleEngine{});
     cfg.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});
+    cfg.static_ctr = j.value("static", StaticEngine{});
 
     cfg.docker = j.value("docker", SocketsEngine{});
     if (cfg.docker.sockets.empty()) {
@@ -205,6 +241,35 @@ void from_json(const json& j, PluginConfig& cfg) {
         cfg.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
         cfg.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
     }
+}
+
+uint64_t my_plugin::get_container_engine_mask() {
+    uint64_t container_mask = 0;
+    if (m_cfg.containerd.enabled) {
+        container_mask |= 1 << CT_CONTAINERD;
+    }
+    if (m_cfg.podman.enabled) {
+        container_mask |= 1 << CT_PODMAN;
+    }
+    if (m_cfg.cri.enabled) {
+        container_mask |= 1 << CT_CRI;
+    }
+    if (m_cfg.docker.enabled) {
+        container_mask |= 1 << CT_DOCKER;
+    }
+    if (m_cfg.lxc.enabled) {
+        container_mask |= 1 << CT_LXC;
+    }
+    if (m_cfg.libvirt_lxc.enabled) {
+        container_mask |= 1 << CT_LIBVIRT_LXC;
+    }
+    if (m_cfg.bpm.enabled) {
+        container_mask |= 1 << CT_BPM;
+    }
+    if (m_cfg.static_ctr.enabled) {
+        container_mask |= 1 << CT_STATIC;
+    }
+    return container_mask;
 }
 
 void my_plugin::parse_init_config(nlohmann::json& config_json) {
@@ -248,6 +313,8 @@ bool my_plugin::init(falcosecurity::init_input& in) {
                 "and may undergo changes in behavior without prioritizing "
                 "backward compatibility.");
 
+    m_mgr = std::make_unique<matcher_manager>(get_container_engine_mask());
+
     try {
         m_threads_table = t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);
 
@@ -288,54 +355,6 @@ bool my_plugin::init(falcosecurity::init_input& in) {
     m_metrics.push_back(n_missing);
 
     return true;
-}
-
-// TODO: rewrite for container_id
-static bool inline get_container_id_from_cgroup_string(const std::string& cgroup_first_line, std::string &container_id) {
-    if(re2::RE2::PartialMatch(cgroup_first_line, pattern, &container_id))
-    {
-        container_id.erase(0, 3);
-        std::replace(container_id.begin(), container_id.end(), '_', '-');
-        return true;
-    }
-    return false;
-}
-
-std::string my_plugin::compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr) {
-    // retrieve tid cgroups, compute container_id and store it.
-    std::string container_id;
-    using st = falcosecurity::state_value_type;
-
-    // retrieve the thread entry associated with this thread id
-    auto thread_entry = m_threads_table.get_entry(tr, thread_id);
-
-    // get the fd table of the thread
-    auto cgroups_table = m_threads_table.get_subtable(
-            tr, m_threads_field_cgroups, thread_entry,
-            st::SS_PLUGIN_ST_UINT64);
-
-    cgroups_table.iterate_entries(
-            tr,
-            [&](const falcosecurity::table_entry& e)
-            {
-                // read the "second" field (aka: the cgroup path)
-                // from the current entry of the cgroups table
-                std::string cgroup;
-                m_cgroups_field_second.read_value(tr, e, cgroup);
-
-                if(!cgroup.empty()) {
-                    if (get_container_id_from_cgroup_string(cgroup, container_id)) {
-                        return false; // stop iterating
-                    }
-                }
-                return true;
-            }
-    );
-    if (container_id == "") {
-        // Could not find any matching container_id; HOST!
-        container_id = HOST_CONTAINER_ID;
-    }
-    return container_id;
 }
 
 const std::vector<falcosecurity::metric>& my_plugin::get_metrics() {

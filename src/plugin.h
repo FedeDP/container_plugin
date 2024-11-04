@@ -18,7 +18,10 @@ limitations under the License.
 #include "plugin_only_consts.h"
 #include "shared_with_tests_consts.h"
 #include "container_info.h"
+#include "matchers/matcher.h"
 #include <unordered_map>
+
+void generate_async_event(const char *json, bool added);
 
 struct SimpleEngine {
     bool enabled;
@@ -37,6 +40,17 @@ struct SocketsEngine {
     }
 };
 
+struct StaticEngine {
+    bool enabled;
+    std::string id;
+    std::string name;
+    std::string image;
+
+    StaticEngine() {
+        enabled = false;
+    }
+};
+
 struct PluginConfig {
     std::string verbosity;
     SimpleEngine bpm;
@@ -46,6 +60,7 @@ struct PluginConfig {
     SocketsEngine podman;
     SocketsEngine cri;
     SocketsEngine containerd;
+    StaticEngine static_ctr;
 };
 
 class my_plugin
@@ -65,6 +80,7 @@ public:
     std::string get_last_error();
     void destroy();
     falcosecurity::init_schema get_init_schema();
+    uint64_t get_container_engine_mask();
     void parse_init_config(nlohmann::json& config_json);
     bool init(falcosecurity::init_input& in);
     const std::vector<falcosecurity::metric>& get_metrics();
@@ -101,7 +117,7 @@ public:
     //////////////////////////
     // Helpers
     //////////////////////////
-    std::string compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr);
+    std::string compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr, container_info **info);
 
 private:
     // State table
@@ -110,6 +126,8 @@ private:
     std::vector<falcosecurity::metric> m_metrics;
 
     PluginConfig m_cfg;
+
+    std::unique_ptr<matcher_manager> m_mgr;
 
     // Last error of the plugin
     std::string m_lasterr;
