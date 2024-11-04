@@ -54,7 +54,10 @@ limitations under the License.
         PPME_ASYNCEVENT_E,                                                     \
         PPME_CONTAINER_E, PPME_CONTAINER_JSON_E, PPME_CONTAINER_JSON_2_E,      \
         PPME_SYSCALL_CLONE_20_X, PPME_SYSCALL_FORK_20_X,                       \
-        PPME_SYSCALL_VFORK_20_X, PPME_SYSCALL_CLONE3_X                         \
+        PPME_SYSCALL_VFORK_20_X, PPME_SYSCALL_CLONE3_X,                        \
+        PPME_SYSCALL_EXECVE_16_X, PPME_SYSCALL_EXECVE_17_X,                    \
+        PPME_SYSCALL_EXECVE_18_X, PPME_SYSCALL_EXECVE_19_X,                    \
+        PPME_SYSCALL_EXECVEAT_X, PPME_SYSCALL_CHROOT_X                         \
     }
 
 #define PARSE_EVENT_SOURCES                                                    \
@@ -85,5 +88,3 @@ limitations under the License.
 #define PLUGIN_DESCRIPTION "Enrich syscall events with metadata from the container"
 #define PLUGIN_CONTACT "github.com/falcosecurity/plugins"
 #define PLUGIN_REQUIRED_API_VERSION "3.8.0"
-
-#define VERBOSITY_PATH "/verbosity"

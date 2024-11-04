@@ -163,6 +163,12 @@ bool my_plugin::parse_event(const falcosecurity::parse_event_input& in) {
         case PPME_SYSCALL_FORK_20_X:
         case PPME_SYSCALL_VFORK_20_X:
         case PPME_SYSCALL_CLONE3_X:
+        case PPME_SYSCALL_EXECVE_16_X:
+        case PPME_SYSCALL_EXECVE_17_X:
+        case PPME_SYSCALL_EXECVE_18_X:
+        case PPME_SYSCALL_EXECVE_19_X:
+        case PPME_SYSCALL_EXECVEAT_X:
+        case PPME_SYSCALL_CHROOT_X:
             return parse_new_process_event(in);
         default:
             SPDLOG_ERROR("received an unknown event type {}",

@@ -2,7 +2,8 @@
 
 ## TODO
 
-- [ ] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
+- [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
+- [ ] allow plugin API to access state table in write mode in extractor and drop `new proc` parsers
 - [ ] Drop jsoncpp dep from container_info.cpp and use nlohmann since it is already in use by the plugin-sdk-cpp
 - [ ] properly send correct json with all info from go-worker
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
