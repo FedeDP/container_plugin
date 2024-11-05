@@ -12,6 +12,10 @@
   - [ ] somehow make rid of re2 dep in `mount_by_source` and `mount_by_dest` to drop the dep
 
 - [ ] properly send json with all info from go-worker
+  - [x] docker
+  - [x] podman
+  - [ ] containerd
+  - [ ] cri
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
@@ -68,6 +72,9 @@ The `async` event is then received by the C++ side as part of the `parsing` capa
 Every time a clone/fork/execve event gets parsed, we attach to its thread table entry the information about the container_id, extracted through a regex by looking at the `cgroups` field, in a foreign key.
 Once the extraction is requested for a thread, the container_id is then used as key to access our plugin's internal container metadata cache, and the requested infos extracted.
 
+Note, however, that for some container engines, namely `{bpm,lxc,libvirt_lcx}`, we only support fetching generic info, ie: the container ID and the container type.  
+Given that there is no "listener" SDK to attach to, for these engines the `async` event is generated directly by the C++ code, as soon as the container ID is retrieved.
+
 ### Plugin official name
 
 `container`
@@ -77,7 +84,7 @@ Once the extraction is requested for a thread, the container_id is then used as 
 <!-- README-PLUGIN-FIELDS -->
 | NAME                          | TYPE      | ARG                  | DESCRIPTION                          |
 |-------------------------------|-----------|----------------------|--------------------------------------|
-| `container.id`                | `string`  | None                 | Container ID.                        |
+| `container.id`                | `string`  | None                 | Container ID (first 12B).            |
 | `container.full_id`           | `string`  | None                 | Container ID.                        |
 | `container.name`              | `string`  | None                 | Container name.                      |
 | `container.image`             | `string`  | None                 | Image name.                          |

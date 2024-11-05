@@ -127,8 +127,6 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		imageID = strings.Split(img, ":")[1]
 	}
 
-	// TODO healtcheck, readiness probe, liveness probe
-	// TODO: cniJson, podsandboxID, podsandboxLabels
 	return Info{
 		Type:             string(typeDocker),
 		ID:               ctr.ID[:12],
@@ -139,7 +137,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		ImageRepo:        imageRepo,
 		ImageTag:         imageTag,
 		User:             cfg.User,
-		CniJson:          "",
+		CniJson:          "", // TODO
 		CPUPeriod:        hostCfg.CPUPeriod,
 		CPUQuota:         hostCfg.CPUQuota,
 		CPUShares:        hostCfg.CPUShares,
@@ -155,10 +153,10 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		Labels:           cfg.Labels,
 		MemoryLimit:      hostCfg.Memory,
 		SwapLimit:        hostCfg.MemorySwap,
-		MetadataDeadline: 0,
-		PodSandboxID:     "",
+		MetadataDeadline: 0,                // TODO
+		PodSandboxID:     netCfg.SandboxID, // TODO double check
 		Privileged:       hostCfg.Privileged,
-		PodSandboxLabels: nil,
+		PodSandboxLabels: nil, // TODO
 		PortMappings:     portMappings,
 		Mounts:           mounts,
 	}
