@@ -123,15 +123,12 @@ bool my_plugin::parse_container_json_event(
 }
 
 
-std::string my_plugin::compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr, container_info **info) {
+std::string my_plugin::compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry, const falcosecurity::table_reader& tr, container_info **info) {
     // retrieve tid cgroups, compute container_id and store it.
     std::string container_id;
     using st = falcosecurity::state_value_type;
 
-    // retrieve the thread entry associated with this thread id
-    auto thread_entry = m_threads_table.get_entry(tr, thread_id);
-
-    // get the fd table of the thread
+    // get the cgroups table of the thread
     auto cgroups_table = m_threads_table.get_subtable(
             tr, m_threads_field_cgroups, thread_entry,
             st::SS_PLUGIN_ST_UINT64);
@@ -175,13 +172,14 @@ bool my_plugin::parse_new_process_event(
     // compute container_id from tid->cgroups
     auto& tr = in.get_table_reader();
 
+    // retrieve the thread entry associated with this thread id
+    auto thread_entry = m_threads_table.get_entry(tr, thread_id);
+
     container_info *info = nullptr;
-    auto container_id = compute_container_id_for_thread(thread_id, tr, &info);
+    auto container_id = compute_container_id_for_thread(thread_entry, tr, &info);
 
     // store container_id
     auto& tw = in.get_table_writer();
-    // retrieve the thread entry associated with this thread id
-    auto thread_entry = m_threads_table.get_entry(tr, thread_id);
     m_container_id_field.write_value(tw, thread_entry,
                                      (const char*)container_id.c_str());
 

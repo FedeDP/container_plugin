@@ -4,8 +4,7 @@
 
 ### Plugin
 - [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
-- [ ] allow plugin API to access state table in write mode in extractor
-  - [ ] drop `new proc` parsers
+- [x] implement initial proc parsing logic to attach container_id foreign key to existing threads
 
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
   - [ ] keep same json that was sent by libs: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/parsers.cpp#L4692

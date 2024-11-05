@@ -115,9 +115,15 @@ public:
     bool parse_event(const falcosecurity::parse_event_input& in);
 
     //////////////////////////
+    // Listening capability
+    //////////////////////////
+    bool capture_open(const falcosecurity::capture_listen_input& in);
+    bool capture_close(const falcosecurity::capture_listen_input& in);
+
+    //////////////////////////
     // Helpers
     //////////////////////////
-    std::string compute_container_id_for_thread(int64_t thread_id, const falcosecurity::table_reader& tr, container_info **info);
+    std::string compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry, const falcosecurity::table_reader& tr, container_info **info);
 
 private:
     // State table
