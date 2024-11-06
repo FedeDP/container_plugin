@@ -162,10 +162,8 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		Labels:           labels,
 		MemoryLimit:      hostCfg.Memory,
 		SwapLimit:        hostCfg.MemorySwap,
-		MetadataDeadline: 0, // TODO
-		PodSandboxID:     netCfg.SandboxID,
 		Privileged:       hostCfg.Privileged,
-		PodSandboxLabels: nil, // TODO
+		PodSandboxLabels: nil,
 		PortMappings:     portMappings,
 		Mounts:           mounts,
 	}

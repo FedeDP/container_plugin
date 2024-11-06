@@ -146,8 +146,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		Labels:           labels,
 		MemoryLimit:      memoryLimit,
 		SwapLimit:        swapLimit,
-		MetadataDeadline: 0,              // TODO
-		PodSandboxID:     info.SandboxID, // TODO double check
+		PodSandboxID:     info.SandboxID,
 		Privileged:       !spec.Process.NoNewPrivileges,
 		PodSandboxLabels: nil, // TODO
 		PortMappings:     nil, // TODO

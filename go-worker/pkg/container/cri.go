@@ -163,7 +163,6 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		Labels:           labels,
 		MemoryLimit:      memoryLimit,
 		SwapLimit:        swapLimit,
-		MetadataDeadline: 0,
 		PodSandboxID:     podSandboxID,
 		Privileged:       false, // TODO
 		PodSandboxLabels: podSandboxLabels,

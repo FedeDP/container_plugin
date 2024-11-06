@@ -62,7 +62,6 @@ type Info struct {
 	Labels           map[string]string `json:"labels"`
 	MemoryLimit      int64             `json:"memory_limit"`
 	SwapLimit        int64             `json:"swap_limit"`
-	MetadataDeadline uint64            `json:"metadata_deadline"`
 	PodSandboxID     string            `json:"pod_sandbox_id"`
 	Privileged       bool              `json:"privileged"`
 	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"`
