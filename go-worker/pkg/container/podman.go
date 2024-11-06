@@ -97,7 +97,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 
 	return Info{
 		Type:           string(typePodman),
-		ID:             ctr.ID[:12],
+		ID:             ctr.ID[:shortIDLength],
 		Name:           name,
 		Image:          ctr.ImageName,
 		ImageDigest:    ctr.ImageDigest,
@@ -105,7 +105,6 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		ImageRepo:      imageRepo,
 		ImageTag:       imageTag,
 		User:           cfg.User,
-		CniJson:        "", // TODO
 		CPUPeriod:      int64(hostCfg.CpuPeriod),
 		CPUQuota:       hostCfg.CpuQuota,
 		CPUShares:      int64(hostCfg.CpuShares),
@@ -140,7 +139,7 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 			evts = append(evts, Event{
 				Info: Info{
 					Type:        string(typePodman),
-					ID:          c.ID[:12],
+					ID:          c.ID[:shortIDLength],
 					Image:       c.Image,
 					FullID:      c.ID,
 					ImageID:     c.ImageID,
@@ -197,7 +196,7 @@ func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
 					outCh <- Event{
 						Info: Info{
 							Type:   string(typePodman),
-							ID:     ev.Actor.ID[:12],
+							ID:     ev.Actor.ID[:shortIDLength],
 							FullID: ev.Actor.ID,
 							Image:  ev.Actor.Attributes["image"],
 						},

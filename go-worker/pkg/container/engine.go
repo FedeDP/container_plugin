@@ -14,7 +14,10 @@ type EngineGenerator func(context.Context, string) (Engine, error)
 
 var EngineGenerators = make(map[Type]EngineGenerator)
 
-const maxLabelLength = 100
+const (
+	maxLabelLength = 100
+	shortIDLength  = 12
+)
 
 type SocketsEngine struct {
 	Enabled bool     `json:"enabled"`
@@ -46,7 +49,7 @@ type Info struct {
 	ImageRepo        string            `json:"imagerepo"`
 	ImageTag         string            `json:"image_tag"`
 	User             string            `json:"user"`
-	CniJson          string            `json:"cni_json"`
+	CniJson          string            `json:"cni_json"` // cri only
 	CPUPeriod        int64             `json:"cpu_period"`
 	CPUQuota         int64             `json:"cpu_quota"`
 	CPUShares        int64             `json:"cpu_shares"`
@@ -62,9 +65,9 @@ type Info struct {
 	Labels           map[string]string `json:"labels"`
 	MemoryLimit      int64             `json:"memory_limit"`
 	SwapLimit        int64             `json:"swap_limit"`
-	PodSandboxID     string            `json:"pod_sandbox_id"`
+	PodSandboxID     string            `json:"pod_sandbox_id"` // cri only
 	Privileged       bool              `json:"privileged"`
-	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"`
+	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"` // cri only
 	PortMappings     []PortMapping     `json:"port_mappings"`
 	Mounts           []Mount           `json:"Mounts"`
 }

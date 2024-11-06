@@ -42,7 +42,13 @@ func newCriEngine(ctx context.Context, socket string) (Engine, error) {
 	}, nil
 }
 
-func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodSandboxStatus) Info {
+func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodSandboxStatus,
+	_ map[string]string) Info {
+
+	// TODO parse info["info"] as json -> https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L263
+	//
+	// then parse env/privileged/image infos https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L481
+
 	image := ctr.GetImage()
 	var img string
 	if image != nil {
@@ -96,7 +102,6 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		mounts = append(mounts, Mount{
 			Source:      m.HostPath,
 			Destination: m.ContainerPath,
-			Mode:        "",
 			RW:          !m.Readonly,
 			Propagation: propagation,
 		})
@@ -139,7 +144,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	return Info{
 		Type:             c.runtime,
-		ID:               ctr.Id[:12],
+		ID:               ctr.Id[:shortIDLength],
 		Name:             metadata.Name,
 		Image:            img,
 		ImageDigest:      ctr.ImageRef,
@@ -166,7 +171,6 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		PodSandboxID:     podSandboxID,
 		Privileged:       false, // TODO
 		PodSandboxLabels: podSandboxLabels,
-		PortMappings:     nil, // TODO
 		Mounts:           mounts,
 	}
 }
@@ -178,13 +182,13 @@ func (c *criEngine) List(ctx context.Context) ([]Event, error) {
 	}
 	evts := make([]Event, len(ctrs))
 	for idx, ctr := range ctrs {
-		status, err := c.client.ContainerStatus(ctx, ctr.Id, false)
-		if err != nil || status.Status == nil {
+		container, err := c.client.ContainerStatus(ctx, ctr.Id, false)
+		if err != nil || container.Status == nil {
 			evts[idx] = Event{
 				IsCreate: true,
 				Info: Info{
 					Type:        c.runtime,
-					ID:          ctr.Id[:12],
+					ID:          ctr.Id[:shortIDLength],
 					FullID:      ctr.Id,
 					ImageID:     ctr.ImageId,
 					CreatedTime: nanoSecondsToUnix(ctr.CreatedAt),
@@ -198,7 +202,7 @@ func (c *criEngine) List(ctx context.Context) ([]Event, error) {
 			}
 			evts[idx] = Event{
 				IsCreate: true,
-				Info:     c.ctrToInfo(status.Status, podSandboxStatus.Status),
+				Info:     c.ctrToInfo(container.Status, podSandboxStatus.Status, container.Info),
 			}
 		}
 	}
@@ -216,29 +220,23 @@ func (c *criEngine) Listen(ctx context.Context) (<-chan Event, error) {
 		for event := range containerEventsCh {
 			if event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT ||
 				event.ContainerEventType == v1.ContainerEventType_CONTAINER_DELETED_EVENT {
-				cStatus := event.GetContainersStatuses()
-				cPodSandbox := event.GetPodSandboxStatus()
-				for _, ctr := range cStatus {
-					var info Info
-					if ctr == nil {
-						// No pod sandbox infos
-						var img string
-						if ctr != nil && ctr.GetImage() != nil {
-							img = ctr.GetImage().Image
-						}
-						info = Info{
-							Type:        c.runtime,
-							ID:          event.ContainerId,
-							Image:       img,
-							CreatedTime: nanoSecondsToUnix(event.CreatedAt),
-						}
-					} else {
-						info = c.ctrToInfo(ctr, cPodSandbox)
+
+				var info Info
+				ctr, err := c.client.ContainerStatus(ctx, event.ContainerId, false)
+				if err != nil || ctr == nil {
+					info = Info{
+						Type:        c.runtime,
+						ID:          event.ContainerId[:shortIDLength],
+						FullID:      event.ContainerId,
+						CreatedTime: nanoSecondsToUnix(event.CreatedAt),
 					}
-					outCh <- Event{
-						Info:     info,
-						IsCreate: event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT,
-					}
+				} else {
+					cPodSandbox := event.GetPodSandboxStatus()
+					info = c.ctrToInfo(ctr.Status, cPodSandbox, ctr.Info)
+				}
+				outCh <- Event{
+					Info:     info,
+					IsCreate: event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT,
 				}
 			}
 		}

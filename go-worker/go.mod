@@ -8,6 +8,7 @@ require (
 	github.com/containerd/typeurl/v2 v2.2.0
 	github.com/containers/podman/v5 v5.2.5
 	github.com/docker/docker v27.3.1+incompatible
+	github.com/opencontainers/runtime-spec v1.2.0
 	k8s.io/cri-api v0.32.0-alpha.0
 	k8s.io/cri-client v0.31.2
 )
@@ -115,7 +116,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runc v1.1.14 // indirect
-	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20230914150019-408c51e934dc // indirect
 	github.com/opencontainers/selinux v1.11.1 // indirect
 	github.com/ostreedev/ostree-go v0.0.0-20210805093236-719684c64e4f // indirect

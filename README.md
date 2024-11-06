@@ -7,16 +7,17 @@
 - [x] implement initial proc parsing logic to attach container_id foreign key to existing threads leveraging capture listener API
 - [ ] implement sinsp_filtercheck_k8s.cpp filterchecks: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.cpp#L364
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
-  - [ ] keep same json that was sent by libs: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/parsers.cpp#L4692
   - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
-  - [ ] somehow make rid of re2 dep in `mount_by_source` and `mount_by_dest` to drop the dep
+  - [ ] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
+  - [ ] somehow get rid of re2 usage in `mount_by_source` and `mount_by_dest` to drop the dep
 
-- [x] properly send json with all info from go-worker (some small TODOs remaining)
+- [x] properly send json with all info from go-worker
   - [x] docker
   - [x] podman
   - [x] containerd
   - [x] cri
   - [x] port CreatedAt to int64
+  - [ ] fix remaining TODOs
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API

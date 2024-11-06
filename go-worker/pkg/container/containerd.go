@@ -30,7 +30,6 @@ func newContainerdEngine(_ context.Context, socket string) (Engine, error) {
 }
 
 func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, container containerd.Container) Info {
-	// https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L804
 	info, err := container.Info(namespacedContext)
 	if err != nil {
 		info = containers.Container{}
@@ -77,25 +76,30 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		}
 	}
 
-	// Mounts related
+	// Mounts related - TODO double check
 	mounts := make([]Mount, 0)
 	for _, m := range spec.Mounts {
+		readOnly := false
+		for _, path := range spec.Linux.ReadonlyPaths {
+			if path == m.Destination {
+				readOnly = true
+				break
+			}
+		}
 		mounts = append(mounts, Mount{
 			Source:      m.Source,
 			Destination: m.Destination,
-			Mode:        "",
-			//RW:          m.ReadOnly, TODO
-			//Propagation: string(m.Propagation), TODO
+			RW:          !readOnly,
+			Propagation: spec.Linux.RootfsPropagation,
 		})
 	}
 
-	// Namespace related
+	// Namespace related - FIXME
 	var (
 		hostIPC     bool
 		hostPID     bool
 		hostNetwork bool
 	)
-
 	for _, ns := range spec.Linux.Namespaces {
 		if ns.Type == specs.PIDNamespace {
 			hostPID = ns.Path == "host"
@@ -108,11 +112,9 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		}
 	}
 
-	// Image related
-	// TODO https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L320
+	// Image related - TODO
 
-	// Network related
-	// TODO https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L634C33-L634C62
+	// Network related - TODO
 
 	labels := make(map[string]string)
 	for key, val := range info.Labels {
@@ -120,9 +122,26 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 			labels[key] = val
 		}
 	}
+
+	isPodSandbox := false
+	var podSandboxLabels map[string]string
+	sandbox, _ := c.client.LoadSandbox(namespacedContext, info.SandboxID)
+	if sandbox != nil {
+		isPodSandbox = true
+		sandboxLabels, _ := sandbox.Labels(namespacedContext)
+		if len(sandboxLabels) > 0 {
+			podSandboxLabels = make(map[string]string)
+			for key, val := range sandboxLabels {
+				if len(val) <= maxLabelLength {
+					podSandboxLabels[key] = val
+				}
+			}
+		}
+	}
+
 	return Info{
 		Type:             string(typeContainerd),
-		ID:               container.ID()[:12],
+		ID:               container.ID()[:shortIDLength],
 		Name:             "", //  // TODO container.m_name = status.metadata().name(); ??
 		Image:            info.Image,
 		ImageDigest:      "", // TODO
@@ -141,15 +160,14 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		HostIPC:          hostIPC,
 		HostNetwork:      hostNetwork,
 		HostPID:          hostPID,
-		Ip:               "",    // TODO
-		IsPodSandbox:     false, // TODO
+		Ip:               "", // TODO
+		IsPodSandbox:     isPodSandbox,
 		Labels:           labels,
 		MemoryLimit:      memoryLimit,
 		SwapLimit:        swapLimit,
 		PodSandboxID:     info.SandboxID,
-		Privileged:       !spec.Process.NoNewPrivileges,
-		PodSandboxLabels: nil, // TODO
-		PortMappings:     nil, // TODO
+		Privileged:       !spec.Process.NoNewPrivileges, // FIXME wrong val
+		PodSandboxLabels: podSandboxLabels,
 		Mounts:           mounts,
 	}
 }
@@ -210,9 +228,10 @@ func (c *containerdEngine) Listen(ctx context.Context) (<-chan Event, error) {
 			if err != nil {
 				// minimum set of infos
 				info = Info{
-					Type:  string(typeContainerd),
-					ID:    id,
-					Image: image,
+					Type:   string(typeContainerd),
+					ID:     id[:shortIDLength],
+					FullID: id,
+					Image:  image,
 				}
 			} else {
 				info = c.ctrToInfo(namespacedContext, container)
