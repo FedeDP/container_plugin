@@ -88,7 +88,13 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		imageTag = imageRepoTag[1]
 	}
 
-	// TODO: cniJson, podsandboxID, podsandboxLabels
+	labels := make(map[string]string)
+	for key, val := range cfg.Labels {
+		if len(val) <= maxLabelLength {
+			labels[key] = val
+		}
+	}
+
 	return Info{
 		Type:             string(typePodman),
 		ID:               ctr.ID[:12],
@@ -104,7 +110,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		CPUQuota:         hostCfg.CpuQuota,
 		CPUShares:        int64(hostCfg.CpuShares),
 		CPUSetCPUCount:   int64(hostCfg.CpuCount),
-		CreatedTime:      ctr.Created.String(),
+		CreatedTime:      ctr.Created.Unix(),
 		Env:              cfg.Env,
 		FullID:           ctr.ID,
 		HostIPC:          hostCfg.IpcMode == "host",
@@ -112,7 +118,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		HostPID:          hostCfg.PidMode == "host",
 		Ip:               netCfg.IPAddress,
 		IsPodSandbox:     isPodSandbox,
-		Labels:           cfg.Labels,
+		Labels:           labels,
 		MemoryLimit:      hostCfg.Memory,
 		SwapLimit:        hostCfg.MemorySwap,
 		MetadataDeadline: 0,                // TODO
@@ -136,9 +142,12 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 		if err != nil {
 			evts = append(evts, Event{
 				Info: Info{
-					Type:  string(typePodman),
-					ID:    c.ID,
-					Image: c.Image,
+					Type:        string(typePodman),
+					ID:          c.ID[:12],
+					Image:       c.Image,
+					FullID:      c.ID,
+					ImageID:     c.ImageID,
+					CreatedTime: c.Created.Unix(),
 				},
 				IsCreate: true,
 			})
@@ -190,9 +199,10 @@ func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
 					// At least send an event with the minimal set of data
 					outCh <- Event{
 						Info: Info{
-							Type:  string(typePodman),
-							ID:    ev.Actor.ID,
-							Image: ev.Actor.Attributes["image"],
+							Type:   string(typePodman),
+							ID:     ev.Actor.ID[:12],
+							FullID: ev.Actor.ID,
+							Image:  ev.Actor.Attributes["image"],
 						},
 						IsCreate: ev.Action == events.ActionCreate,
 					}

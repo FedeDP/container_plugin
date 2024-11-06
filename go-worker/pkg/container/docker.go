@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"strings"
+	"time"
 )
 
 const typeDocker Type = "docker"
@@ -127,6 +128,14 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		imageID = strings.Split(img, ":")[1]
 	}
 
+	labels := make(map[string]string)
+	for key, val := range cfg.Labels {
+		if len(val) <= maxLabelLength {
+			labels[key] = val
+		}
+	}
+
+	createdTime, _ := time.Parse(time.RFC3339Nano, ctr.Created)
 	return Info{
 		Type:             string(typeDocker),
 		ID:               ctr.ID[:12],
@@ -142,7 +151,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		CPUQuota:         hostCfg.CPUQuota,
 		CPUShares:        hostCfg.CPUShares,
 		CPUSetCPUCount:   hostCfg.CPUCount,
-		CreatedTime:      ctr.Created,
+		CreatedTime:      createdTime.Unix(),
 		Env:              cfg.Env,
 		FullID:           ctr.ID,
 		HostIPC:          hostCfg.IpcMode.IsHost(),
@@ -150,11 +159,11 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 		HostPID:          hostCfg.PidMode.IsHost(),
 		Ip:               netCfg.IPAddress,
 		IsPodSandbox:     isPodSandbox,
-		Labels:           cfg.Labels,
+		Labels:           labels,
 		MemoryLimit:      hostCfg.Memory,
 		SwapLimit:        hostCfg.MemorySwap,
-		MetadataDeadline: 0,                // TODO
-		PodSandboxID:     netCfg.SandboxID, // TODO double check
+		MetadataDeadline: 0, // TODO
+		PodSandboxID:     netCfg.SandboxID,
 		Privileged:       hostCfg.Privileged,
 		PodSandboxLabels: nil, // TODO
 		PortMappings:     portMappings,
@@ -175,9 +184,12 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 			// Minimum set of infos
 			evts[idx] = Event{
 				Info: Info{
-					Type:  string(typeDocker),
-					ID:    ctr.ID,
-					Image: ctr.Image,
+					Type:        string(typeDocker),
+					ID:          ctr.ID[:12],
+					Image:       ctr.Image,
+					FullID:      ctr.ID,
+					ImageID:     ctr.ImageID,
+					CreatedTime: nanoSecondsToUnix(ctr.Created),
 				},
 				IsCreate: true,
 			}
@@ -207,12 +219,13 @@ func (dc *dockerEngine) Listen(ctx context.Context) (<-chan Event, error) {
 				ctrJson, err = dc.ContainerInspect(ctx, msg.Actor.ID)
 			}
 			if err != nil {
-				// At least send an event with the minimal set of data
+				// At least send an event with the minimum set of data
 				outCh <- Event{
 					Info: Info{
-						Type:  string(typeDocker),
-						ID:    msg.Actor.ID,
-						Image: msg.Actor.Attributes["image"],
+						Type:   string(typeDocker),
+						ID:     msg.Actor.ID[:12],
+						FullID: msg.Actor.ID,
+						Image:  msg.Actor.Attributes["image"],
 					},
 					IsCreate: msg.Action == events.ActionCreate,
 				}

@@ -4,18 +4,19 @@
 
 ### Plugin
 - [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
-- [x] implement initial proc parsing logic to attach container_id foreign key to existing threads
+- [x] implement initial proc parsing logic to attach container_id foreign key to existing threads leveraging capture listener API
 
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
   - [ ] keep same json that was sent by libs: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/parsers.cpp#L4692
   - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
   - [ ] somehow make rid of re2 dep in `mount_by_source` and `mount_by_dest` to drop the dep
 
-- [ ] properly send json with all info from go-worker
+- [x] properly send json with all info from go-worker (some small TODOs remaining)
   - [x] docker
   - [x] podman
-  - [ ] containerd
-  - [ ] cri
+  - [x] containerd
+  - [x] cri
+  - [x] port CreatedAt to int64
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
@@ -54,11 +55,14 @@ a single event metadata.
 
 ## Capabilities
 
-The `container` plugin implements 3 capabilities:
+The `container` plugin implements the following capabilities:
 
+* `capture listening` -> to attach `container_id` foreign key to all pre-existing threadinfos, once they have been scraped from procfs by sinsp 
 * `extraction` -> to extract `container.X` fields
-* `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork/execve events
-* `async` -> to generate events with container infos
+* `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork/execve events to attach `container_id` foreign key to any threads
+* `async` -> to generate events with container information
+
+It requires **3.9.0** plugin API version.
 
 ## Architecture
 

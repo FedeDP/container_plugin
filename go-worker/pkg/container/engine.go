@@ -4,12 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Type string
 type EngineGenerator func(context.Context, string) (Engine, error)
 
 var EngineGenerators = make(map[Type]EngineGenerator)
+
+const maxLabelLength = 100
 
 type SocketsEngine struct {
 	Enabled bool     `json:"enabled"`
@@ -46,7 +51,7 @@ type Info struct {
 	CPUQuota         int64             `json:"cpu_quota"`
 	CPUShares        int64             `json:"cpu_shares"`
 	CPUSetCPUCount   int64             `json:"cpuset_cpu_count"`
-	CreatedTime      string            `json:"created_time"`
+	CreatedTime      int64             `json:"created_time"`
 	Env              []string          `json:"env"`
 	FullID           string            `json:"full_id"`
 	HostIPC          bool              `json:"host_ipc"`
@@ -60,7 +65,7 @@ type Info struct {
 	MetadataDeadline uint64            `json:"metadata_deadline"`
 	PodSandboxID     string            `json:"pod_sandbox_id"`
 	Privileged       bool              `json:"privileged"`
-	PodSandboxLabels []string          `json:"pod_sandbox_labels"`
+	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"`
 	PortMappings     []PortMapping     `json:"port_mappings"`
 	Mounts           []Mount           `json:"Mounts"`
 }
@@ -92,4 +97,38 @@ func enforceUnixProtocolIfEmpty(socket string) string {
 		return base.String()
 	}
 	return socket
+}
+
+func nanoSecondsToUnix(ns int64) int64 {
+	return time.Unix(0, ns).Unix()
+}
+
+// Examples:
+// 1,7 -> 2
+// 1-4,7 -> 4 + 1 -> 5
+// 1-4,7-10,12 -> 4 + 4 + 1 -> 9
+func countCPUSet(cpuSet string) int64 {
+	var counter int64
+	cpusetParts := strings.Split(cpuSet, ",")
+	for _, cpusetPart := range cpusetParts {
+		cpuSetDash := strings.Split(cpusetPart, "-")
+		if len(cpuSetDash) > 1 {
+			if len(cpuSetDash) > 2 {
+				// malformed
+				return 0
+			}
+			start, err := strconv.ParseInt(cpuSetDash[0], 10, 64)
+			if err != nil {
+				return 0
+			}
+			end, err := strconv.ParseInt(cpuSetDash[1], 10, 64)
+			if err != nil {
+				return 0
+			}
+			counter += end - start + 1
+		} else {
+			counter++
+		}
+	}
+	return counter
 }
