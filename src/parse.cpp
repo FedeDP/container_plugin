@@ -60,6 +60,11 @@ struct sinsp_param {
 }
 */
 
+void from_json(const json& j, container_health_probe& probe) {
+    probe.m_args = j.value("args", std::vector<std::string>{});
+    probe.m_exe = j.value("exe", "");
+}
+
 void from_json(const json& j, container_mount_info& mount) {
     mount.m_source = j.value("Source", "");
     mount.m_dest = j.value("Destination", "");
@@ -106,6 +111,15 @@ void from_json(const json& j, std::shared_ptr<container_info>& cinfo) {
     cinfo->m_pod_sandbox_labels = container.value("pod_sandbox_labels", std::map<std::string, std::string>{});
     cinfo->m_port_mappings = container.value("port_mappings", std::vector<container_port_mapping>{});
     cinfo->m_mounts =  container.value("Mounts", std::vector<container_mount_info>{});
+
+    for (int probe_type = container_health_probe::PT_HEALTHCHECK; probe_type <= container_health_probe::PT_READINESS_PROBE; probe_type++) {
+        const auto& probe_name = container_health_probe::probe_type_names[probe_type];
+        if (container.contains(probe_name)) {
+            container_health_probe probe = container.value(probe_name, container_health_probe());
+            probe.m_type = container_health_probe::probe_type(probe_type);
+            cinfo->m_health_probes.push_back(probe);
+        }
+    }
 }
 
 void to_json(json& j, const container_mount_info& mount) {
@@ -139,6 +153,8 @@ void to_json(json& j, const std::shared_ptr<container_info>& cinfo) {
     j["cpu_shares"] = cinfo->m_cpu_shares;
     j["cpuset_cpu_count"] = cinfo->m_cpuset_cpu_count;
     j["created_time"] = cinfo->m_created_time;
+    // TODO: only append a limited set of env?
+    // https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L232
     j["env"] = cinfo->m_env;
     j["full_id"] = cinfo->m_full_id;
     j["host_ipc"] = cinfo->m_host_ipc;
@@ -154,6 +170,16 @@ void to_json(json& j, const std::shared_ptr<container_info>& cinfo) {
     j["pod_sandbox_labels"] = cinfo->m_pod_sandbox_labels;
     j["port_mappings"] = cinfo->m_port_mappings;
     j["Mounts"] = cinfo->m_mounts;
+
+    for(auto &probe : cinfo->m_health_probes) {
+        const auto probe_type = container_health_probe::probe_type_names[probe.m_type];
+        j[probe_type]["exe"] = probe.m_exe;
+        auto args = json::array();
+        for(auto &arg : probe.m_args) {
+            args.push_back(arg);
+        }
+        j[probe_type]["args"] = args;
+    }
 }
 
 // Obtain a param from a sinsp event

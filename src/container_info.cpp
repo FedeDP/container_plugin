@@ -21,7 +21,7 @@ limitations under the License.
 #include "container_info.h"
 
 std::vector<std::string> container_health_probe::probe_type_names =
-        {"None", "Healthcheck", "LivenessProbe", "ReadinessProbe", "End"};
+        {"Healthcheck", "LivenessProbe", "ReadinessProbe"};
 
 container_health_probe::container_health_probe() {}
 
@@ -29,60 +29,11 @@ container_health_probe::container_health_probe(
         const probe_type ptype,
         const std::string &&exe,
         const std::vector<std::string> &&args):
-        m_probe_type(ptype),
-        m_health_probe_exe(exe),
-        m_health_probe_args(args) {}
+        m_type(ptype),
+        m_exe(exe),
+        m_args(args) {}
 
 container_health_probe::~container_health_probe() {}
-
-/*void container_health_probe::parse_health_probes(
-        const Json::Value &config_obj,
-        std::list<container_health_probe> &probes) {
-    // Add any health checks described in the container config/labels.
-    for(int i = PT_NONE; i != PT_END; i++) {
-        std::string key = probe_type_names[i];
-        const Json::Value &probe_obj = config_obj[key];
-
-        if(!probe_obj.isNull() && probe_obj.isObject()) {
-            const Json::Value &probe_exe_obj = probe_obj["exe"];
-
-            if(!probe_exe_obj.isNull() && probe_exe_obj.isConvertibleTo(Json::stringValue)) {
-                const Json::Value &probe_args_obj = probe_obj["args"];
-
-                std::string probe_exe = probe_exe_obj.asString();
-                std::vector<std::string> probe_args;
-
-                if(!probe_args_obj.isNull() && probe_args_obj.isArray()) {
-                    for(const auto &item : probe_args_obj) {
-                        if(item.isConvertibleTo(Json::stringValue)) {
-                            probe_args.push_back(item.asString());
-                        }
-                    }
-                }
-
-                probes.emplace_back(static_cast<probe_type>(i),
-                                    std::move(probe_exe),
-                                    std::move(probe_args));
-            }
-        }
-    }
-}
-
-void container_health_probe::add_health_probes(
-        const std::list<container_health_probe> &probes,
-        Json::Value &config_obj) {
-    for(auto &probe : probes) {
-        std::string key = probe_type_names[probe.m_probe_type];
-        Json::Value args;
-
-        config_obj[key]["exe"] = probe.m_health_probe_exe;
-        for(auto &arg : probe.m_health_probe_args) {
-            args.append(arg);
-        }
-
-        config_obj[key]["args"] = args;
-    }
-}*/
 
 const container_mount_info *container_info::mount_by_idx(
         uint32_t idx) const {

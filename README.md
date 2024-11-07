@@ -11,6 +11,8 @@
   - [x] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
   - [ ] somehow get rid of re2 usage in `mount_by_source` and `mount_by_dest` to drop the dep
   - [x] make sure that the new container json is exactly the same as the old one
+  - [x] implement healthprobes logic
+  - [ ] reimplement `sinsp_container_manager::identify_category()` : https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L488
 
 - [x] implement new init config key: `label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)`
 
@@ -22,6 +24,7 @@
   - [x] port CreatedAt to int64
   - [ ] fix remaining TODOs
   - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early :/
+  - [ ] send healthprobe related infos
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API

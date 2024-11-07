@@ -53,27 +53,15 @@ class container_health_probe {
 public:
     // The type of health probe
     enum probe_type {
-        PT_NONE = 0,
         PT_HEALTHCHECK,
         PT_LIVENESS_PROBE,
-        PT_READINESS_PROBE,
-        PT_END
+        PT_READINESS_PROBE
     };
 
     // String representations of the above, suitable for
     // parsing to/from json. Should be kept in sync with
     // probe_type enum.
     static std::vector<std::string> probe_type_names;
-
-    // Parse any health probes out of the provided
-    // container json, updating the list of probes.
-    // TODO
-    /*static void parse_health_probes(const Json::Value &config_obj,
-                                    std::list<container_health_probe> &probes);
-
-    // Serialize the list of health probes, adding to the provided json object
-    static void add_health_probes(const std::list<container_health_probe> &probes,
-                                  Json::Value &config_obj);*/
 
     container_health_probe();
     container_health_probe(const probe_type probe_type,
@@ -83,11 +71,11 @@ public:
 
     // The probe_type that should be used for commands
     // matching this health probe.
-    probe_type m_probe_type;
+    probe_type m_type;
 
     // The actual health probe exe and args.
-    std::string m_health_probe_exe;
-    std::vector<std::string> m_health_probe_args;
+    std::string m_exe;
+    std::vector<std::string> m_args;
 };
 
 class container_info {

@@ -396,17 +396,17 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             bool set = false;
             for(auto &probe : cinfo->m_health_probes) {
                 if((field_id == TYPE_CONTAINER_HEALTHCHECK &&
-                    probe.m_probe_type ==
+                    probe.m_type ==
                     container_health_probe::PT_HEALTHCHECK) ||
                    (field_id == TYPE_CONTAINER_LIVENESS_PROBE &&
-                    probe.m_probe_type ==
+                    probe.m_type ==
                     container_health_probe::PT_LIVENESS_PROBE) ||
                    (field_id == TYPE_CONTAINER_READINESS_PROBE &&
-                    probe.m_probe_type ==
+                    probe.m_type ==
                     container_health_probe::PT_READINESS_PROBE)) {
-                    tstr = probe.m_health_probe_exe;
+                    tstr = probe.m_exe;
 
-                    for(auto &arg : probe.m_health_probe_args) {
+                    for(auto &arg : probe.m_args) {
                         tstr += " ";
                         tstr += arg;
                     }
