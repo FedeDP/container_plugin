@@ -34,6 +34,16 @@ enum ContainerFields {
     TYPE_CONTAINER_HOST_PID,
     TYPE_CONTAINER_HOST_NETWORK,
     TYPE_CONTAINER_HOST_IPC,
+    TYPE_K8S_POD_NAME,
+    TYPE_K8S_NS_NAME,
+    TYPE_K8S_POD_ID,
+    TYPE_K8S_POD_UID,
+    TYPE_K8S_POD_SANDBOX_ID,
+    TYPE_K8S_POD_FULL_SANDBOX_ID,
+    TYPE_K8S_POD_LABEL,
+    TYPE_K8S_POD_LABELS,
+    TYPE_K8S_POD_IP,
+    TYPE_K8S_POD_CNIRESULT,
     TYPE_CONTAINER_FIELD_MAX
 };
 
@@ -162,10 +172,89 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "'true' if the container is running in the host network namespace, 'false' otherwise."},
             {ft::FTYPE_BOOL, PLUGIN_NAME  ".host_ipc", "Host IPC Namespace",
                     "'true' if the container is running in the host IPC namespace, 'false' otherwise."},
+            {ft::FTYPE_STRING, "k8s.pod.name", "Pod Name",
+                    "The Kubernetes pod name. This field is extracted from the container runtime socket "
+                    "simultaneously as we look up the 'container.*' fields. In cases of lookup delays, it may "
+                    "not be available yet."},
+            {ft::FTYPE_STRING, "k8s.ns.name", "Namespace Name",
+                    "The Kubernetes namespace name. This field is extracted from the container runtime socket "
+                    "simultaneously as we look up the 'container.*' fields. In cases of lookup delays, it may "
+                    "not be available yet."},
+            {ft::FTYPE_STRING, "k8s.pod.id", "Legacy Pod UID",
+                    "[LEGACY] The Kubernetes pod UID, e.g. 3e41dc6b-08a8-44db-bc2a-3724b18ab19a. This legacy "
+                    "field points to `k8s.pod.uid`; however, the pod ID typically refers to the pod sandbox "
+                    "ID. We recommend using the semantically more accurate `k8s.pod.uid` field. This field is "
+                    "extracted from the container runtime socket simultaneously as we look up the "
+                    "'container.*' fields. In cases of lookup delays, it may not be available yet."},
+            {ft::FTYPE_STRING, "k8s.pod.uid", "Pod UID",
+                    "The Kubernetes pod UID, e.g. 3e41dc6b-08a8-44db-bc2a-3724b18ab19a. Note that the pod UID "
+                    "is a unique identifier assigned upon pod creation within Kubernetes, allowing the "
+                    "Kubernetes control plane to manage and track pods reliably. As such, it is fundamentally "
+                    "a different concept compared to the pod sandbox ID. This field is extracted from the "
+                    "container runtime socket simultaneously as we look up the 'container.*' fields. In cases "
+                    "of lookup delays, it may not be available yet."},
+            {ft::FTYPE_STRING, "k8s.pod.sandbox_id", "Pod / Sandbox ID",
+                    "The truncated Kubernetes pod sandbox ID (first 12 characters), e.g 63060edc2d3a. The "
+                    "sandbox ID is specific to the container runtime environment. It is the equivalent of the "
+                    "container ID for the pod / sandbox and extracted from the Linux cgroups. As such, it "
+                    "differs from the pod UID. This field is extracted from the container runtime socket "
+                    "simultaneously as we look up the 'container.*' fields. In cases of lookup delays, it may "
+                    "not be available yet. In Kubernetes, pod sandbox container processes can exist where "
+                    "`container.id` matches `k8s.pod.sandbox_id`, lacking other 'container.*' details."},
+            {ft::FTYPE_STRING, "k8s.pod.full_sandbox_id", "Pod / Sandbox ID",
+                    "The full Kubernetes pod / sandbox ID, e.g "
+                    "63060edc2d3aa803ab559f2393776b151f99fc5b05035b21db66b3b62246ad6a. This field is "
+                    "extracted from the container runtime socket simultaneously as we look up the "
+                    "'container.*' fields. In cases of lookup delays, it may not be available yet."},
+            {ft::FTYPE_STRING, "k8s.pod.label", "Pod Label",
+                    "The Kubernetes pod label. The label can be accessed either with the familiar brackets "
+                    "notation, e.g. 'k8s.pod.label[foo]' or by appending a dot followed by the name, e.g. "
+                    "'k8s.pod.label.foo'. The label name itself can include the original special characters "
+                    "such as '.', '-', '_' or '/' characters. For instance, "
+                    "'k8s.pod.label[app.kubernetes.io/name]', 'k8s.pod.label.app.kubernetes.io/name' or "
+                    "'k8s.pod.label[custom-label_one]' are all valid. This field is extracted from the "
+                    "container runtime socket simultaneously as we look up the 'container.*' fields. In cases "
+                    "of lookup delays, it may not be available yet.", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, "k8s.pod.labels", "Pod Labels",
+                    "The Kubernetes pod comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'. This "
+                    "field is extracted from the container runtime socket simultaneously as we look up the "
+                    "'container.*' fields. In cases of lookup delays, it may not be available yet."},
+            {ft::FTYPE_STRING, "k8s.pod.ip", "Pod Ip",
+                    "The Kubernetes pod ip, same as container.ip field as each container in a pod shares the "
+                    "network stack of the sandbox / pod. Only ipv4 addresses are tracked. Consider "
+                    "k8s.pod.cni.json for logging ip addresses for each network interface. This field is "
+                    "extracted from the container runtime socket simultaneously as we look up the "
+                    "'container.*' fields. In cases of lookup delays, it may not be available yet."},
+            {ft::FTYPE_STRING, "k8s.pod.cni.json", "Pod CNI result json",
+                    "The Kubernetes pod CNI result field from the respective pod status info, same as "
+                    "container.cni.json field. It contains ip addresses for each network interface exposed as "
+                    "unparsed escaped JSON string. Supported for CRI container engine (containerd, cri-o "
+                    "runtimes), optimized for containerd (some non-critical JSON keys removed). Useful for "
+                    "tracking ips (ipv4 and ipv6, dual-stack support) for each network interface "
+                    "(multi-interface support). This field is extracted from the container runtime socket "
+                    "simultaneously as we look up the 'container.*' fields. In cases of lookup delays, it may "
+                    "not be available yet."},
     };
     const int fields_size = sizeof(fields) / sizeof(fields[0]);
     static_assert(fields_size == TYPE_CONTAINER_FIELD_MAX, "Wrong number of container fields.");
     return std::vector<falcosecurity::field_info>(fields, fields + fields_size);
+}
+
+static inline void concatenate_container_labels(const std::map<std::string, std::string>& labels, std::string* s) {
+    for(auto const& label_pair : labels) {
+        // exclude annotations and internal labels
+        if(label_pair.first.find("annotation.") == 0 ||
+           label_pair.first.find("io.kubernetes.") == 0) {
+            continue;
+        }
+        if(!s->empty()) {
+            s->append(", ");
+        }
+        s->append(label_pair.first);
+        if(!label_pair.second.empty()) {
+            s->append(":" + label_pair.second);
+        }
+    }
 }
 
 bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
@@ -363,6 +452,89 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         case TYPE_CONTAINER_HOST_IPC:
             req.set_value(cinfo.m_host_ipc);
+            break;
+        case TYPE_K8S_POD_NAME:
+            if (cinfo.m_labels.count("io.kubernetes.pod.name") > 0) {
+                req.set_value(cinfo.m_labels.at("io.kubernetes.pod.name"));
+            }
+            break;
+        case TYPE_K8S_NS_NAME:
+            if (cinfo.m_labels.count("io.kubernetes.pod.namespace") > 0) {
+                req.set_value(cinfo.m_labels.at("io.kubernetes.pod.namespace"));
+            }
+            break;
+        case TYPE_K8S_POD_ID:
+        case TYPE_K8S_POD_UID:
+            if(cinfo.m_labels.count("io.kubernetes.pod.uid") > 0) {
+                req.set_value(cinfo.m_labels.at("io.kubernetes.pod.uid"));
+            }
+            break;
+        case TYPE_K8S_POD_SANDBOX_ID:
+        case TYPE_K8S_POD_FULL_SANDBOX_ID: {
+            auto sandbox_id = cinfo.m_pod_sandbox_id;
+            if (field_id == TYPE_K8S_POD_SANDBOX_ID) {
+                if(sandbox_id.size() > 12) {
+                    sandbox_id.resize(12);
+                }
+            }
+            req.set_value(sandbox_id);
+            break;
+        }
+        case TYPE_K8S_POD_LABEL:
+        case TYPE_K8S_POD_LABELS: {
+            if (cinfo.m_pod_sandbox_cniresult.empty()) {
+                auto sandbox_id = cinfo.m_pod_sandbox_id.substr(0, 12);
+                if (m_containers.count(sandbox_id) > 0) {
+                    auto &sandbox_container_info = m_containers[sandbox_id];
+                    if (field_id == TYPE_K8S_POD_LABEL) {
+                        auto arg_key = req.get_arg_key();
+                        req.set_value(sandbox_container_info.m_pod_sandbox_labels.at(arg_key));
+                    } else {
+                        std::string labels;
+                        concatenate_container_labels(sandbox_container_info.m_pod_sandbox_labels, &labels);
+                        req.set_value(labels);
+                    }
+                }
+            } else {
+                if (field_id == TYPE_K8S_POD_LABEL) {
+                    auto arg_key = req.get_arg_key();
+                    req.set_value(cinfo.m_pod_sandbox_labels.at(arg_key));
+                } else {
+                    std::string labels;
+                    concatenate_container_labels(cinfo.m_pod_sandbox_labels, &labels);
+                    req.set_value(labels);
+                }
+            }
+
+            break;
+        }
+        case TYPE_K8S_POD_IP:
+            if (cinfo.m_pod_sandbox_cniresult.empty()) {
+                auto sandbox_id = cinfo.m_pod_sandbox_id.substr(0, 12);
+                if (m_containers.count(sandbox_id) > 0) {
+                    auto &sandbox_container_info = m_containers[sandbox_id];
+                    auto ip_val = htonl(sandbox_container_info.m_container_ip);
+                    char addrbuff[100];
+                    inet_ntop(AF_INET, &ip_val, addrbuff, sizeof(addrbuff));
+                    req.set_value(addrbuff);
+                }
+            } else {
+                auto ip_val = htonl(cinfo.m_container_ip);
+                char addrbuff[100];
+                inet_ntop(AF_INET, &ip_val, addrbuff, sizeof(addrbuff));
+                req.set_value(addrbuff);
+            }
+            break;
+        case TYPE_K8S_POD_CNIRESULT:
+            if (cinfo.m_pod_sandbox_cniresult.empty()) {
+                auto sandbox_id = cinfo.m_pod_sandbox_id.substr(0, 12);
+                if (m_containers.count(sandbox_id) > 0) {
+                    auto &sandbox_container_info = m_containers[sandbox_id];
+                    req.set_value(sandbox_container_info.m_pod_sandbox_cniresult);
+                }
+            } else {
+                req.set_value(cinfo.m_pod_sandbox_cniresult);
+            }
             break;
         default:
             SPDLOG_ERROR(

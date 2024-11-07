@@ -5,7 +5,7 @@
 ### Plugin
 - [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
 - [x] implement initial proc parsing logic to attach container_id foreign key to existing threads leveraging capture listener API
-- [ ] implement sinsp_filtercheck_k8s.cpp filterchecks: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.cpp#L364
+- [x] implement sinsp_filtercheck_k8s.cpp filterchecks: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.cpp#L364
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
   - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
   - [ ] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
