@@ -11,10 +11,10 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
-const typeContainerd Type = "containerd"
+const typeContainerd engineType = "containerd"
 
 func init() {
-	EngineGenerators[typeContainerd] = newContainerdEngine
+	engineGenerators[typeContainerd] = newContainerdEngine
 }
 
 type containerdEngine struct {
@@ -118,7 +118,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 
 	labels := make(map[string]string)
 	for key, val := range info.Labels {
-		if len(val) <= maxLabelLength {
+		if len(val) <= maxLabelLen {
 			labels[key] = val
 		}
 	}
@@ -132,7 +132,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		if len(sandboxLabels) > 0 {
 			podSandboxLabels = make(map[string]string)
 			for key, val := range sandboxLabels {
-				if len(val) <= maxLabelLength {
+				if len(val) <= maxLabelLen {
 					podSandboxLabels[key] = val
 				}
 			}
@@ -140,35 +140,37 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 
 	return Info{
-		Type:             string(typeContainerd),
-		ID:               container.ID()[:shortIDLength],
-		Name:             "", //  // TODO container.m_name = status.metadata().name(); ??
-		Image:            info.Image,
-		ImageDigest:      "", // TODO
-		ImageID:          "", // TODO
-		ImageRepo:        "", // TODO
-		ImageTag:         "", // TODO
-		User:             spec.Process.User.Username,
-		CniJson:          "", // TODO
-		CPUPeriod:        int64(cpuPeriod),
-		CPUQuota:         cpuQuota,
-		CPUShares:        int64(cpuShares),
-		CPUSetCPUCount:   cpusetCount,
-		CreatedTime:      info.CreatedAt.Unix(),
-		Env:              spec.Process.Env,
-		FullID:           container.ID(),
-		HostIPC:          hostIPC,
-		HostNetwork:      hostNetwork,
-		HostPID:          hostPID,
-		Ip:               "", // TODO
-		IsPodSandbox:     isPodSandbox,
-		Labels:           labels,
-		MemoryLimit:      memoryLimit,
-		SwapLimit:        swapLimit,
-		PodSandboxID:     info.SandboxID,
-		Privileged:       !spec.Process.NoNewPrivileges, // FIXME wrong val
-		PodSandboxLabels: podSandboxLabels,
-		Mounts:           mounts,
+		Container{
+			Type:             typeContainerd.ToCTValue(),
+			ID:               container.ID()[:shortIDLength],
+			Name:             "", //  // TODO container.m_name = status.metadata().name(); ??
+			Image:            info.Image,
+			ImageDigest:      "", // TODO
+			ImageID:          "", // TODO
+			ImageRepo:        "", // TODO
+			ImageTag:         "", // TODO
+			User:             spec.Process.User.Username,
+			CniJson:          "", // TODO
+			CPUPeriod:        int64(cpuPeriod),
+			CPUQuota:         cpuQuota,
+			CPUShares:        int64(cpuShares),
+			CPUSetCPUCount:   cpusetCount,
+			CreatedTime:      info.CreatedAt.Unix(),
+			Env:              spec.Process.Env,
+			FullID:           container.ID(),
+			HostIPC:          hostIPC,
+			HostNetwork:      hostNetwork,
+			HostPID:          hostPID,
+			Ip:               "", // TODO
+			IsPodSandbox:     isPodSandbox,
+			Labels:           labels,
+			MemoryLimit:      memoryLimit,
+			SwapLimit:        swapLimit,
+			PodSandboxID:     info.SandboxID,
+			Privileged:       !spec.Process.NoNewPrivileges, // FIXME wrong val
+			PodSandboxLabels: podSandboxLabels,
+			Mounts:           mounts,
+		},
 	}
 }
 
@@ -228,10 +230,12 @@ func (c *containerdEngine) Listen(ctx context.Context) (<-chan Event, error) {
 			if err != nil {
 				// minimum set of infos
 				info = Info{
-					Type:   string(typeContainerd),
-					ID:     id[:shortIDLength],
-					FullID: id,
-					Image:  image,
+					Container{
+						Type:   typeContainerd.ToCTValue(),
+						ID:     id[:shortIDLength],
+						FullID: id,
+						Image:  image,
+					},
 				}
 			} else {
 				info = c.ctrToInfo(namespacedContext, container)

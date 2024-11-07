@@ -2,7 +2,6 @@ package main
 
 import "C"
 import (
-	"encoding/json"
 	"github.com/FedeDP/container-worker/pkg/container"
 	"sync"
 )
@@ -29,12 +28,6 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t) bool {
 	var ctx context.Context
 	ctx, ctxCancel = context.WithCancel(context.Background())
 
-	var cfg map[string]container.SocketsEngine
-	err := json.Unmarshal([]byte(C.GoString(initCfg)), &cfg)
-	if err != nil {
-		return false
-	}
-
 	// See https://github.com/enobufs/go-calls-c-pointer/blob/master/counter_api.go
 	goCb := func(containerJson string, added bool) {
 		if containerJson == "" {
@@ -47,25 +40,23 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t) bool {
 		C.makeCallback(cstr, cbool, cb)
 	}
 
+	generators, err := container.Generators(C.GoString(initCfg))
+	if err != nil {
+		return false
+	}
+
 	containerEngines := make([]container.Engine, 0)
-	for engineName, engineGen := range container.EngineGenerators {
-		engineCfg, ok := cfg[string(engineName)]
-		if !ok || !engineCfg.Enabled {
+	for _, generator := range generators {
+		engine, err := generator(ctx)
+		if err != nil {
 			continue
 		}
-		// For each specified socket, start an engine
-		for _, socket := range engineCfg.Sockets {
-			engine, err := engineGen(ctx, socket)
-			if err != nil {
-				continue
-			}
-			containerEngines = append(containerEngines, engine)
-			// List all pre-existing containers and run `goCb` on all of them
-			containers, err := engine.List(ctx)
-			if err == nil {
-				for _, ctr := range containers {
-					goCb(ctr.String(), true)
-				}
+		containerEngines = append(containerEngines, engine)
+		// List all pre-existing containers and run `goCb` on all of them
+		containers, err := engine.List(ctx)
+		if err == nil {
+			for _, ctr := range containers {
+				goCb(ctr.String(), true)
 			}
 		}
 	}

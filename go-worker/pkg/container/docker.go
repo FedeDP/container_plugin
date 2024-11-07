@@ -12,10 +12,10 @@ import (
 	"time"
 )
 
-const typeDocker Type = "docker"
+const typeDocker engineType = "docker"
 
 func init() {
-	EngineGenerators[typeDocker] = newDockerEngine
+	engineGenerators[typeDocker] = newDockerEngine
 }
 
 type dockerEngine struct {
@@ -130,40 +130,53 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 
 	labels := make(map[string]string)
 	for key, val := range cfg.Labels {
-		if len(val) <= maxLabelLength {
+		if len(val) <= maxLabelLen {
 			labels[key] = val
+		}
+	}
+
+	ip := netCfg.IPAddress
+	if ip == "" {
+		if hostCfg.NetworkMode.IsContainer() {
+			secondaryID := hostCfg.NetworkMode.ConnectedContainer()
+			secondary, _ := dc.ContainerInspect(ctx, secondaryID)
+			if secondary.NetworkSettings != nil {
+				ip = secondary.NetworkSettings.IPAddress
+			}
 		}
 	}
 
 	createdTime, _ := time.Parse(time.RFC3339Nano, ctr.Created)
 	return Info{
-		Type:           string(typeDocker),
-		ID:             ctr.ID[:shortIDLength],
-		Name:           name,
-		Image:          cfg.Image,
-		ImageDigest:    imageDigest,
-		ImageID:        imageID,
-		ImageRepo:      imageRepo,
-		ImageTag:       imageTag,
-		User:           cfg.User,
-		CPUPeriod:      hostCfg.CPUPeriod,
-		CPUQuota:       hostCfg.CPUQuota,
-		CPUShares:      hostCfg.CPUShares,
-		CPUSetCPUCount: hostCfg.CPUCount,
-		CreatedTime:    createdTime.Unix(),
-		Env:            cfg.Env,
-		FullID:         ctr.ID,
-		HostIPC:        hostCfg.IpcMode.IsHost(),
-		HostNetwork:    hostCfg.NetworkMode.IsHost(),
-		HostPID:        hostCfg.PidMode.IsHost(),
-		Ip:             netCfg.IPAddress,
-		IsPodSandbox:   isPodSandbox,
-		Labels:         labels,
-		MemoryLimit:    hostCfg.Memory,
-		SwapLimit:      hostCfg.MemorySwap,
-		Privileged:     hostCfg.Privileged,
-		PortMappings:   portMappings,
-		Mounts:         mounts,
+		Container{
+			Type:           typeDocker.ToCTValue(),
+			ID:             ctr.ID[:shortIDLength],
+			Name:           name,
+			Image:          cfg.Image,
+			ImageDigest:    imageDigest,
+			ImageID:        imageID,
+			ImageRepo:      imageRepo,
+			ImageTag:       imageTag,
+			User:           cfg.User,
+			CPUPeriod:      hostCfg.CPUPeriod,
+			CPUQuota:       hostCfg.CPUQuota,
+			CPUShares:      hostCfg.CPUShares,
+			CPUSetCPUCount: hostCfg.CPUCount,
+			CreatedTime:    createdTime.Unix(),
+			Env:            cfg.Env,
+			FullID:         ctr.ID,
+			HostIPC:        hostCfg.IpcMode.IsHost(),
+			HostNetwork:    hostCfg.NetworkMode.IsHost(),
+			HostPID:        hostCfg.PidMode.IsHost(),
+			Ip:             ip,
+			IsPodSandbox:   isPodSandbox,
+			Labels:         labels,
+			MemoryLimit:    hostCfg.Memory,
+			SwapLimit:      hostCfg.MemorySwap,
+			Privileged:     hostCfg.Privileged,
+			PortMappings:   portMappings,
+			Mounts:         mounts,
+		},
 	}
 }
 
@@ -180,12 +193,14 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 			// Minimum set of infos
 			evts[idx] = Event{
 				Info: Info{
-					Type:        string(typeDocker),
-					ID:          ctr.ID[:shortIDLength],
-					Image:       ctr.Image,
-					FullID:      ctr.ID,
-					ImageID:     ctr.ImageID,
-					CreatedTime: nanoSecondsToUnix(ctr.Created),
+					Container{
+						Type:        typeDocker.ToCTValue(),
+						ID:          ctr.ID[:shortIDLength],
+						Image:       ctr.Image,
+						FullID:      ctr.ID,
+						ImageID:     ctr.ImageID,
+						CreatedTime: nanoSecondsToUnix(ctr.Created),
+					},
 				},
 				IsCreate: true,
 			}
@@ -218,10 +233,12 @@ func (dc *dockerEngine) Listen(ctx context.Context) (<-chan Event, error) {
 				// At least send an event with the minimum set of data
 				outCh <- Event{
 					Info: Info{
-						Type:   string(typeDocker),
-						ID:     msg.Actor.ID[:shortIDLength],
-						FullID: msg.Actor.ID,
-						Image:  msg.Actor.Attributes["image"],
+						Container{
+							Type:   typeDocker.ToCTValue(),
+							ID:     msg.Actor.ID[:shortIDLength],
+							FullID: msg.Actor.ID,
+							Image:  msg.Actor.Attributes["image"],
+						},
 					},
 					IsCreate: msg.Action == events.ActionCreate,
 				}

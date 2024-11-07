@@ -6,13 +6,13 @@
 - [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
 - [x] implement initial proc parsing logic to attach container_id foreign key to existing threads leveraging capture listener API
 - [x] implement sinsp_filtercheck_k8s.cpp filterchecks: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.cpp#L364
-- [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
+- [x] rewrite container_info.cpp logic to parse the new json sent by coworker
   - [x] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
   - [x] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
   - [ ] somehow get rid of re2 usage in `mount_by_source` and `mount_by_dest` to drop the dep
-  - [ ] make sure that the new container json is exactly the same as the old one
+  - [x] make sure that the new container json is exactly the same as the old one
 
-- [ ] implement init config key: `label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)`
+- [x] implement new init config key: `label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)`
 
 - [x] properly send json with all info from go-worker
   - [x] docker
@@ -21,6 +21,7 @@
   - [x] cri
   - [x] port CreatedAt to int64
   - [ ] fix remaining TODOs
+  - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early :/
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
@@ -151,6 +152,7 @@ plugins:
     init_config:
       # verbosity level for the plugin logger
       verbosity: warning # (optional, default: info)
+      label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)
       engines:
         docker:
           enabled: true

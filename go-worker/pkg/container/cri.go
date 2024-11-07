@@ -8,23 +8,27 @@ import (
 	"time"
 )
 
-const typeCri Type = "cri"
+const (
+	typeCri  engineType = "cri"
+	typeCrio engineType = "cri-o"
+)
 
 func init() {
-	EngineGenerators[typeCri] = newCriEngine
+	engineGenerators[typeCri] = newCriEngine
 }
 
 type criEngine struct {
 	client  internalapi.RuntimeService
-	runtime string
+	runtime int // as CT_FOO value
 }
 
 // See https://github.com/falcosecurity/libs/blob/4d04cad02cd27e53cb18f431361a4d031836bb75/userspace/libsinsp/cri.hpp#L71
-func getRuntime(runtime string) string {
+func getRuntime(runtime string) int {
 	if runtime == "containerd" || runtime == "cri-o" {
-		return runtime
+		tp := engineType(runtime)
+		return tp.ToCTValue()
 	}
-	return string(typeCri)
+	return typeCri.ToCTValue()
 }
 
 func newCriEngine(ctx context.Context, socket string) (Engine, error) {
@@ -124,7 +128,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	labels := make(map[string]string)
 	for key, val := range ctr.Labels {
-		if len(val) <= maxLabelLength {
+		if len(val) <= maxLabelLen {
 			labels[key] = val
 		}
 	}
@@ -137,41 +141,43 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	podSandboxLabels := make(map[string]string)
 	for key, val := range podSandboxStatus.Labels {
-		if len(val) <= maxLabelLength {
+		if len(val) <= maxLabelLen {
 			podSandboxLabels[key] = val
 		}
 	}
 
 	return Info{
-		Type:             c.runtime,
-		ID:               ctr.Id[:shortIDLength],
-		Name:             metadata.Name,
-		Image:            img,
-		ImageDigest:      ctr.ImageRef,
-		ImageID:          ctr.ImageId,
-		ImageRepo:        "", // TODO
-		ImageTag:         "", // TODO
-		User:             user.String(),
-		CniJson:          "", // TODO
-		CPUPeriod:        cpuPeriod,
-		CPUQuota:         cpuQuota,
-		CPUShares:        cpuShares,
-		CPUSetCPUCount:   cpusetCount,
-		CreatedTime:      nanoSecondsToUnix(ctr.CreatedAt),
-		Env:              nil, // TODO
-		FullID:           ctr.Id,
-		HostIPC:          podSandboxStatus.Linux.Namespaces.Options.Ipc == v1.NamespaceMode_NODE,
-		HostNetwork:      podSandboxStatus.Linux.Namespaces.Options.Network == v1.NamespaceMode_NODE,
-		HostPID:          podSandboxStatus.Linux.Namespaces.Options.Pid == v1.NamespaceMode_NODE,
-		Ip:               podSandboxStatus.Network.Ip,
-		IsPodSandbox:     isPodSandbox,
-		Labels:           labels,
-		MemoryLimit:      memoryLimit,
-		SwapLimit:        swapLimit,
-		PodSandboxID:     podSandboxID,
-		Privileged:       false, // TODO
-		PodSandboxLabels: podSandboxLabels,
-		Mounts:           mounts,
+		Container{
+			Type:             c.runtime,
+			ID:               ctr.Id[:shortIDLength],
+			Name:             metadata.Name,
+			Image:            img,
+			ImageDigest:      ctr.ImageRef,
+			ImageID:          ctr.ImageId,
+			ImageRepo:        "", // TODO
+			ImageTag:         "", // TODO
+			User:             user.String(),
+			CniJson:          "", // TODO
+			CPUPeriod:        cpuPeriod,
+			CPUQuota:         cpuQuota,
+			CPUShares:        cpuShares,
+			CPUSetCPUCount:   cpusetCount,
+			CreatedTime:      nanoSecondsToUnix(ctr.CreatedAt),
+			Env:              nil, // TODO
+			FullID:           ctr.Id,
+			HostIPC:          podSandboxStatus.Linux.Namespaces.Options.Ipc == v1.NamespaceMode_NODE,
+			HostNetwork:      podSandboxStatus.Linux.Namespaces.Options.Network == v1.NamespaceMode_NODE,
+			HostPID:          podSandboxStatus.Linux.Namespaces.Options.Pid == v1.NamespaceMode_NODE,
+			Ip:               podSandboxStatus.Network.Ip,
+			IsPodSandbox:     isPodSandbox,
+			Labels:           labels,
+			MemoryLimit:      memoryLimit,
+			SwapLimit:        swapLimit,
+			PodSandboxID:     podSandboxID,
+			Privileged:       false, // TODO
+			PodSandboxLabels: podSandboxLabels,
+			Mounts:           mounts,
+		},
 	}
 }
 
@@ -187,12 +193,14 @@ func (c *criEngine) List(ctx context.Context) ([]Event, error) {
 			evts[idx] = Event{
 				IsCreate: true,
 				Info: Info{
-					Type:        c.runtime,
-					ID:          ctr.Id[:shortIDLength],
-					FullID:      ctr.Id,
-					ImageID:     ctr.ImageId,
-					CreatedTime: nanoSecondsToUnix(ctr.CreatedAt),
-					Labels:      ctr.Labels,
+					Container{
+						Type:        c.runtime,
+						ID:          ctr.Id[:shortIDLength],
+						FullID:      ctr.Id,
+						ImageID:     ctr.ImageId,
+						CreatedTime: nanoSecondsToUnix(ctr.CreatedAt),
+						Labels:      ctr.Labels,
+					},
 				},
 			}
 		} else {
@@ -225,10 +233,12 @@ func (c *criEngine) Listen(ctx context.Context) (<-chan Event, error) {
 				ctr, err := c.client.ContainerStatus(ctx, event.ContainerId, false)
 				if err != nil || ctr == nil {
 					info = Info{
-						Type:        c.runtime,
-						ID:          event.ContainerId[:shortIDLength],
-						FullID:      event.ContainerId,
-						CreatedTime: nanoSecondsToUnix(event.CreatedAt),
+						Container{
+							Type:        c.runtime,
+							ID:          event.ContainerId[:shortIDLength],
+							FullID:      event.ContainerId,
+							CreatedTime: nanoSecondsToUnix(event.CreatedAt),
+						},
 					}
 				} else {
 					cPodSandbox := event.GetPodSandboxStatus()

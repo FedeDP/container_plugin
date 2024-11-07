@@ -37,36 +37,38 @@ void generate_async_event(const char *json, bool added) {
 }
 
 // Build the json object to be passed to the go-worker as init config.
+// See go-worker/engine.go::cfg struct for the format
 void to_json(json& j, const PluginConfig& cfg)
 {
-    j = json{
+    j["label_max_len"] = cfg.label_max_len;
+    j["engines"] = json{
             {
                     "docker",
-                                 {
-                                         {"enabled", cfg.docker.enabled },
-                                         {"sockets", cfg.docker.sockets }
-                                 }
+                    {
+                            {"enabled", cfg.docker.enabled },
+                            {"sockets", cfg.docker.sockets }
+                    }
             },
             {
                     "podman",
-                                 {
-                                         {"enabled", cfg.podman.enabled },
-                                         {"sockets", cfg.podman.sockets }
-                                 }
+                    {
+                            {"enabled", cfg.podman.enabled },
+                            {"sockets", cfg.podman.sockets }
+                    }
             },
             {
                     "cri",
-                                 {
-                                         {"enabled", cfg.cri.enabled },
-                                         {"sockets", cfg.cri.sockets }
-                                 }
+                    {
+                            {"enabled", cfg.cri.enabled },
+                            {"sockets", cfg.cri.sockets }
+                    }
             },
             {
                     "containerd",
-                                 {
-                                         {"enabled", cfg.containerd.enabled },
-                                         {"sockets", cfg.containerd.sockets }
-                                 }
+                    {
+                            {"enabled", cfg.containerd.enabled },
+                            {"sockets", cfg.containerd.sockets }
+                    }
             }
     };
 }

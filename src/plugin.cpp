@@ -75,6 +75,11 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
 			"title": "The plugin logging verbosity",
 			"description": "The verbosity that the plugin will use when printing logs."
 		},
+        "label_max_len": {
+            "type": "integer",
+            "title": "Max label length",
+            "description": "Labels exceeding this limit won't be reported."
+        }
         "engines": {
             "$ref": "#/definitions/Engines",
             "title": "The plugin per-engine configuration",
@@ -209,6 +214,7 @@ void from_json(const json& j, SocketsEngine& engine) {
 
 void from_json(const json& j, PluginConfig& cfg) {
     cfg.verbosity = j.value("verbosity", "info");
+    cfg.label_max_len = j.value("label_max_len", DEFAULT_LABEL_MAX_LEN);
     cfg.bpm = j.value("bpm", SimpleEngine{});
     cfg.lxc = j.value("lxc", SimpleEngine{});
     cfg.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});

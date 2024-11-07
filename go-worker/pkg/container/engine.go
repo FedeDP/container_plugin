@@ -1,5 +1,6 @@
 package container
 
+import "C"
 import (
 	"context"
 	"encoding/json"
@@ -9,19 +10,69 @@ import (
 	"time"
 )
 
-type Type string
-type EngineGenerator func(context.Context, string) (Engine, error)
+const shortIDLength = 12
 
-var EngineGenerators = make(map[Type]EngineGenerator)
+type engineType string
 
-const (
-	maxLabelLength = 100
-	shortIDLength  = 12
+// ToCTValue returns integer representation: CT_DOCKER,CT_PODMAN etc etc
+// See src/container_type.h
+func (t engineType) ToCTValue() int {
+	switch t {
+	case typeDocker:
+		return 0
+	case typePodman:
+		return 11
+	case typeCri:
+		return 6
+	case typeContainerd:
+		return 7
+	case typeCrio:
+		return 8
+	default:
+		return 0xffff // unknown
+	}
+}
+
+type engineGenerator func(context.Context, string) (Engine, error)
+type EngineGenerator func(ctx context.Context) (Engine, error)
+
+var (
+	engineGenerators = make(map[engineType]engineGenerator)
+	maxLabelLen      = 100 // default value
 )
 
-type SocketsEngine struct {
+type socketsEngine struct {
 	Enabled bool     `json:"enabled"`
 	Sockets []string `json:"sockets"`
+}
+
+type engineCfg struct {
+	SocketsEngines map[string]socketsEngine `json:"engines"`
+	LabelMaxLen    int                      `json:"label_max_len"`
+}
+
+func Generators(initCfg string) ([]EngineGenerator, error) {
+	var c engineCfg
+	err := json.Unmarshal([]byte(initCfg), &c)
+	if err != nil {
+		return nil, err
+	}
+	maxLabelLen = c.LabelMaxLen
+
+	generators := make([]EngineGenerator, 0)
+	for engineName, engineGen := range engineGenerators {
+		engineCfg, ok := c.SocketsEngines[string(engineName)]
+		if !ok || !engineCfg.Enabled {
+			continue
+		}
+		// For each specified socket, return a closure to generate its engine
+		for _, socket := range engineCfg.Sockets {
+			generators = append(generators, func(ctx context.Context) (Engine, error) {
+				return engineGen(ctx, socket)
+			})
+		}
+	}
+	return generators, nil
 }
 
 type PortMapping struct {
@@ -39,10 +90,8 @@ type Mount struct {
 }
 
 // TODO add healtcheck/liveness/readiness probe related fields
-// TODO: type must be int (see CT_DOCKER...)
-// TODO: must add "container {" opening to the resulting json
-type Info struct {
-	Type             string            `json:"type"`
+type Container struct {
+	Type             int               `json:"type"`
 	ID               string            `json:"id"`
 	Name             string            `json:"name"`
 	Image            string            `json:"image"`
@@ -50,7 +99,7 @@ type Info struct {
 	ImageID          string            `json:"imageid"`
 	ImageRepo        string            `json:"imagerepo"`
 	ImageTag         string            `json:"imagetag"`
-	User             string            `json:"user"`
+	User             string            `json:"User"`
 	CniJson          string            `json:"cni_json"` // cri only
 	CPUPeriod        int64             `json:"cpu_period"`
 	CPUQuota         int64             `json:"cpu_quota"`
@@ -72,6 +121,63 @@ type Info struct {
 	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"` // cri only
 	PortMappings     []PortMapping     `json:"port_mappings"`
 	Mounts           []Mount           `json:"Mounts"`
+}
+
+// Info struct wraps Container because we need the `container` struct in the json for backward compatibility.
+// Format:
+/*
+{
+  "container": {
+    "type": 0,
+    "id": "2400edb296c5",
+    "name": "sharp_poincare",
+    "image": "fedora:38",
+    "imagedigest": "sha256:b9ff6f23cceb5bde20bb1f79b492b98d71ef7a7ae518ca1b15b26661a11e6a94",
+    "imageid": "0ca0fed353fb77c247abada85aebc667fd1f5fa0b5f6ab1efb26867ba18f2f0a",
+    "imagerepo": "fedora",
+    "imagetag": "38",
+    "User": "",
+    "cni_json": "",
+    "cpu_period": 0,
+    "cpu_quota": 0,
+    "cpu_shares": 0,
+    "cpuset_cpu_count": 0,
+    "created_time": 1730977803,
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "DISTTAG=f38container",
+      "FGC=f38",
+      "FBR=f38"
+    ],
+    "full_id": "2400edb296c5d631fef083a30c680f71801b0409a9676ee546c084d0087d7c7d",
+    "host_ipc": false,
+    "host_network": false,
+    "host_pid": false,
+    "ip": "",
+    "is_pod_sandbox": false,
+    "labels": {
+      "maintainer": "Clement Verna <cverna@fedoraproject.org>"
+    },
+    "memory_limit": 0,
+    "swap_limit": 0,
+    "pod_sandbox_id": "",
+    "privileged": false,
+    "pod_sandbox_labels": null,
+    "port_mappings": [],
+    "Mounts": [
+      {
+        "Source": "/home/federico",
+        "Destination": "/home/federico",
+        "Mode": "",
+        "RW": true,
+        "Propagation": "rprivate"
+      }
+    ]
+  }
+}
+*/
+type Info struct {
+	Container `json:"container"`
 }
 
 type Event struct {

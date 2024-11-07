@@ -46,3 +46,4 @@ constexpr auto PPME_SYSCALL_EXECVEAT_X = (_et)331;
 constexpr auto PPME_SYSCALL_CHROOT_X = (_et)267;
 
 #define SHORT_ID_LEN 12
+#define DEFAULT_LABEL_MAX_LEN 100

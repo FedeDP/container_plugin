@@ -13,10 +13,10 @@ import (
 	"strings"
 )
 
-const typePodman Type = "podman"
+const typePodman engineType = "podman"
 
 func init() {
-	EngineGenerators[typePodman] = newPodmanEngine
+	engineGenerators[typePodman] = newPodmanEngine
 }
 
 type podmanEngine struct {
@@ -90,39 +90,41 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 
 	labels := make(map[string]string)
 	for key, val := range cfg.Labels {
-		if len(val) <= maxLabelLength {
+		if len(val) <= maxLabelLen {
 			labels[key] = val
 		}
 	}
 
 	return Info{
-		Type:           string(typePodman),
-		ID:             ctr.ID[:shortIDLength],
-		Name:           name,
-		Image:          ctr.ImageName,
-		ImageDigest:    ctr.ImageDigest,
-		ImageID:        ctr.Image,
-		ImageRepo:      imageRepo,
-		ImageTag:       imageTag,
-		User:           cfg.User,
-		CPUPeriod:      int64(hostCfg.CpuPeriod),
-		CPUQuota:       hostCfg.CpuQuota,
-		CPUShares:      int64(hostCfg.CpuShares),
-		CPUSetCPUCount: int64(hostCfg.CpuCount),
-		CreatedTime:    ctr.Created.Unix(),
-		Env:            cfg.Env,
-		FullID:         ctr.ID,
-		HostIPC:        hostCfg.IpcMode == "host",
-		HostNetwork:    hostCfg.NetworkMode == "host",
-		HostPID:        hostCfg.PidMode == "host",
-		Ip:             netCfg.IPAddress,
-		IsPodSandbox:   isPodSandbox,
-		Labels:         labels,
-		MemoryLimit:    hostCfg.Memory,
-		SwapLimit:      hostCfg.MemorySwap,
-		Privileged:     hostCfg.Privileged,
-		PortMappings:   portMappings,
-		Mounts:         mounts,
+		Container{
+			Type:           typePodman.ToCTValue(),
+			ID:             ctr.ID[:shortIDLength],
+			Name:           name,
+			Image:          ctr.ImageName,
+			ImageDigest:    ctr.ImageDigest,
+			ImageID:        ctr.Image,
+			ImageRepo:      imageRepo,
+			ImageTag:       imageTag,
+			User:           cfg.User,
+			CPUPeriod:      int64(hostCfg.CpuPeriod),
+			CPUQuota:       hostCfg.CpuQuota,
+			CPUShares:      int64(hostCfg.CpuShares),
+			CPUSetCPUCount: int64(hostCfg.CpuCount),
+			CreatedTime:    ctr.Created.Unix(),
+			Env:            cfg.Env,
+			FullID:         ctr.ID,
+			HostIPC:        hostCfg.IpcMode == "host",
+			HostNetwork:    hostCfg.NetworkMode == "host",
+			HostPID:        hostCfg.PidMode == "host",
+			Ip:             netCfg.IPAddress,
+			IsPodSandbox:   isPodSandbox,
+			Labels:         labels,
+			MemoryLimit:    hostCfg.Memory,
+			SwapLimit:      hostCfg.MemorySwap,
+			Privileged:     hostCfg.Privileged,
+			PortMappings:   portMappings,
+			Mounts:         mounts,
+		},
 	}
 }
 
@@ -138,12 +140,14 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 		if err != nil {
 			evts = append(evts, Event{
 				Info: Info{
-					Type:        string(typePodman),
-					ID:          c.ID[:shortIDLength],
-					Image:       c.Image,
-					FullID:      c.ID,
-					ImageID:     c.ImageID,
-					CreatedTime: c.Created.Unix(),
+					Container{
+						Type:        typePodman.ToCTValue(),
+						ID:          c.ID[:shortIDLength],
+						Image:       c.Image,
+						FullID:      c.ID,
+						ImageID:     c.ImageID,
+						CreatedTime: c.Created.Unix(),
+					},
 				},
 				IsCreate: true,
 			})
@@ -195,10 +199,12 @@ func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
 					// At least send an event with the minimal set of data
 					outCh <- Event{
 						Info: Info{
-							Type:   string(typePodman),
-							ID:     ev.Actor.ID[:shortIDLength],
-							FullID: ev.Actor.ID,
-							Image:  ev.Actor.Attributes["image"],
+							Container{
+								Type:   typePodman.ToCTValue(),
+								ID:     ev.Actor.ID[:shortIDLength],
+								FullID: ev.Actor.ID,
+								Image:  ev.Actor.Attributes["image"],
+							},
 						},
 						IsCreate: ev.Action == events.ActionCreate,
 					}
