@@ -306,30 +306,30 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
     switch(field_id)
     {
         case TYPE_CONTAINER_ID:
-            req.set_value(cinfo.m_id);
+            req.set_value(cinfo->m_id);
             break;
         case TYPE_CONTAINER_FULL_CONTAINER_ID:
-            req.set_value(cinfo.m_full_id);
+            req.set_value(cinfo->m_full_id);
             break;
         case TYPE_CONTAINER_NAME:
-            req.set_value(cinfo.m_name);
+            req.set_value(cinfo->m_name);
             break;
         case TYPE_CONTAINER_IMAGE:
-            req.set_value(cinfo.m_image);
+            req.set_value(cinfo->m_image);
             break;
         case TYPE_CONTAINER_IMAGE_ID:
-            req.set_value(cinfo.m_imageid);
+            req.set_value(cinfo->m_imageid);
             break;
         case TYPE_CONTAINER_TYPE:
-            req.set_value(to_string(cinfo.m_type));
+            req.set_value(to_string(cinfo->m_type));
             break;
         case TYPE_CONTAINER_PRIVILEGED:
-            req.set_value(cinfo.m_privileged);
+            req.set_value(cinfo->m_privileged);
             break;
         case TYPE_CONTAINER_MOUNTS: {
             std::string tstr;
             bool first = true;
-            for (auto &mntinfo: cinfo.m_mounts) {
+            for (auto &mntinfo: cinfo->m_mounts) {
                 if (first) {
                     first = false;
                 } else {
@@ -349,10 +349,10 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             const container_info::container_mount_info *mntinfo;
             auto arg_id = req.get_arg_index();
             if (arg_id != -1) {
-                mntinfo = cinfo.mount_by_idx(arg_id);
+                mntinfo = cinfo->mount_by_idx(arg_id);
             } else {
                 auto arg_key = req.get_arg_key();
-                mntinfo = cinfo.mount_by_source(arg_key);
+                mntinfo = cinfo->mount_by_source(arg_key);
             }
             if (mntinfo) {
                 std::string tstr;
@@ -381,20 +381,20 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         }
         case TYPE_CONTAINER_IMAGE_REPOSITORY:
-            req.set_value(cinfo.m_imagerepo);
+            req.set_value(cinfo->m_imagerepo);
             break;
         case TYPE_CONTAINER_IMAGE_TAG:
-            req.set_value(cinfo.m_imagetag);
+            req.set_value(cinfo->m_imagetag);
             break;
         case TYPE_CONTAINER_IMAGE_DIGEST:
-            req.set_value(cinfo.m_imagedigest);
+            req.set_value(cinfo->m_imagedigest);
             break;
         case TYPE_CONTAINER_HEALTHCHECK:
         case TYPE_CONTAINER_LIVENESS_PROBE:
         case TYPE_CONTAINER_READINESS_PROBE: {
             std::string tstr = "NONE";
             bool set = false;
-            for(auto &probe : cinfo.m_health_probes) {
+            for(auto &probe : cinfo->m_health_probes) {
                 if((field_id == TYPE_CONTAINER_HEALTHCHECK &&
                     probe.m_probe_type ==
                     container_info::container_health_probe::PT_HEALTHCHECK) ||
@@ -435,43 +435,43 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         }
         case TYPE_CONTAINER_IP_ADDR: {
             uint32_t
-            val = htonl(cinfo.m_container_ip);
+            val = htonl(cinfo->m_container_ip);
             char addrbuff[100];
             inet_ntop(AF_INET, &val, addrbuff, sizeof(addrbuff));
             req.set_value(addrbuff);
             break;
         }
         case TYPE_CONTAINER_CNIRESULT:
-            req.set_value(cinfo.m_pod_sandbox_cniresult);
+            req.set_value(cinfo->m_pod_sandbox_cniresult);
             break;
         case TYPE_CONTAINER_HOST_PID:
-            req.set_value(cinfo.m_host_pid);
+            req.set_value(cinfo->m_host_pid);
             break;
         case TYPE_CONTAINER_HOST_NETWORK:
-            req.set_value(cinfo.m_host_network);
+            req.set_value(cinfo->m_host_network);
             break;
         case TYPE_CONTAINER_HOST_IPC:
-            req.set_value(cinfo.m_host_ipc);
+            req.set_value(cinfo->m_host_ipc);
             break;
         case TYPE_K8S_POD_NAME:
-            if (cinfo.m_labels.count("io.kubernetes.pod.name") > 0) {
-                req.set_value(cinfo.m_labels.at("io.kubernetes.pod.name"));
+            if (cinfo->m_labels.count("io.kubernetes.pod.name") > 0) {
+                req.set_value(cinfo->m_labels.at("io.kubernetes.pod.name"));
             }
             break;
         case TYPE_K8S_NS_NAME:
-            if (cinfo.m_labels.count("io.kubernetes.pod.namespace") > 0) {
-                req.set_value(cinfo.m_labels.at("io.kubernetes.pod.namespace"));
+            if (cinfo->m_labels.count("io.kubernetes.pod.namespace") > 0) {
+                req.set_value(cinfo->m_labels.at("io.kubernetes.pod.namespace"));
             }
             break;
         case TYPE_K8S_POD_ID:
         case TYPE_K8S_POD_UID:
-            if(cinfo.m_labels.count("io.kubernetes.pod.uid") > 0) {
-                req.set_value(cinfo.m_labels.at("io.kubernetes.pod.uid"));
+            if(cinfo->m_labels.count("io.kubernetes.pod.uid") > 0) {
+                req.set_value(cinfo->m_labels.at("io.kubernetes.pod.uid"));
             }
             break;
         case TYPE_K8S_POD_SANDBOX_ID:
         case TYPE_K8S_POD_FULL_SANDBOX_ID: {
-            auto sandbox_id = cinfo.m_pod_sandbox_id;
+            auto sandbox_id = cinfo->m_pod_sandbox_id;
             if (field_id == TYPE_K8S_POD_SANDBOX_ID) {
                 if(sandbox_id.size() > 12) {
                     sandbox_id.resize(12);
@@ -482,26 +482,26 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         }
         case TYPE_K8S_POD_LABEL:
         case TYPE_K8S_POD_LABELS: {
-            if (cinfo.m_pod_sandbox_cniresult.empty()) {
-                auto sandbox_id = cinfo.m_pod_sandbox_id.substr(0, 12);
+            if (cinfo->m_pod_sandbox_cniresult.empty()) {
+                auto sandbox_id = cinfo->m_pod_sandbox_id.substr(0, 12);
                 if (m_containers.count(sandbox_id) > 0) {
                     auto &sandbox_container_info = m_containers[sandbox_id];
                     if (field_id == TYPE_K8S_POD_LABEL) {
                         auto arg_key = req.get_arg_key();
-                        req.set_value(sandbox_container_info.m_pod_sandbox_labels.at(arg_key));
+                        req.set_value(sandbox_container_info->m_pod_sandbox_labels.at(arg_key));
                     } else {
                         std::string labels;
-                        concatenate_container_labels(sandbox_container_info.m_pod_sandbox_labels, &labels);
+                        concatenate_container_labels(sandbox_container_info->m_pod_sandbox_labels, &labels);
                         req.set_value(labels);
                     }
                 }
             } else {
                 if (field_id == TYPE_K8S_POD_LABEL) {
                     auto arg_key = req.get_arg_key();
-                    req.set_value(cinfo.m_pod_sandbox_labels.at(arg_key));
+                    req.set_value(cinfo->m_pod_sandbox_labels.at(arg_key));
                 } else {
                     std::string labels;
-                    concatenate_container_labels(cinfo.m_pod_sandbox_labels, &labels);
+                    concatenate_container_labels(cinfo->m_pod_sandbox_labels, &labels);
                     req.set_value(labels);
                 }
             }
@@ -509,31 +509,31 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         }
         case TYPE_K8S_POD_IP:
-            if (cinfo.m_pod_sandbox_cniresult.empty()) {
-                auto sandbox_id = cinfo.m_pod_sandbox_id.substr(0, 12);
+            if (cinfo->m_pod_sandbox_cniresult.empty()) {
+                auto sandbox_id = cinfo->m_pod_sandbox_id.substr(0, 12);
                 if (m_containers.count(sandbox_id) > 0) {
                     auto &sandbox_container_info = m_containers[sandbox_id];
-                    auto ip_val = htonl(sandbox_container_info.m_container_ip);
+                    auto ip_val = htonl(sandbox_container_info->m_container_ip);
                     char addrbuff[100];
                     inet_ntop(AF_INET, &ip_val, addrbuff, sizeof(addrbuff));
                     req.set_value(addrbuff);
                 }
             } else {
-                auto ip_val = htonl(cinfo.m_container_ip);
+                auto ip_val = htonl(cinfo->m_container_ip);
                 char addrbuff[100];
                 inet_ntop(AF_INET, &ip_val, addrbuff, sizeof(addrbuff));
                 req.set_value(addrbuff);
             }
             break;
         case TYPE_K8S_POD_CNIRESULT:
-            if (cinfo.m_pod_sandbox_cniresult.empty()) {
-                auto sandbox_id = cinfo.m_pod_sandbox_id.substr(0, 12);
+            if (cinfo->m_pod_sandbox_cniresult.empty()) {
+                auto sandbox_id = cinfo->m_pod_sandbox_id.substr(0, 12);
                 if (m_containers.count(sandbox_id) > 0) {
                     auto &sandbox_container_info = m_containers[sandbox_id];
-                    req.set_value(sandbox_container_info.m_pod_sandbox_cniresult);
+                    req.set_value(sandbox_container_info->m_pod_sandbox_cniresult);
                 }
             } else {
-                req.set_value(cinfo.m_pod_sandbox_cniresult);
+                req.set_value(cinfo->m_pod_sandbox_cniresult);
             }
             break;
         default:

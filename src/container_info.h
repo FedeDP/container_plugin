@@ -146,16 +146,16 @@ public:
     bool is_pod_sandbox() const { return m_is_pod_sandbox; }
 
     // static utilities to build a container_info
-    static container_info host_container_info() {
-        auto host_info = container_info();
-        host_info.m_id = "host";
-        host_info.m_full_id = "host";
-        host_info.m_name = "host";
+    static std::shared_ptr<container_info> host_container_info() {
+        auto host_info = std::make_shared<container_info>();
+        host_info->m_id = "host";
+        host_info->m_full_id = "host";
+        host_info->m_name = "host";
         return host_info;
     }
 
-    static container_info from_json(nlohmann::json &root) {
-        auto info = container_info();
+    static std::shared_ptr<container_info> from_json(nlohmann::json &root) {
+        auto info = std::make_shared<container_info>();
         // TODO implement logic.
         // See https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/parsers.cpp#L4672
         return info;

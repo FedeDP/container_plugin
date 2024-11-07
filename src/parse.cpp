@@ -71,9 +71,9 @@ bool my_plugin::parse_async_event(
 
     auto cinfo = container_info::from_json(json_event);
     if (added) {
-        m_containers[cinfo.m_id] = cinfo;
+        m_containers[cinfo->m_id] = cinfo;
     } else {
-        m_containers.erase(cinfo.m_id);
+        m_containers.erase(cinfo->m_id);
     }
 
     // Update n_containers metric
@@ -81,7 +81,7 @@ bool my_plugin::parse_async_event(
 
     // Update n_missing metric
     auto val = m_metrics.at(1).value.u64;
-    if (!cinfo.m_is_pod_sandbox && cinfo.m_image.empty()) {
+    if (!cinfo->m_is_pod_sandbox && cinfo->m_image.empty()) {
         m_metrics.at(1).set_value(val + 1);
     }
     return true;
@@ -100,11 +100,11 @@ bool my_plugin::parse_container_event(
     std::string name = (char*)name_param.param_pointer;
     std::string image = (char*)image_param.param_pointer;
 
-    auto cinfo = container_info();
-    cinfo.m_id = id;
-    cinfo.m_type = tp;
-    cinfo.m_name = name;
-    cinfo.m_image = image;
+    auto cinfo = std::make_shared<container_info>();
+    cinfo->m_id = id;
+    cinfo->m_type = tp;
+    cinfo->m_name = name;
+    cinfo->m_image = image;
     m_containers[id] = cinfo;
     return true;
 }
@@ -118,7 +118,7 @@ bool my_plugin::parse_container_json_event(
     auto json_event = nlohmann::json::parse(json_str);
 
     auto cinfo = container_info::from_json(json_event);
-    m_containers[cinfo.m_id] = cinfo;
+    m_containers[cinfo->m_id] = cinfo;
     return true;
 }
 
