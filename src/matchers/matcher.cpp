@@ -43,10 +43,11 @@ matcher_manager::matcher_manager(uint64_t container_engine_mask, const std::stri
     }
 }
 
-bool matcher_manager::match_cgroup(const std::string& cgroup, std::string& container_id, container_info **ctr) {
+bool matcher_manager::match_cgroup(const std::string& cgroup, std::string& container_id,
+                                   std::shared_ptr<container_info>& ctr) {
     for (const auto &matcher : m_matchers) {
         if (matcher->resolve(cgroup, container_id)) {
-            *ctr = matcher->to_container(container_id);
+            ctr = matcher->to_container(container_id);
             return true;
         }
     }

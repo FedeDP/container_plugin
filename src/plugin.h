@@ -123,7 +123,9 @@ public:
     //////////////////////////
     // Helpers
     //////////////////////////
-    std::string compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry, const falcosecurity::table_reader& tr, container_info **info);
+    std::string compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
+                                                const falcosecurity::table_reader& tr,
+                                                std::shared_ptr<container_info>& info);
 
 private:
     // State table

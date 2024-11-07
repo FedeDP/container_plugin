@@ -20,15 +20,12 @@ limitations under the License.
 #include <re2/re2.h>
 #include "container_info.h"
 
-std::vector<std::string> container_info::container_health_probe::probe_type_names =
+std::vector<std::string> container_health_probe::probe_type_names =
         {"None", "Healthcheck", "LivenessProbe", "ReadinessProbe", "End"};
 
-// Initialize container max label length to default 100 value
-uint32_t container_info::m_container_label_max_length = 100;
+container_health_probe::container_health_probe() {}
 
-container_info::container_health_probe::container_health_probe() {}
-
-container_info::container_health_probe::container_health_probe(
+container_health_probe::container_health_probe(
         const probe_type ptype,
         const std::string &&exe,
         const std::vector<std::string> &&args):
@@ -36,9 +33,9 @@ container_info::container_health_probe::container_health_probe(
         m_health_probe_exe(exe),
         m_health_probe_args(args) {}
 
-container_info::container_health_probe::~container_health_probe() {}
+container_health_probe::~container_health_probe() {}
 
-void container_info::container_health_probe::parse_health_probes(
+/*void container_health_probe::parse_health_probes(
         const Json::Value &config_obj,
         std::list<container_health_probe> &probes) {
     // Add any health checks described in the container config/labels.
@@ -71,7 +68,7 @@ void container_info::container_health_probe::parse_health_probes(
     }
 }
 
-void container_info::container_health_probe::add_health_probes(
+void container_health_probe::add_health_probes(
         const std::list<container_health_probe> &probes,
         Json::Value &config_obj) {
     for(auto &probe : probes) {
@@ -85,9 +82,9 @@ void container_info::container_health_probe::add_health_probes(
 
         config_obj[key]["args"] = args;
     }
-}
+}*/
 
-const container_info::container_mount_info *container_info::mount_by_idx(
+const container_mount_info *container_info::mount_by_idx(
         uint32_t idx) const {
     if(idx >= m_mounts.size()) {
         return NULL;
@@ -96,7 +93,7 @@ const container_info::container_mount_info *container_info::mount_by_idx(
     return &(m_mounts[idx]);
 }
 
-const container_info::container_mount_info *container_info::mount_by_source(
+const container_mount_info *container_info::mount_by_source(
         const std::string &source) const {
     // note: linear search
     re2::RE2 pattern(source, re2::RE2::POSIX);
@@ -109,7 +106,7 @@ const container_info::container_mount_info *container_info::mount_by_source(
     return NULL;
 }
 
-const container_info::container_mount_info *container_info::mount_by_dest(
+const container_mount_info *container_info::mount_by_dest(
         const std::string &dest) const {
     // note: linear search
     re2::RE2 pattern(dest, re2::RE2::POSIX);
@@ -123,7 +120,7 @@ const container_info::container_mount_info *container_info::mount_by_dest(
 }
 
 // TODO reimplement in go
-/*container_info::container_health_probe::probe_type container_info::match_health_probe(
+/*container_health_probe::probe_type container_info::match_health_probe(
         sinsp_threadinfo *tinfo) const {
 
     auto pred = [&](const container_health_probe &p) {

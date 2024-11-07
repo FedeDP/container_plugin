@@ -4,10 +4,157 @@
 // Parse capability
 //////////////////////////
 
+using nlohmann::json;
+
 struct sinsp_param {
     uint16_t param_len;
     uint8_t* param_pointer;
 };
+
+/*
+{
+  "container": {
+    "Mounts": [
+      {
+        "Destination": "/home/federico",
+        "Mode": "",
+        "Propagation": "rprivate",
+        "RW": true,
+        "Source": "/home/federico"
+      }
+    ],
+    "User": "",
+    "cni_json": "",
+    "cpu_period": 100000,
+    "cpu_quota": 0,
+    "cpu_shares": 1024,
+    "cpuset_cpu_count": 0,
+    "created_time": 1730971086,
+    "env": [],
+    "full_id": "32a1026ccb88a551e2a38eb8f260b4700aefec7e8c007344057e58a9fa302374",
+    "host_ipc": false,
+    "host_network": false,
+    "host_pid": false,
+    "id": "32a1026ccb88",
+    "image": "fedora:38",
+    "imagedigest": "sha256:b9ff6f23cceb5bde20bb1f79b492b98d71ef7a7ae518ca1b15b26661a11e6a94",
+    "imageid": "0ca0fed353fb77c247abada85aebc667fd1f5fa0b5f6ab1efb26867ba18f2f0a",
+    "imagerepo": "fedora",
+    "imagetag": "38",
+    "ip": "172.17.0.2",
+    "is_pod_sandbox": false,
+    "labels": {
+      "maintainer": "Clement Verna <cverna@fedoraproject.org>"
+    },
+    "lookup_state": 1,
+    "memory_limit": 0,
+    "metadata_deadline": 0,
+    "name": "youthful_babbage",
+    "pod_sandbox_id": "",
+    "pod_sandbox_labels": null,
+    "port_mappings": [],
+    "privileged": false,
+    "swap_limit": 0,
+    "type": 0
+  }
+}
+*/
+
+void from_json(const json& j, container_mount_info& mount) {
+    mount.m_source = j.value("Source", "");
+    mount.m_dest = j.value("Destination", "");
+    mount.m_mode = j.value("Mode", "");
+    mount.m_rdwr = j.value("RW", false);
+    mount.m_propagation = j.value("Propagation", "");
+}
+
+void from_json(const json& j, container_port_mapping& port) {
+    port.m_host_ip = j.value("HostIp", 0);
+    port.m_host_port = j.value("HostPort", 0);
+    port.m_container_port = j.value("ContainerPort", 0);
+}
+
+void from_json(const json& j, std::shared_ptr<container_info>& cinfo) {
+    const json& container = j["container"];
+    cinfo->m_type = container.value("type", CT_UNKNOWN);
+    cinfo->m_id = container.value("id", "");
+    cinfo->m_name = container.value("name", "");
+    cinfo->m_image = container.value("image", "");
+    cinfo->m_imagedigest = container.value("imagedigest", "");
+    cinfo->m_imageid = container.value("imageid", "");
+    cinfo->m_imagerepo = container.value("imagerepo", "");
+    cinfo->m_imagetag = container.value("imagetag", "");
+    cinfo->m_container_user = container.value("User", "");
+    cinfo->m_pod_sandbox_cniresult = container.value("cni_json", "");
+    cinfo->m_cpu_period = container.value("cpu_period", 0);
+    cinfo->m_cpu_quota = container.value("cpu_quota", 0);
+    cinfo->m_cpu_shares = container.value("cpu_shares", 0);
+    cinfo->m_cpuset_cpu_count = container.value("cpuset_cpu_count", 0);
+    cinfo->m_created_time = container.value("created_time", 0);
+    cinfo->m_env = container.value("env", std::vector<std::string>{});
+    cinfo->m_full_id = container.value("full_id", "");
+    cinfo->m_host_ipc = container.value("host_ipc", false);
+    cinfo->m_host_network = container.value("host_network", false);
+    cinfo->m_host_pid = container.value("host_pid", false);
+    cinfo->m_container_ip = container.value("ip", 0);
+    cinfo->m_is_pod_sandbox = container.value("is_pod_sandbox", false);
+    cinfo->m_labels = container.value("labels", std::map<std::string, std::string>{});
+    cinfo->m_memory_limit = container.value("memory_limit", 0);
+    cinfo->m_swap_limit = container.value("swap_limit", 0);
+    cinfo->m_pod_sandbox_id = container.value("pod_sandbox_id", "");
+    cinfo->m_privileged = container.value("privileged", false);
+    cinfo->m_pod_sandbox_labels = container.value("pod_sandbox_labels", std::map<std::string, std::string>{});
+    cinfo->m_port_mappings = container.value("port_mappings", std::vector<container_port_mapping>{});
+    cinfo->m_mounts =  container.value("Mounts", std::vector<container_mount_info>{});
+}
+
+void to_json(json& j, const container_mount_info& mount) {
+    j["Source"] = mount.m_source;
+    j["Destination"] = mount.m_dest;
+    j["Mode"] = mount.m_mode;
+    j["RW"] = mount.m_rdwr;
+    j["Propagation"] = mount.m_propagation;
+}
+
+void to_json(json& j, const container_port_mapping& port) {
+    j["HostIp"] = port.m_host_ip;
+    j["HostPort"] = port.m_host_port;
+    j["ContainerPort"] = port.m_container_port;
+}
+
+void to_json(json& j, const std::shared_ptr<container_info>& cinfo) {
+    auto& container = j["container"];
+    j["type"] = cinfo->m_type;
+    j["id"] = cinfo->m_id;
+    j["name"] = cinfo->m_name;
+    j["image"] = cinfo->m_image;
+    j["imagedigest"] = cinfo->m_imagedigest;
+    j["imageid"] = cinfo->m_imageid;
+    j["imagerepo"] = cinfo->m_imagerepo;
+    j["imagetag"] = cinfo->m_imagetag;
+    j["User"] = cinfo->m_container_user;
+    j["cni_json"] = cinfo->m_pod_sandbox_cniresult;
+    j["cpu_period"] = cinfo->m_cpu_period;
+    j["cpu_quota"] = cinfo->m_cpu_quota;
+    j["cpu_shares"] = cinfo->m_cpu_shares;
+    j["cpuset_cpu_count"] = cinfo->m_cpuset_cpu_count;
+    j["created_time"] = cinfo->m_created_time;
+    j["env"] = cinfo->m_env;
+    j["full_id"] = cinfo->m_full_id;
+    j["host_ipc"] = cinfo->m_host_ipc;
+    j["host_network"] = cinfo->m_host_network;
+    j["host_pid"] = cinfo->m_host_pid;
+    j["ip"] = cinfo->m_container_ip;
+    j["is_pod_sandbox"] = cinfo->m_is_pod_sandbox;
+    j["labels"] = cinfo->m_labels;
+    j["memory_limit"] = cinfo->m_memory_limit;
+    j["swap_limit"] = cinfo->m_swap_limit;
+    j["pod_sandbox_id"] = cinfo->m_pod_sandbox_id;
+    j["privileged"] = cinfo->m_privileged;
+    j["pod_sandbox_labels"] = cinfo->m_pod_sandbox_labels;
+    j["port_mappings"] = cinfo->m_port_mappings;
+    j["Mounts"] = cinfo->m_mounts;
+}
 
 // Obtain a param from a sinsp event
 static inline sinsp_param get_syscall_evt_param(void* evt, uint32_t num_param)
@@ -69,7 +216,7 @@ bool my_plugin::parse_async_event(
     }
     auto json_event = nlohmann::json::parse(std::string(json_charbuf_pointer));
 
-    auto cinfo = container_info::from_json(json_event);
+    auto cinfo = json_event.get<std::shared_ptr<container_info>>();
     if (added) {
         m_containers[cinfo->m_id] = cinfo;
     } else {
@@ -117,13 +264,15 @@ bool my_plugin::parse_container_json_event(
     std::string json_str = (char *)json_param.param_pointer;
     auto json_event = nlohmann::json::parse(json_str);
 
-    auto cinfo = container_info::from_json(json_event);
+    auto cinfo = json_event.get<std::shared_ptr<container_info>>();
     m_containers[cinfo->m_id] = cinfo;
     return true;
 }
 
 
-std::string my_plugin::compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry, const falcosecurity::table_reader& tr, container_info **info) {
+std::string my_plugin::compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
+                                                       const falcosecurity::table_reader& tr,
+                                                       std::shared_ptr<container_info>& info) {
     // retrieve tid cgroups, compute container_id and store it.
     std::string container_id;
     using st = falcosecurity::state_value_type;
@@ -175,8 +324,8 @@ bool my_plugin::parse_new_process_event(
     // retrieve the thread entry associated with this thread id
     auto thread_entry = m_threads_table.get_entry(tr, thread_id);
 
-    container_info *info = nullptr;
-    auto container_id = compute_container_id_for_thread(thread_entry, tr, &info);
+    std::shared_ptr<container_info> info = nullptr;
+    auto container_id = compute_container_id_for_thread(thread_entry, tr, info);
 
     // store container_id
     auto& tw = in.get_table_writer();
@@ -188,7 +337,8 @@ bool my_plugin::parse_new_process_event(
         // it means we do not expect to receive any metadata from the go-worker,
         // since the engine has no listener SDK.
         // Just send the event now.
-        generate_async_event(info->to_json().c_str(), true);
+        nlohmann::json j(info);
+        generate_async_event(j.dump().c_str(), true);
     }
     return true;
 }

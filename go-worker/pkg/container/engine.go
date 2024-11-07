@@ -39,6 +39,8 @@ type Mount struct {
 }
 
 // TODO add healtcheck/liveness/readiness probe related fields
+// TODO: type must be int (see CT_DOCKER...)
+// TODO: must add "container {" opening to the resulting json
 type Info struct {
 	Type             string            `json:"type"`
 	ID               string            `json:"id"`
@@ -47,7 +49,7 @@ type Info struct {
 	ImageDigest      string            `json:"imagedigest"`
 	ImageID          string            `json:"imageid"`
 	ImageRepo        string            `json:"imagerepo"`
-	ImageTag         string            `json:"image_tag"`
+	ImageTag         string            `json:"imagetag"`
 	User             string            `json:"user"`
 	CniJson          string            `json:"cni_json"` // cri only
 	CPUPeriod        int64             `json:"cpu_period"`

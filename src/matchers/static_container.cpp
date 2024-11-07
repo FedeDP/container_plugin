@@ -55,26 +55,26 @@ static inline void split_container_image(const std::string& image,
 static_container::static_container(const std::string& id,
                                    const std::string& name,
                                    const std::string& image) {
-    m_static_container_info = container_info();
-    m_static_container_info.m_id = id;
-    m_static_container_info.m_type = CT_STATIC;
-    m_static_container_info.m_name = name;
-    m_static_container_info.m_image = image;
+    m_static_container_info = std::make_shared<container_info>();
+    m_static_container_info->m_id = id;
+    m_static_container_info->m_type = CT_STATIC;
+    m_static_container_info->m_name = name;
+    m_static_container_info->m_image = image;
     std::string hostname;
     std::string port;
-    split_container_image(m_static_container_info.m_image,
+    split_container_image(m_static_container_info->m_image,
                                        hostname,
                                        port,
-                                       m_static_container_info.m_imagerepo,
-                                       m_static_container_info.m_imagetag,
-                                       m_static_container_info.m_imagedigest);
+                                       m_static_container_info->m_imagerepo,
+                                       m_static_container_info->m_imagetag,
+                                       m_static_container_info->m_imagedigest);
 }
 
 bool static_container::resolve(const std::string& cgroup, std::string& container_id) {
-    container_id = m_static_container_info.m_id;
+    container_id = m_static_container_info->m_id;
     return true;
 }
 
-container_info *static_container::to_container(const std::string& container_id) {
-    return &m_static_container_info;
+std::shared_ptr<container_info> static_container::to_container(const std::string& container_id) {
+    return m_static_container_info;
 }

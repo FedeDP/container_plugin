@@ -7,9 +7,12 @@
 - [x] implement initial proc parsing logic to attach container_id foreign key to existing threads leveraging capture listener API
 - [x] implement sinsp_filtercheck_k8s.cpp filterchecks: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.cpp#L364
 - [ ] rewrite container_info.cpp logic to parse the new json sent by coworker
-  - [ ] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
-  - [ ] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
+  - [x] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
+  - [x] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
   - [ ] somehow get rid of re2 usage in `mount_by_source` and `mount_by_dest` to drop the dep
+  - [ ] make sure that the new container json is exactly the same as the old one
+
+- [ ] implement init config key: `label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)`
 
 - [x] properly send json with all info from go-worker
   - [x] docker

@@ -9,8 +9,8 @@ public:
                      const std::string& image);
 
     bool resolve(const std::string& cgroup, std::string& container_id) override;
-    container_info *to_container(const std::string& container_id) override;
+    std::shared_ptr<container_info> to_container(const std::string& container_id) override;
 
 private:
-    container_info m_static_container_info;
+    std::shared_ptr<container_info> m_static_container_info;
 };

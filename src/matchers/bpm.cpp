@@ -1,4 +1,5 @@
 #include "bpm.h"
+#include <cstring>
 
 bool bpm::resolve(const std::string& cgroup, std::string& container_id) {
     //
@@ -24,9 +25,9 @@ bool bpm::resolve(const std::string& cgroup, std::string& container_id) {
     return false;
 }
 
-container_info *bpm::to_container(const std::string& container_id) {
-    static container_info ctr;
-    ctr.m_id = container_id;
-    ctr.m_type = CT_BPM;
-    return &ctr;
+std::shared_ptr<container_info> bpm::to_container(const std::string& container_id) {
+    auto ctr = std::make_shared<container_info>();
+    ctr->m_id = container_id;
+    ctr->m_type = CT_BPM;
+    return ctr;
 }

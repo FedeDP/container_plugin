@@ -31,14 +31,12 @@ target_compile_options(container PUBLIC "$<$<CONFIG:DEBUG>:-DDEBUG>")
 target_compile_features(container PUBLIC cxx_std_17)
 
 # TODO: use re2 not from system
-# TODO: use njson instead of jsoncpp, that is provided by falcosecurity-sdk
 find_package(PkgConfig)
 pkg_check_modules(RE2 REQUIRED re2)
-pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
 # project includes
 target_include_directories(
-        container PRIVATE ${PLUGIN_SDK_INCLUDE} ${SPDLOG_INCLUDE} ${RE2_INCLUDE_DIRS} ${JSONCPP_INCLUDE_DIRS} ${WORKER_INCLUDE})
+        container PRIVATE ${PLUGIN_SDK_INCLUDE} ${SPDLOG_INCLUDE} ${RE2_INCLUDE_DIRS} ${WORKER_INCLUDE})
 
 # project linked libraries
-target_link_libraries(container PRIVATE ${RE2_LIBRARIES} ${JSON_LIBRARIES} ${WORKER_LIB})
+target_link_libraries(container PRIVATE ${RE2_LIBRARIES} ${WORKER_LIB})
