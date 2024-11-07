@@ -35,11 +35,16 @@ func newDockerEngine(_ context.Context, socket string) (Engine, error) {
 func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) Info {
 	hostCfg := ctr.HostConfig
 	if hostCfg == nil {
-		hostCfg = &container.HostConfig{}
+		hostCfg = &container.HostConfig{
+			Resources: container.Resources{
+				CPUPeriod: defaultCpuPeriod,
+				CPUShares: defaultCpuShares,
+			},
+		}
 	}
-	mounts := make([]Mount, 0)
+	mounts := make([]mount, 0)
 	for _, m := range ctr.Mounts {
-		mounts = append(mounts, Mount{
+		mounts = append(mounts, mount{
 			Source:      m.Source,
 			Destination: m.Destination,
 			Mode:        m.Mode,
@@ -57,14 +62,14 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	if netCfg == nil {
 		netCfg = &types.NetworkSettings{}
 	}
-	portMappings := make([]PortMapping, 0)
+	portMappings := make([]portMapping, 0)
 	for port, portBindings := range netCfg.Ports {
 		if port.Proto() != "tcp" {
 			continue
 		}
 		containerPort := port.Int()
 		for _, portBinding := range portBindings {
-			portMappings = append(portMappings, PortMapping{
+			portMappings = append(portMappings, portMapping{
 				HostIp:        portBinding.HostIP,
 				HostPort:      portBinding.HostPort,
 				ContainerPort: containerPort,
@@ -147,6 +152,18 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 
 	createdTime, _ := time.Parse(time.RFC3339Nano, ctr.Created)
+
+	var (
+		cpuShares int64 = defaultCpuShares
+		cpuPeriod int64 = defaultCpuPeriod
+	)
+	if hostCfg.CPUShares > 0 {
+		cpuShares = hostCfg.CPUShares
+	}
+	if hostCfg.CPUPeriod > 0 {
+		cpuPeriod = hostCfg.CPUPeriod
+	}
+
 	return Info{
 		Container{
 			Type:           typeDocker.ToCTValue(),
@@ -158,9 +175,9 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 			ImageRepo:      imageRepo,
 			ImageTag:       imageTag,
 			User:           cfg.User,
-			CPUPeriod:      hostCfg.CPUPeriod,
+			CPUPeriod:      cpuPeriod,
 			CPUQuota:       hostCfg.CPUQuota,
-			CPUShares:      hostCfg.CPUShares,
+			CPUShares:      cpuShares,
 			CPUSetCPUCount: hostCfg.CPUCount,
 			CreatedTime:    createdTime.Unix(),
 			Env:            cfg.Env,

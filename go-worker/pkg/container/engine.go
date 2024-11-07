@@ -10,7 +10,13 @@ import (
 	"time"
 )
 
-const shortIDLength = 12
+const (
+	shortIDLength = 12
+	// Default values from
+	//https://github.com/falcosecurity/libs/blob/39c0e0dcb9d1d23e46b13f4963a9a7106db1f650/userspace/libsinsp/container_info.h#L218
+	defaultCpuPeriod = 100000
+	defaultCpuShares = 1024
+)
 
 type engineType string
 
@@ -75,13 +81,13 @@ func Generators(initCfg string) ([]EngineGenerator, error) {
 	return generators, nil
 }
 
-type PortMapping struct {
+type portMapping struct {
 	HostIp        string `json:"HostIp"`
 	HostPort      string `json:"HostPort"`
 	ContainerPort int    `json:"ContainerPort"`
 }
 
-type Mount struct {
+type mount struct {
 	Source      string `json:"Source"`
 	Destination string `json:"Destination"`
 	Mode        string `json:"Mode"`
@@ -89,7 +95,12 @@ type Mount struct {
 	Propagation string `json:"Propagation"`
 }
 
-// TODO add healtcheck/liveness/readiness probe related fields
+type probe struct {
+	Exe  string   `json:"exe"`
+	Args []string `json:"args"`
+}
+
+// TODO implement healtcheck/liveness/readiness probe related fields
 type Container struct {
 	Type             int               `json:"type"`
 	ID               string            `json:"id"`
@@ -119,8 +130,11 @@ type Container struct {
 	PodSandboxID     string            `json:"pod_sandbox_id"` // cri only
 	Privileged       bool              `json:"privileged"`
 	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"` // cri only
-	PortMappings     []PortMapping     `json:"port_mappings"`
-	Mounts           []Mount           `json:"Mounts"`
+	PortMappings     []portMapping     `json:"port_mappings"`
+	Mounts           []mount           `json:"Mounts"`
+	HealthcheckProbe *probe            `json:"Healthcheck,omitempty"`
+	LivenessProbe    *probe            `json:"LivenessProbe,omitempty"`
+	ReadinessProbe   *probe            `json:"ReadinessProbe,omitempty"`
 }
 
 // Info struct wraps Container because we need the `container` struct in the json for backward compatibility.

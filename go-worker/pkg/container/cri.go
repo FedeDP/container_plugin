@@ -70,9 +70,9 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	// Cpu related
 	var (
-		cpuPeriod   int64
+		cpuPeriod   int64 = defaultCpuPeriod
 		cpuQuota    int64
-		cpuShares   int64
+		cpuShares   int64 = defaultCpuShares
 		cpusetCount int64
 	)
 	// Memory related
@@ -90,7 +90,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		swapLimit = ctr.GetResources().GetLinux().MemorySwapLimitInBytes
 	}
 
-	mounts := make([]Mount, 0)
+	mounts := make([]mount, 0)
 	for _, m := range ctr.Mounts {
 		var propagation string
 		switch m.Propagation {
@@ -103,7 +103,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		default:
 			propagation = "unknown"
 		}
-		mounts = append(mounts, Mount{
+		mounts = append(mounts, mount{
 			Source:      m.HostPath,
 			Destination: m.ContainerPath,
 			RW:          !m.Readonly,

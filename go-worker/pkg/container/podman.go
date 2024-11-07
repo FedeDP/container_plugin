@@ -49,9 +49,9 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 	name = strings.TrimPrefix(ctr.Name, "/")
 	isPodSandbox = strings.Contains(name, "k8s_POD")
 
-	mounts := make([]Mount, 0)
+	mounts := make([]mount, 0)
 	for _, m := range ctr.Mounts {
-		mounts = append(mounts, Mount{
+		mounts = append(mounts, mount{
 			Source:      m.Source,
 			Destination: m.Destination,
 			Mode:        m.Mode,
@@ -60,7 +60,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		})
 	}
 
-	portMappings := make([]PortMapping, 0)
+	portMappings := make([]portMapping, 0)
 	for port, portBindings := range netCfg.Ports {
 		if !strings.Contains(port, "/tcp") {
 			continue
@@ -70,7 +70,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 			continue
 		}
 		for _, portBinding := range portBindings {
-			portMappings = append(portMappings, PortMapping{
+			portMappings = append(portMappings, portMapping{
 				HostIp:        portBinding.HostIP,
 				HostPort:      portBinding.HostPort,
 				ContainerPort: containerPort,
@@ -95,6 +95,17 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		}
 	}
 
+	var (
+		cpuShares int64 = defaultCpuShares
+		cpuPeriod int64 = defaultCpuPeriod
+	)
+	if hostCfg.CpuShares > 0 {
+		cpuShares = int64(hostCfg.CpuShares)
+	}
+	if hostCfg.CpuPeriod > 0 {
+		cpuPeriod = int64(hostCfg.CpuPeriod)
+	}
+
 	return Info{
 		Container{
 			Type:           typePodman.ToCTValue(),
@@ -106,9 +117,9 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 			ImageRepo:      imageRepo,
 			ImageTag:       imageTag,
 			User:           cfg.User,
-			CPUPeriod:      int64(hostCfg.CpuPeriod),
+			CPUPeriod:      cpuPeriod,
 			CPUQuota:       hostCfg.CpuQuota,
-			CPUShares:      int64(hostCfg.CpuShares),
+			CPUShares:      cpuShares,
 			CPUSetCPUCount: int64(hostCfg.CpuCount),
 			CreatedTime:    ctr.Created.Unix(),
 			Env:            cfg.Env,

@@ -44,9 +44,9 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 
 	// Cpu related
 	var (
-		cpuPeriod   uint64
+		cpuPeriod   uint64 = defaultCpuPeriod
 		cpuQuota    int64
-		cpuShares   uint64
+		cpuShares   uint64 = defaultCpuShares
 		cpusetCount int64
 	)
 	if spec.Linux != nil && spec.Linux.Resources != nil && spec.Linux.Resources.CPU != nil {
@@ -77,7 +77,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 
 	// Mounts related - TODO double check
-	mounts := make([]Mount, 0)
+	mounts := make([]mount, 0)
 	for _, m := range spec.Mounts {
 		readOnly := false
 		for _, path := range spec.Linux.ReadonlyPaths {
@@ -86,7 +86,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 				break
 			}
 		}
-		mounts = append(mounts, Mount{
+		mounts = append(mounts, mount{
 			Source:      m.Source,
 			Destination: m.Destination,
 			RW:          !readOnly,
