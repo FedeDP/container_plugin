@@ -9,8 +9,8 @@ import (
 /*
 #include <stdbool.h>
 typedef const char cchar_t;
-typedef void (*async_cb)(const char *json, bool added);
-void makeCallback(const char *json, bool added, async_cb cb);
+typedef void (*async_cb)(const char *json, bool added, int async_id);
+void makeCallback(const char *json, bool added, int async_id, async_cb cb);
 */
 import "C"
 
@@ -24,7 +24,7 @@ var (
 )
 
 //export StartWorker
-func StartWorker(cb C.async_cb, initCfg *C.cchar_t) bool {
+func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 	var ctx context.Context
 	ctx, ctxCancel = context.WithCancel(context.Background())
 
@@ -37,7 +37,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t) bool {
 		// a C-function to have it call the function pointer.
 		cstr := C.CString(containerJson)
 		cbool := C.bool(added)
-		C.makeCallback(cstr, cbool, cb)
+		C.makeCallback(cstr, cbool, asyncID, cb)
 	}
 
 	generators, err := container.Generators(C.GoString(initCfg))

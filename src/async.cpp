@@ -8,8 +8,7 @@
 
 using nlohmann::json;
 
-static std::unique_ptr<falcosecurity::async_event_handler> s_async_handler;
-static std::mutex s_async_handler_mutex;
+static std::unique_ptr<falcosecurity::async_event_handler> s_async_handler[ASYNC_HANDLER_MAX];
 
 std::vector<std::string> my_plugin::get_async_events() {
     return ASYNC_EVENT_NAMES;
@@ -19,7 +18,7 @@ std::vector<std::string> my_plugin::get_async_event_sources() {
     return ASYNC_EVENT_SOURCES;
 }
 
-void generate_async_event(const char *json, bool added) {
+void generate_async_event(const char *json, bool added, int async_type) {
     falcosecurity::events::asyncevent_e_encoder enc;
     enc.set_tid(1);
     std::string msg = json;
@@ -31,9 +30,8 @@ void generate_async_event(const char *json, bool added) {
     enc.set_data((void*)msg.c_str(), msg.size() + 1);
 
     // Here below we use the global static variable; make sure to avoid concurrent usages.
-    const std::lock_guard<std::mutex> lock(s_async_handler_mutex);
-    enc.encode(s_async_handler->writer());
-    s_async_handler->push();
+    enc.encode(s_async_handler[async_type]->writer());
+    s_async_handler[async_type]->push();
 }
 
 // Build the json object to be passed to the go-worker as init config.
@@ -78,11 +76,13 @@ void to_json(json& j, const PluginConfig& cfg)
 // `set_async_event_handler` plugin API will be called.
 bool my_plugin::start_async_events(
         std::shared_ptr<falcosecurity::async_event_handler_factory> f) {
-    s_async_handler = f->new_handler();
-    // Implemented by GO worker.go
+    for (int i = 0; i < ASYNC_HANDLER_MAX; i++) {
+        s_async_handler[i] = std::move(f->new_handler());
+    }
 
+    // Implemented by GO worker.go
     json j(m_cfg);
-    return StartWorker(generate_async_event, j.dump().c_str());
+    return StartWorker(generate_async_event, j.dump().c_str(), ASYNC_HANDLER_GO_WORKER);
 }
 
 // We need this API to stop the async thread when the
@@ -90,7 +90,6 @@ bool my_plugin::start_async_events(
 bool my_plugin::stop_async_events() noexcept {
     // Implemented by GO worker.go
     StopWorker();
-    s_async_handler.reset();
     return true;
 }
 

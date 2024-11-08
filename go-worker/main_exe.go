@@ -5,7 +5,7 @@ package main
 /*
 #include <stdio.h>
 #include <stdbool.h>
-void echo_cb(const char *json, bool added) {
+void echo_cb(const char *json, bool added, int async_id) {
 	printf("Added: %d, Json: %s\n", added, json);
 }
 */
@@ -56,7 +56,8 @@ func main() {
 	}
 	fmt.Println("Starting worker")
 	cstr := C.CString(initCfg)
-	if !StartWorker((*[0]byte)(C.echo_cb), cstr) {
+	asyncID := C.int(0)
+	if !StartWorker((*[0]byte)(C.echo_cb), cstr, asyncID) {
 		fmt.Println("Failed to start worker; nothing configured?")
 		os.Exit(1)
 	}

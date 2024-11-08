@@ -8,9 +8,9 @@ import (
 /*
 #include <stdbool.h>
 #include <stdlib.h>
-typedef void (*async_cb)(const char *json, bool added);
-extern void makeCallback(const char *json, bool added, async_cb cb) {
-	cb(json, added);
+typedef void (*async_cb)(const char *json, bool added, int async_id);
+extern void makeCallback(const char *json, bool added, int async_id, async_cb cb) {
+	cb(json, added, async_id);
 	free((void *)json);
 }
 */

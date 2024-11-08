@@ -21,7 +21,11 @@ limitations under the License.
 #include "matchers/matcher.h"
 #include <unordered_map>
 
-void generate_async_event(const char *json, bool added);
+#define ASYNC_HANDLER_DEFAULT 0
+#define ASYNC_HANDLER_GO_WORKER 1
+#define ASYNC_HANDLER_MAX 2
+
+void generate_async_event(const char *json, bool added, int async_type);
 
 struct SimpleEngine {
     bool enabled;

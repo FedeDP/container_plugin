@@ -364,7 +364,7 @@ bool my_plugin::parse_new_process_event(
         // since the engine has no listener SDK.
         // Just send the event now.
         nlohmann::json j(info);
-        generate_async_event(j.dump().c_str(), true);
+        generate_async_event(j.dump().c_str(), true, ASYNC_HANDLER_DEFAULT);
     }
     return true;
 }
