@@ -23,9 +23,6 @@ limitations under the License.
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
-// Regex to extract the container_id from cgroups
-#define RGX_CONTAINER "([0-9|a-f|A-F]){64}"
-
 #define HOST_CONTAINER_ID "host"
 
 // Sinsp events used in the plugin
@@ -46,4 +43,3 @@ constexpr auto PPME_SYSCALL_EXECVEAT_X = (_et)331;
 constexpr auto PPME_SYSCALL_CHROOT_X = (_et)267;
 
 #define SHORT_ID_LEN 12
-#define DEFAULT_LABEL_MAX_LEN 100

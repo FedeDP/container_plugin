@@ -76,9 +76,9 @@ The `container` plugin implements the following capabilities:
 * `capture listening` -> to attach `container_id` foreign key to all pre-existing threadinfos, once they have been scraped from procfs by sinsp 
 * `extraction` -> to extract `container.X` fields
 * `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork/execve events to attach `container_id` foreign key to any threads
-* `async` -> to generate events with container information
+* `async` -> to generate events with container information and `dump` current plugin cache state when requested
 
-It requires **3.9.0** plugin API version.
+It requires **3.10.0** plugin API version.
 
 ## Architecture
 

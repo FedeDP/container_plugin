@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../container_info.h"
+#include "../plugin_config.h"
 #include <list>
 
 class cgroup_matcher {
@@ -17,7 +18,7 @@ public:
 
 class matcher_manager {
 public:
-    matcher_manager(uint64_t container_engine_mask, const std::string& m_static_id = "", const std::string& m_static_name = "", const std::string& m_static_image = "");
+    matcher_manager(const PluginConfig& cfg);
 
     bool match_cgroup(const std::string& cgroup, std::string& container_id, std::shared_ptr<container_info>& ctr);
 

@@ -6,8 +6,6 @@
 // Async capability
 //////////////////////////
 
-using nlohmann::json;
-
 static std::unique_ptr<falcosecurity::async_event_handler> s_async_handler[ASYNC_HANDLER_MAX];
 
 std::vector<std::string> my_plugin::get_async_events() {
@@ -29,48 +27,9 @@ void generate_async_event(const char *json, bool added, int async_type) {
     }
     enc.set_data((void*)msg.c_str(), msg.size() + 1);
 
-    // Here below we use the global static variable; make sure to avoid concurrent usages.
     enc.encode(s_async_handler[async_type]->writer());
     s_async_handler[async_type]->push();
 }
-
-// Build the json object to be passed to the go-worker as init config.
-// See go-worker/engine.go::cfg struct for the format
-void to_json(json& j, const PluginConfig& cfg)
-{
-    j["label_max_len"] = cfg.label_max_len;
-    j["engines"] = json{
-            {
-                    "docker",
-                    {
-                            {"enabled", cfg.docker.enabled },
-                            {"sockets", cfg.docker.sockets }
-                    }
-            },
-            {
-                    "podman",
-                    {
-                            {"enabled", cfg.podman.enabled },
-                            {"sockets", cfg.podman.sockets }
-                    }
-            },
-            {
-                    "cri",
-                    {
-                            {"enabled", cfg.cri.enabled },
-                            {"sockets", cfg.cri.sockets }
-                    }
-            },
-            {
-                    "containerd",
-                    {
-                            {"enabled", cfg.containerd.enabled },
-                            {"sockets", cfg.containerd.sockets }
-                    }
-            }
-    };
-}
-
 
 // We need this API to start the async thread when the
 // `set_async_event_handler` plugin API will be called.
@@ -81,7 +40,7 @@ bool my_plugin::start_async_events(
     }
 
     // Implemented by GO worker.go
-    json j(m_cfg);
+    nlohmann::json j(m_cfg);
     return StartWorker(generate_async_event, j.dump().c_str(), ASYNC_HANDLER_GO_WORKER);
 }
 
@@ -91,6 +50,20 @@ bool my_plugin::stop_async_events() noexcept {
     // Implemented by GO worker.go
     StopWorker();
     return true;
+}
+
+void my_plugin::dump(std::unique_ptr<falcosecurity::async_event_handler> async_handler) {
+    for (const auto &container : m_containers) {
+        falcosecurity::events::asyncevent_e_encoder enc;
+        enc.set_tid(1);
+        nlohmann::json j(container.second);
+        std::string msg = j.dump();
+        enc.set_name(ASYNC_EVENT_NAME_ADDED);
+        enc.set_data((void*)msg.c_str(), msg.size() + 1);
+
+        enc.encode(async_handler->writer());
+        async_handler->push();
+    }
 }
 
 FALCOSECURITY_PLUGIN_ASYNC_EVENTS(my_plugin);

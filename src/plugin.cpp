@@ -16,11 +16,7 @@ limitations under the License.
 */
 
 #include "plugin.h"
-#include <filesystem>
-
-namespace fs = std::filesystem;
-
-using nlohmann::json;
+#include "plugin_config_schema.h"
 
 //////////////////////////
 // General plugin API
@@ -58,224 +54,8 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
     falcosecurity::init_schema init_schema;
     init_schema.schema_type =
             falcosecurity::init_schema_type::SS_PLUGIN_SCHEMA_JSON;
-    init_schema.schema = R"(
-{
-	"$schema": "http://json-schema.org/draft-04/schema#",
-	"required": [],
-	"properties": {
-		"verbosity": {
-			"enum": [
-				"trace",
-				"debug",
-				"info",
-				"warning",
-				"error",
-				"critical"
-			],
-			"title": "The plugin logging verbosity",
-			"description": "The verbosity that the plugin will use when printing logs."
-		},
-        "label_max_len": {
-            "type": "integer",
-            "title": "Max label length",
-            "description": "Labels exceeding this limit won't be reported."
-        }
-        "engines": {
-            "$ref": "#/definitions/Engines",
-            "title": "The plugin per-engine configuration",
-			"description": "Allows to disable/enable each engine and customize sockets where available."
-        }
-	},
-    "definitions": {
-        "Engines": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "docker": {
-                    "$ref": "#/definitions/SocketsContainer"
-                },
-                "podman": {
-                    "$ref": "#/definitions/SocketsContainer"
-                },
-                "containerd": {
-                    "$ref": "#/definitions/SocketsContainer"
-                },
-                "cri": {
-                    "$ref": "#/definitions/SocketsContainer"
-                },
-                "lxc": {
-                    "$ref": "#/definitions/SimpleContainer"
-                },
-                "libvirt_lxc": {
-                    "$ref": "#/definitions/SimpleContainer"
-                },
-                "bpm": {
-                    "$ref": "#/definitions/SimpleContainer"
-                },
-                "static": {
-                    "$ref": "#/definitions/StaticContainer"
-                }
-            },
-            "required": [
-                "bpm",
-                "containerd",
-                "cri",
-                "docker",
-                "libvirt_lxc",
-                "lxc",
-                "podman"
-            ],
-            "title": "Engines"
-        },
-        "nonEmptyString": {
-            "type": "string",
-            "minLength": 1
-        },
-        "SimpleContainer": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "enabled"
-            ],
-            "title": "SimpleContainer"
-        },
-        "SocketsContainer": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "sockets": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            },
-            "required": [
-                "enabled",
-                "sockets"
-            ],
-            "title": "SocketsContainer"
-        },
-        "StaticContainer": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "container_id": {
-                    "$ref": "#/definitions/nonEmptyString"
-                },
-                "container_name": {
-                    "$ref": "#/definitions/nonEmptyString"
-                },
-                "container_image": {
-                    "$ref": "#/definitions/nonEmptyString"
-                }
-            },
-            "required": [
-                "enabled",
-                "container_id",
-                "container_name",
-                "container_image"
-            ],
-            "title": "StaticContainer"
-        }
-    },
-	"additionalProperties": false,
-	"type": "object"
-})";
+    init_schema.schema = plugin_schema_string;
     return init_schema;
-}
-
-void from_json(const json& j, StaticEngine& engine) {
-    engine.enabled = j.value("enabled", false);
-    engine.name = j.value("container_name", "");
-    engine.id = j.value("container_id", "");
-    engine.image = j.value("container_image", "");
-}
-
-void from_json(const json& j, SimpleEngine& engine) {
-    engine.enabled = j.value("enabled", true);
-}
-
-void from_json(const json& j, SocketsEngine& engine) {
-    engine.enabled = j.value("enabled", true);
-    engine.sockets = j.value("sockets", std::vector<std::string>{});
-}
-
-void from_json(const json& j, PluginConfig& cfg) {
-    cfg.verbosity = j.value("verbosity", "info");
-    cfg.label_max_len = j.value("label_max_len", DEFAULT_LABEL_MAX_LEN);
-    cfg.bpm = j.value("bpm", SimpleEngine{});
-    cfg.lxc = j.value("lxc", SimpleEngine{});
-    cfg.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});
-    cfg.static_ctr = j.value("static", StaticEngine{});
-
-    cfg.docker = j.value("docker", SocketsEngine{});
-    if (cfg.docker.sockets.empty()) {
-        cfg.docker.sockets.emplace_back("/var/run/docker.sock");
-    }
-
-    cfg.podman = j.value("podman", SocketsEngine{});
-    if (cfg.podman.sockets.empty()) {
-        cfg.podman.sockets.emplace_back("/run/podman/podman.sock");
-        for (const auto & entry : fs::directory_iterator("/run/user")) {
-            if (entry.is_directory()) {
-                if (std::filesystem::exists(entry.path().string() + "/podman/podman.sock")) {
-                    cfg.podman.sockets.emplace_back(entry.path().string() + "/podman/podman.sock");
-                }
-            }
-        }
-    }
-
-    cfg.cri = j.value("cri", SocketsEngine{});
-    if (cfg.cri.sockets.empty()) {
-        cfg.cri.sockets.emplace_back("/run/crio/crio.sock");
-    }
-
-    cfg.containerd = j.value("containerd", SocketsEngine{});
-    if (cfg.containerd.sockets.empty()) {
-        cfg.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
-        cfg.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
-    }
-}
-
-uint64_t my_plugin::get_container_engine_mask() {
-    uint64_t container_mask = 0;
-    if (m_cfg.containerd.enabled) {
-        container_mask |= 1 << CT_CONTAINERD;
-    }
-    if (m_cfg.podman.enabled) {
-        container_mask |= 1 << CT_PODMAN;
-    }
-    if (m_cfg.cri.enabled) {
-        container_mask |= 1 << CT_CRI;
-    }
-    if (m_cfg.docker.enabled) {
-        container_mask |= 1 << CT_DOCKER;
-    }
-    if (m_cfg.lxc.enabled) {
-        container_mask |= 1 << CT_LXC;
-    }
-    if (m_cfg.libvirt_lxc.enabled) {
-        container_mask |= 1 << CT_LIBVIRT_LXC;
-    }
-    if (m_cfg.bpm.enabled) {
-        container_mask |= 1 << CT_BPM;
-    }
-    if (m_cfg.static_ctr.enabled) {
-        container_mask |= 1 << CT_STATIC;
-    }
-    return container_mask;
 }
 
 void my_plugin::parse_init_config(nlohmann::json& config_json) {
@@ -319,7 +99,7 @@ bool my_plugin::init(falcosecurity::init_input& in) {
                 "and may undergo changes in behavior without prioritizing "
                 "backward compatibility.");
 
-    m_mgr = std::make_unique<matcher_manager>(get_container_engine_mask());
+    m_mgr = std::make_unique<matcher_manager>(m_cfg);
 
     try {
         m_threads_table = t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);

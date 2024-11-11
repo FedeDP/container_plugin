@@ -17,7 +17,6 @@ limitations under the License.
 
 #include "plugin_only_consts.h"
 #include "shared_with_tests_consts.h"
-#include "container_info.h"
 #include "matchers/matcher.h"
 #include <unordered_map>
 
@@ -26,51 +25,6 @@ limitations under the License.
 #define ASYNC_HANDLER_MAX 2
 
 void generate_async_event(const char *json, bool added, int async_type);
-
-struct SimpleEngine {
-    bool enabled;
-
-    SimpleEngine() {
-        enabled = true;
-    }
-};
-
-struct SocketsEngine {
-    bool enabled;
-    std::vector<std::string> sockets;
-
-    SocketsEngine() {
-        enabled = true;
-    }
-};
-
-struct StaticEngine {
-    bool enabled;
-    std::string id;
-    std::string name;
-    std::string image;
-
-    StaticEngine() {
-        enabled = false;
-    }
-};
-
-struct PluginConfig {
-    std::string verbosity;
-    int label_max_len;
-    SimpleEngine bpm;
-    SimpleEngine lxc;
-    SimpleEngine libvirt_lxc;
-    SocketsEngine docker;
-    SocketsEngine podman;
-    SocketsEngine cri;
-    SocketsEngine containerd;
-    StaticEngine static_ctr;
-
-    PluginConfig() {
-        label_max_len = DEFAULT_LABEL_MAX_LEN;
-    }
-};
 
 class my_plugin
 {
@@ -89,7 +43,6 @@ public:
     std::string get_last_error();
     void destroy();
     falcosecurity::init_schema get_init_schema();
-    uint64_t get_container_engine_mask();
     void parse_init_config(nlohmann::json& config_json);
     bool init(falcosecurity::init_input& in);
     const std::vector<falcosecurity::metric>& get_metrics();
@@ -102,6 +55,7 @@ public:
     std::vector<std::string> get_async_event_sources();
     bool start_async_events(std::shared_ptr<falcosecurity::async_event_handler_factory> f);
     bool stop_async_events() noexcept;
+    void dump(std::unique_ptr<falcosecurity::async_event_handler> async_handler);
 
     //////////////////////////
     // Extract capability

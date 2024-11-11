@@ -7,7 +7,9 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
 #include "container_type.h"
+#include "plugin_only_consts.h"
 
 class container_port_mapping {
 public:
@@ -111,9 +113,9 @@ public:
     // static utilities to build a container_info
     static std::shared_ptr<container_info> host_container_info() {
         auto host_info = std::make_shared<container_info>();
-        host_info->m_id = "host";
-        host_info->m_full_id = "host";
-        host_info->m_name = "host";
+        host_info->m_id = HOST_CONTAINER_ID;
+        host_info->m_full_id = HOST_CONTAINER_ID;
+        host_info->m_name = HOST_CONTAINER_ID;
         return host_info;
     }
 
@@ -158,3 +160,14 @@ public:
      */
     int64_t m_created_time;
 };
+
+
+/* Nlhomann adapters (implemented by container_info_json.cpp) */
+void from_json(const nlohmann::json& j, container_health_probe& probe);
+void from_json(const nlohmann::json& j, container_mount_info& mount);
+void from_json(const nlohmann::json& j, container_port_mapping& port);
+void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo);
+
+void to_json(nlohmann::json& j, const container_mount_info& mount);
+void to_json(nlohmann::json& j, const container_port_mapping& port);
+void to_json(nlohmann::json& j, const std::shared_ptr<const container_info>& cinfo);
