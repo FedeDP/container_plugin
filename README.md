@@ -6,6 +6,7 @@
 - [x] attach also execve/execveat etc etc (basically check wherever `resolve_container` is used in current libs code)
 - [x] implement initial proc parsing logic to attach container_id foreign key to existing threads leveraging capture listener API
 - [x] implement sinsp_filtercheck_k8s.cpp filterchecks: https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.cpp#L364
+  - [ ] implement deprecated fields too? https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/sinsp_filtercheck_k8s.h#L36
 - [x] rewrite container_info.cpp logic to parse the new json sent by coworker
   - [x] Drop jsoncpp dep and use nlohmann since it is already in use by the plugin-sdk-cpp
   - [x] just implement `to_json` and `from_json` on the class (like `PluginConfig`)
@@ -44,16 +45,25 @@ that just returns "n/a", "", "host": since default Falco rules use container fie
 
 ### Libs
 
-- [ ] remove all container-related code from sinsp to be able to inject the plugin
-  - [ ] `sinsp_network_interfaces::is_ipv4addr_in_local_machine()` uses container_manager. Used by sinsp_filtercheck_fd to determine if local socket
-  - [ ] `sinsp_usergroup_manager::subscribe_container_mgr()` has a listener on container removed
-  - [ ] `sinsp_dumper::open()` calls `m_container_manager.dump_containers()` -> need new API to dump plugin state
-  - [ ] `sinsp_filter_check_user::extract_single()` needs container to return `user.name` field as set by container metadata.
+**Remove all container-related code from sinsp to be able to inject the plugin**
+
+- [x] Dump related
+  - [x] `sinsp_dumper::open()` calls `m_container_manager.dump_containers()` -> need new API to dump plugin state (see https://github.com/falcosecurity/libs/pull/2152)
+  - [x] plugin must also be able to pre-parse all `PPME_CONTAINER(_JSON)_E` and `PPME_ASYNCEVENT_E` at capture open (see https://github.com/falcosecurity/libs/pull/2152)
+
+- [ ] User group manager related:
+  - [ ] `sinsp_usergroup_manager::subscribe_container_mgr()` has a listener on container removed/added -> possible fix: parse `ASYNCEVENT("container_{added,removed}") instead
   - [ ] multiple parsers use `m_container_id` field to refresh tinfo user/loginuser/group information
-  - [ ] plugin must also be able to pre-parse all `PPME_CONTAINER(_JSON)_E` and `PPME_ASYNCEVENT_E` at capture open
-  - [ ] `sinsp_threadinfo::compute_program_hash()` uses container_id
   - [ ] `sinsp_threadinfo::set_{user/group/loginuser}()` use container_id
-- [ ] all Libs container-related tests? Will need to run sinsp with the external plugin!
+  - [ ] `sinsp_filter_check_user::extract_single()` needs container_id to return `user.name` field
+  - [ ] fix for all of the above: keep container_id in threadinfo but fill it from the container, or add a small threadinfo method `get_container_id` that uses libsinsp state table API to retrieve it.
+
+- [ ] Others
+  - [ ] `sinsp_threadinfo::compute_program_hash()` uses container_id -> expose `m_program_hash` and `m_program_hash_scripts` from libs and compute the hash in the plugin? Or better still, just add the fields from the plugin like we do for container_id
+  - [ ] `sinsp_network_interfaces::is_ipv4addr_in_local_machine()` uses container_manager. Used by sinsp_filtercheck_fd to determine if local socket... ???
+
+- [ ] Tests
+  - [ ] all Libs container-related tests? Will need to run sinsp with the external plugin!
 
 ## Experimental
 
