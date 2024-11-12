@@ -56,7 +56,7 @@ that just returns "n/a", "", "host": since default Falco rules use container fie
   - [ ] multiple parsers use `m_container_id` field to refresh tinfo user/loginuser/group information
   - [ ] `sinsp_threadinfo::set_{user/group/loginuser}()` use container_id
   - [ ] `sinsp_filter_check_user::extract_single()` needs container_id to return `user.name` field
-  - [ ] fix for all of the above: keep container_id in threadinfo but fill it from the container, or add a small threadinfo method `get_container_id` that uses libsinsp state table API to retrieve it.
+  - [ ] fix for all of the above: keep container_id in threadinfo but fill it from the plugin, or add a small threadinfo method `get_container_id` that uses libsinsp state table API to retrieve it.
 
 - [ ] Others
   - [ ] `sinsp_threadinfo::compute_program_hash()` uses container_id -> expose `m_program_hash` and `m_program_hash_scripts` from libs and compute the hash in the plugin? Or better still, just add the fields from the plugin like we do for container_id
@@ -64,6 +64,7 @@ that just returns "n/a", "", "host": since default Falco rules use container fie
 
 - [ ] Tests
   - [ ] all Libs container-related tests? Will need to run sinsp with the external plugin!
+  - [ ] we will need to run sinsp-example with plugins -> extend it! (for testing purposes and for e2e test framework by Mauro)
 
 ## Experimental
 
