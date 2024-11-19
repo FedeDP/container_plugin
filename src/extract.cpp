@@ -34,6 +34,8 @@ enum ContainerFields {
     TYPE_CONTAINER_HOST_PID,
     TYPE_CONTAINER_HOST_NETWORK,
     TYPE_CONTAINER_HOST_IPC,
+    TYPE_CONTAINER_LABEL,
+    TYPE_CONTAINER_LABELS,
     TYPE_K8S_POD_NAME,
     TYPE_K8S_NS_NAME,
     TYPE_K8S_POD_ID,
@@ -44,6 +46,26 @@ enum ContainerFields {
     TYPE_K8S_POD_LABELS,
     TYPE_K8S_POD_IP,
     TYPE_K8S_POD_CNIRESULT,
+    // below fields are all deprecated
+    TYPE_K8S_RC_NAME,
+    TYPE_K8S_RC_ID,
+    TYPE_K8S_RC_LABEL,
+    TYPE_K8S_RC_LABELS,
+    TYPE_K8S_SVC_NAME,
+    TYPE_K8S_SVC_ID,
+    TYPE_K8S_SVC_LABEL,
+    TYPE_K8S_SVC_LABELS,
+    TYPE_K8S_NS_ID,
+    TYPE_K8S_NS_LABEL,
+    TYPE_K8S_NS_LABELS,
+    TYPE_K8S_RS_NAME,
+    TYPE_K8S_RS_ID,
+    TYPE_K8S_RS_LABEL,
+    TYPE_K8S_RS_LABELS,
+    TYPE_K8S_DEPLOYMENT_NAME,
+    TYPE_K8S_DEPLOYMENT_ID,
+    TYPE_K8S_DEPLOYMENT_LABEL,
+    TYPE_K8S_DEPLOYMENT_LABELS,
     TYPE_CONTAINER_FIELD_MAX
 };
 
@@ -172,6 +194,10 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "'true' if the container is running in the host network namespace, 'false' otherwise."},
             {ft::FTYPE_BOOL, PLUGIN_NAME  ".host_ipc", "Host IPC Namespace",
                     "'true' if the container is running in the host IPC namespace, 'false' otherwise."},
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".label", "Container Label",
+                    "Container label. E.g. 'container.label.foo'.", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, PLUGIN_NAME  ".labels", "Container Labels",
+                    "Container comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
             {ft::FTYPE_STRING, "k8s.pod.name", "Pod Name",
                     "The Kubernetes pod name. This field is extracted from the container runtime socket "
                     "simultaneously as we look up the 'container.*' fields. In cases of lookup delays, it may "
@@ -234,6 +260,46 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "(multi-interface support). This field is extracted from the container runtime socket "
                     "simultaneously as we look up the 'container.*' fields. In cases of lookup delays, it may "
                     "not be available yet."},
+            {ft::FTYPE_STRING, "k8s.rc.name", "[Deprecated] Replication Controller Name",
+                    "Kubernetes replication controller name."},
+            {ft::FTYPE_STRING, "k8s.rc.id", "[Deprecated] Replication Controller ID",
+                    "Kubernetes replication controller id."},
+            {ft::FTYPE_STRING, "k8s.rc.label", "[Deprecated] Replication Controller Label",
+                    "Kubernetes replication controller label. E.g. 'k8s.rc.label.foo'.", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, "k8s.rc.labels", "[Deprecated] Replication Controller Labels",
+                    "Kubernetes replication controller comma-separated key/value labels. E.g. "
+                    "'foo1:bar1,foo2:bar2'."},
+            {ft::FTYPE_STRING, "k8s.svc.name", "[Deprecated] Service Name",
+                    "Kubernetes service name (can return more than one value, concatenated)."},
+            {ft::FTYPE_STRING, "k8s.svc.id", "[Deprecated] Service ID",
+                    "Kubernetes service id (can return more than one value, concatenated)."},
+            {ft::FTYPE_STRING, "k8s.svc.label", "[Deprecated] Service Label",
+                    "Kubernetes service label. E.g. 'k8s.svc.label.foo' (can return more than one value, "
+                    "concatenated).", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, "k8s.svc.labels", "[Deprecated] Service Labels",
+                    "Kubernetes service comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
+            {ft::FTYPE_STRING, "k8s.ns.id", "[Deprecated] Namespace ID",
+                    "Kubernetes namespace id."},
+            {ft::FTYPE_STRING, "k8s.ns.label", "[Deprecated] Namespace Label",
+                    "Kubernetes namespace label. E.g. 'k8s.ns.label.foo'.", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, "k8s.ns.labels", "[Deprecated] Namespace Labels",
+                    "Kubernetes namespace comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
+            {ft::FTYPE_STRING, "k8s.rs.name", "[Deprecated] Replica Set Name",
+                    "Kubernetes replica set name."},
+            {ft::FTYPE_STRING, "k8s.rs.id", "[Deprecated] Replica Set ID",
+                    "Kubernetes replica set id."},
+            {ft::FTYPE_STRING, "k8s.rs.label", "[Deprecated] Replica Set Label",
+                    "Kubernetes replica set label. E.g. 'k8s.rs.label.foo'.", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, "k8s.rs.labels", "[Deprecated] Replica Set Labels",
+                    "Kubernetes replica set comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
+            {ft::FTYPE_STRING, "k8s.deployment.name", "[Deprecated] Deployment Name",
+                    "Kubernetes deployment name."},
+            {ft::FTYPE_STRING, "k8s.deployment.id", "[Deprecated] Deployment ID",
+                    "Kubernetes deployment id."},
+            {ft::FTYPE_STRING, "k8s.deployment.label", "[Deprecated] Deployment Label",
+                    "Kubernetes deployment label. E.g. 'k8s.rs.label.foo'.", falcosecurity::field_arg()},
+            {ft::FTYPE_STRING, "k8s.deployment.labels", "[Deprecated] Deployment Labels",
+                    "Kubernetes deployment comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
     };
     const int fields_size = sizeof(fields) / sizeof(fields[0]);
     static_assert(fields_size == TYPE_CONTAINER_FIELD_MAX, "Wrong number of container fields.");
@@ -448,6 +514,19 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         case TYPE_CONTAINER_HOST_IPC:
             req.set_value(cinfo->m_host_ipc);
             break;
+        case TYPE_CONTAINER_LABEL: {
+            auto arg_key = req.get_arg_key();
+            if (cinfo->m_labels.count(arg_key) > 0) {
+                req.set_value(cinfo->m_labels.at(arg_key));
+            }
+            break;
+        }
+        case TYPE_CONTAINER_LABELS: {
+            std::string labels;
+            concatenate_container_labels(cinfo->m_labels, &labels);
+            req.set_value(labels);
+            break;
+        }
         case TYPE_K8S_POD_NAME:
             if (cinfo->m_labels.count("io.kubernetes.pod.name") > 0) {
                 req.set_value(cinfo->m_labels.at("io.kubernetes.pod.name"));
@@ -477,30 +556,30 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         }
         case TYPE_K8S_POD_LABEL:
         case TYPE_K8S_POD_LABELS: {
+            std::shared_ptr<const container_info> sandbox_container_info;
             if (cinfo->m_pod_sandbox_cniresult.empty()) {
+                // Fallback: Retrieve PodSandboxStatusResponse fields stored in explicit pod sandbox container
                 auto sandbox_id = cinfo->m_pod_sandbox_id.substr(0, SHORT_ID_LEN);
                 if (m_containers.count(sandbox_id) > 0) {
-                    auto &sandbox_container_info = m_containers[sandbox_id];
-                    if (field_id == TYPE_K8S_POD_LABEL) {
-                        auto arg_key = req.get_arg_key();
-                        req.set_value(sandbox_container_info->m_pod_sandbox_labels.at(arg_key));
-                    } else {
-                        std::string labels;
-                        concatenate_container_labels(sandbox_container_info->m_pod_sandbox_labels, &labels);
-                        req.set_value(labels);
-                    }
+                    sandbox_container_info = m_containers[sandbox_id];
                 }
-            } else {
                 if (field_id == TYPE_K8S_POD_LABEL) {
                     auto arg_key = req.get_arg_key();
-                    req.set_value(cinfo->m_pod_sandbox_labels.at(arg_key));
+                    if (sandbox_container_info && sandbox_container_info->m_pod_sandbox_labels.count(arg_key) > 0) {
+                        req.set_value(sandbox_container_info->m_pod_sandbox_labels.at(arg_key));
+                    } else if (cinfo->m_pod_sandbox_labels.count(arg_key) > 0) {
+                        req.set_value(cinfo->m_pod_sandbox_labels.at(arg_key));
+                    }
                 } else {
                     std::string labels;
-                    concatenate_container_labels(cinfo->m_pod_sandbox_labels, &labels);
+                    if (sandbox_container_info) {
+                        concatenate_container_labels(sandbox_container_info->m_pod_sandbox_labels, &labels);
+                    } else {
+                        concatenate_container_labels(cinfo->m_pod_sandbox_labels, &labels);
+                    }
                     req.set_value(labels);
                 }
             }
-
             break;
         }
         case TYPE_K8S_POD_IP:
@@ -524,6 +603,27 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             } else {
                 req.set_value(cinfo->m_pod_sandbox_cniresult);
             }
+            break;
+        case TYPE_K8S_RC_NAME:
+        case TYPE_K8S_RC_ID:
+        case TYPE_K8S_RC_LABEL:
+        case TYPE_K8S_RC_LABELS:
+        case TYPE_K8S_SVC_NAME:
+        case TYPE_K8S_SVC_ID:
+        case TYPE_K8S_SVC_LABEL:
+        case TYPE_K8S_SVC_LABELS:
+        case TYPE_K8S_NS_ID:
+        case TYPE_K8S_NS_LABEL:
+        case TYPE_K8S_NS_LABELS:
+        case TYPE_K8S_RS_NAME:
+        case TYPE_K8S_RS_ID:
+        case TYPE_K8S_RS_LABEL:
+        case TYPE_K8S_RS_LABELS:
+        case TYPE_K8S_DEPLOYMENT_NAME:
+        case TYPE_K8S_DEPLOYMENT_ID:
+        case TYPE_K8S_DEPLOYMENT_LABEL:
+        case TYPE_K8S_DEPLOYMENT_LABELS:
+            // Deprecated fields don't extract anything
             break;
         default:
             SPDLOG_ERROR(
