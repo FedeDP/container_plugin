@@ -14,10 +14,13 @@
   - [x] make sure that the new container json is exactly the same as the old one
   - [x] implement healthprobes logic
   - [ ] reimplement `sinsp_container_manager::identify_category()` : https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L488
+  - [ ] expose plugin containers cache as sinsp state API table
 
 - [x] implement new init config key: `label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)`
 
 - [x] implement container.labels[] support
+
+- [ ] improve logging
 
 - [x] properly send json with all info from go-worker
   - [x] docker
@@ -28,6 +31,7 @@
   - [ ] fix remaining TODOs
   - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early :/
   - [ ] send healthprobe related infos
+  - [ ] add tests (leverage https://testcontainers.com/?language=go?)
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
