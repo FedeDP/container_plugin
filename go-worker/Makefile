@@ -10,3 +10,8 @@ exe:
 
 clean:
 	rm -rf worker libworker.a libworker.h
+
+.PHONY: test
+test:
+	go clean -testcache
+	GOEXPERIMENT=loopvar go test -v -cover -race ./...

@@ -163,6 +163,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	if hostCfg.CPUPeriod > 0 {
 		cpuPeriod = hostCfg.CPUPeriod
 	}
+	cpusetCount := countCPUSet(hostCfg.CpusetCpus)
 
 	return Info{
 		Container{
@@ -178,7 +179,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 			CPUPeriod:      cpuPeriod,
 			CPUQuota:       hostCfg.CPUQuota,
 			CPUShares:      cpuShares,
-			CPUSetCPUCount: hostCfg.CPUCount,
+			CPUSetCPUCount: cpusetCount,
 			CreatedTime:    createdTime.Unix(),
 			Env:            cfg.Env,
 			FullID:         ctr.ID,

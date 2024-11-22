@@ -233,6 +233,9 @@ func nanoSecondsToUnix(ns int64) int64 {
 // 1-4,7-10,12 -> 4 + 4 + 1 -> 9
 func countCPUSet(cpuSet string) int64 {
 	var counter int64
+	if cpuSet == "" {
+		return counter
+	}
 	cpusetParts := strings.Split(cpuSet, ",")
 	for _, cpusetPart := range cpusetParts {
 		cpuSetDash := strings.Split(cpusetPart, "-")

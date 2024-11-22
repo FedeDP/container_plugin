@@ -105,6 +105,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 	if hostCfg.CpuPeriod > 0 {
 		cpuPeriod = int64(hostCfg.CpuPeriod)
 	}
+	cpusetCount := countCPUSet(hostCfg.CpusetCpus)
 
 	return Info{
 		Container{
@@ -120,7 +121,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 			CPUPeriod:      cpuPeriod,
 			CPUQuota:       hostCfg.CpuQuota,
 			CPUShares:      cpuShares,
-			CPUSetCPUCount: int64(hostCfg.CpuCount),
+			CPUSetCPUCount: cpusetCount,
 			CreatedTime:    ctr.Created.Unix(),
 			Env:            cfg.Env,
 			FullID:         ctr.ID,

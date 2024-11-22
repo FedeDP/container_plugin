@@ -80,7 +80,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		memoryLimit int64
 		swapLimit   int64
 	)
-	if ctr.GetResources() != nil && ctr.GetResources().GetLinux() != nil {
+	if ctr.GetResources().GetLinux() != nil {
 		cpuPeriod = ctr.GetResources().GetLinux().CpuPeriod
 		cpuQuota = ctr.GetResources().GetLinux().CpuQuota
 		cpuShares = ctr.GetResources().GetLinux().CpuShares
