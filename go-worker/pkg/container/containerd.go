@@ -50,13 +50,13 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		cpusetCount int64
 	)
 	if spec.Linux != nil && spec.Linux.Resources != nil && spec.Linux.Resources.CPU != nil {
-		if spec.Linux.Resources.CPU.Period != nil {
+		if spec.Linux.Resources.CPU.Period != nil && *spec.Linux.Resources.CPU.Period > 0 {
 			cpuPeriod = *spec.Linux.Resources.CPU.Period
 		}
 		if spec.Linux.Resources.CPU.Quota != nil {
 			cpuQuota = *spec.Linux.Resources.CPU.Quota
 		}
-		if spec.Linux.Resources.CPU.Shares != nil {
+		if spec.Linux.Resources.CPU.Shares != nil && *spec.Linux.Resources.CPU.Shares > 0 {
 			cpuShares = *spec.Linux.Resources.CPU.Shares
 		}
 		cpusetCount = countCPUSet(spec.Linux.Resources.CPU.Cpus)
@@ -100,15 +100,17 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		hostPID     bool
 		hostNetwork bool
 	)
-	for _, ns := range spec.Linux.Namespaces {
-		if ns.Type == specs.PIDNamespace {
-			hostPID = ns.Path == "host"
-		}
-		if ns.Type == specs.NetworkNamespace {
-			hostNetwork = ns.Path == "host"
-		}
-		if ns.Type == specs.IPCNamespace {
-			hostIPC = ns.Path == "host"
+	if spec.Linux != nil {
+		for _, ns := range spec.Linux.Namespaces {
+			if ns.Type == specs.PIDNamespace {
+				hostPID = ns.Path == "host"
+			}
+			if ns.Type == specs.NetworkNamespace {
+				hostNetwork = ns.Path == "host"
+			}
+			if ns.Type == specs.IPCNamespace {
+				hostIPC = ns.Path == "host"
+			}
 		}
 	}
 
@@ -167,7 +169,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 			MemoryLimit:      memoryLimit,
 			SwapLimit:        swapLimit,
 			PodSandboxID:     info.SandboxID,
-			Privileged:       !spec.Process.NoNewPrivileges, // FIXME wrong val
+			Privileged:       false, // TODO implement
 			PodSandboxLabels: podSandboxLabels,
 			Mounts:           mounts,
 		},

@@ -31,7 +31,7 @@
   - [ ] fix remaining TODOs
   - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early :/
   - [ ] send healthprobe related infos
-  - [ ] add tests (leverage https://testcontainers.com/?language=go?)
+  - [x] add tests
 
 - [x] implement correct logic to extract container_id for each container_engine like we do in current sinsp impl
   - [x] implement container runtimes that only use the container id/type, like rkt,bpm,libvirt,lxc, in the C++ side since we don't have a listener API
@@ -39,7 +39,7 @@
 
 - [x] parameterize `get_fields` fields to allow to change PLUGIN_NAME for testing purposes
 
-- [ ] fixup CRI `GetContainerEvents()` (not sending any event) ??
+- [x] fixup CRI `GetContainerEvents()` (not sending any event) ??
 
 ### Falco
 

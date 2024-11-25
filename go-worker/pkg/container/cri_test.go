@@ -97,7 +97,7 @@ func TestCRI(t *testing.T) {
 	const crioSocket = "/run/containerd/containerd.sock"
 	client, err := remote.NewRemoteRuntimeService(crioSocket, 5*time.Second, nil, nil)
 	if err != nil {
-		t.Skip("CRI socket " + crioSocket + " mandatory to run cri tests")
+		t.Skip("Socket " + crioSocket + " mandatory to run cri tests")
 	}
 
 	engine, err := newCriEngine(context.Background(), crioSocket)
@@ -201,6 +201,20 @@ func TestCRI(t *testing.T) {
 	assert.NoError(t, err)
 
 	// receive the "remove" event
-	event := <-listCh
-	assert.Equal(t, expectedEvent, event)
+	expectedEvent = Event{
+		Info: Info{Container{
+			Type:        typeContainerd.ToCTValue(),
+			ID:          ctr[:shortIDLength],
+			FullID:      ctr,
+			CreatedTime: expectedEvent.CreatedTime,
+		}},
+		IsCreate: false,
+	}
+	for {
+		event := <-listCh
+		if event.IsCreate == false {
+			assert.Equal(t, expectedEvent, event)
+			break
+		}
+	}
 }
