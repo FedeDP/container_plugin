@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -93,7 +94,7 @@ func TestCRIFake(t *testing.T) {
 }
 
 func TestCRI(t *testing.T) {
-	const crioSocket = "/run/crio/crio.sock"
+	const crioSocket = "/run/containerd/containerd.sock"
 	client, err := remote.NewRemoteRuntimeService(crioSocket, 5*time.Second, nil, nil)
 	if err != nil {
 		t.Skip("CRI socket " + crioSocket + " mandatory to run cri tests")
@@ -102,7 +103,27 @@ func TestCRI(t *testing.T) {
 	engine, err := newCriEngine(context.Background(), crioSocket)
 	assert.NoError(t, err)
 
-	ctr, err := client.CreateContainer(context.Background(), "test_sandbox", &v1.ContainerConfig{
+	id := uuid.New()
+	podSandboxConfig := &v1.PodSandboxConfig{
+		Metadata: &v1.PodSandboxMetadata{
+			Name:      "test",
+			Uid:       id.String(),
+			Namespace: "default",
+			Attempt:   0,
+		},
+	}
+	sandboxName, err := client.RunPodSandbox(context.Background(), podSandboxConfig, "")
+	assert.NoError(t, err)
+
+	// Pull image
+	imageClient, err := remote.NewRemoteImageService(crioSocket, 20*time.Second, nil, nil)
+	assert.NoError(t, err)
+	_, err = imageClient.PullImage(context.Background(), &v1.ImageSpec{
+		Image: "alpine:3.20.3",
+	}, nil, podSandboxConfig)
+	assert.NoError(t, err)
+
+	ctr, err := client.CreateContainer(context.Background(), sandboxName, &v1.ContainerConfig{
 		Metadata: &v1.ContainerMetadata{
 			Name:    "test_container",
 			Attempt: 0,
@@ -121,10 +142,10 @@ func TestCRI(t *testing.T) {
 				CpusetCpus: "1-3",
 			},
 			SecurityContext: &v1.LinuxContainerSecurityContext{
-				Privileged: true,
+				Privileged: false,
 			},
 		},
-	}, nil)
+	}, podSandboxConfig)
 	assert.NoError(t, err)
 
 	events, err := engine.List(context.Background())
@@ -132,52 +153,54 @@ func TestCRI(t *testing.T) {
 
 	expectedEvent := Event{
 		Info: Info{Container{
-			Type:             typeCri.ToCTValue(),
-			ID:               "test_sandbox",
+			Type:             typeContainerd.ToCTValue(),
+			ID:               ctr[:shortIDLength],
 			Name:             "test_container",
-			Image:            "alpine:3.20.3",
-			ImageDigest:      "alpine:3.20.3",
+			Image:            "docker.io/library/alpine:3.20.3",
+			ImageDigest:      "docker.io/library/alpine@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
 			User:             "&ContainerUser{Linux:nil,}",
 			CPUPeriod:        defaultCpuPeriod,
 			CPUQuota:         2000,
 			CPUShares:        defaultCpuShares,
 			CPUSetCPUCount:   3,
 			Env:              nil, // TODO
-			FullID:           "test_sandbox_test_container_0",
-			Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": "test_sandbox_test_container_0"},
-			PodSandboxID:     "test_sandbox_test_container_0",
+			FullID:           ctr,
+			Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": sandboxName, "io.kubernetes.pod.name": "test", "io.kubernetes.pod.namespace": "default", "io.kubernetes.pod.uid": id.String()},
+			PodSandboxID:     sandboxName,
 			Privileged:       false, // TODO
 			PodSandboxLabels: map[string]string{},
 			Mounts:           []mount{},
+			IsPodSandbox:     true,
 		}},
 		IsCreate: true,
 	}
 
-	// We don't have this before creation
 	found := false
 	for _, event := range events {
 		if event.FullID == ctr {
 			found = true
-			// We don't have this before creation
+			// We don't have these before creation
 			expectedEvent.CreatedTime = event.CreatedTime
+			expectedEvent.Ip = event.Ip
 			assert.Equal(t, expectedEvent, event)
 		}
 	}
 	assert.True(t, found)
 
 	// Now try the listen API
-	// fakeruntime.GetContainerEvents() returns nil. Cannot be tested rn.
-	/*cancelCtx, cancel := context.WithCancel(context.Background())
+	cancelCtx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
+
 	listCh, err := engine.Listen(cancelCtx)
 	assert.NoError(t, err)
 
-	_, err = fakeRuntime.RemoveContainer(context.Background(), &v1.RemoveContainerRequest{
-		ContainerId: "test_sandbox_test_container_0",
-	})
+	err = client.RemoveContainer(context.Background(), "test_sandbox_test_container_0")
+	assert.NoError(t, err)
+
+	err = client.RemovePodSandbox(context.Background(), sandboxName)
 	assert.NoError(t, err)
 
 	// receive the "remove" event
 	event := <-listCh
-	assert.Equal(t, nil, event)*/
+	assert.Equal(t, expectedEvent, event)
 }
