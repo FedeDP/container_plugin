@@ -26,14 +26,14 @@ func main() {
 		  "containerd":{
 			 "enabled":true,
 			 "sockets":[
-				"/run/containerd/containerd.sock"
+				"/run/containerd/containerd.sock",
 				"/run/k3s/containerd/containerd.sock"
 			 ]
 		  },
 		  "cri":{
 			 "enabled":true,
 			 "sockets":[
-				"/run/crio/crio.sock",
+				"/run/crio/crio.sock"
 			 ]
 		  },
 		  "docker":{
