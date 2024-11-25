@@ -99,6 +99,8 @@ It requires **3.10.0** plugin API version.
 
 ## Architecture
 
+![](./architecture.svg)
+
 The `container` plugin is split into 2 modules:
 * a [C++ shared object](src) that implements the 3 capabilities and holds the cache map `<container_id,container_info>`
 * a [GO static library](go-worker) (linked inside the C++ shared object) that implements the worker logic to retrieve new containers' metadata leveraging existing SDKs
@@ -106,7 +108,7 @@ The `container` plugin is split into 2 modules:
 As soon as the plugin starts, the go-worker gets started as part of the `async` capability, passing to it plugin init config and a C++ callback to generate async events. 
 Whenever the GO worker finds a new container, it immediately generates an `async` event through the aforementioned callback.
 The `async` event is then received by the C++ side as part of the `parsing` capability, and it enriches its own internal state cache.
-Every time a clone/fork/execve event gets parsed, we attach to its thread table entry the information about the container_id, extracted through a regex by looking at the `cgroups` field, in a foreign key.
+Every time a clone/fork/execve event gets parsed, we attach to its thread table entry the information about the container_id, extracted by looking at the `cgroups` field, in a foreign key.
 Once the extraction is requested for a thread, the container_id is then used as key to access our plugin's internal container metadata cache, and the requested infos extracted.
 
 Note, however, that for some container engines, namely `{bpm,lxc,libvirt_lcx}`, we only support fetching generic info, ie: the container ID and the container type.  
