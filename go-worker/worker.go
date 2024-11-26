@@ -11,7 +11,6 @@ import (
 typedef void (*async_cb)(const char *json, bool added, int async_id);
 extern void makeCallback(const char *json, bool added, int async_id, async_cb cb) {
 	cb(json, added, async_id);
-	free((void *)json);
 }
 */
 import "C"

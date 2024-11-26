@@ -8,6 +8,8 @@ require (
 	github.com/containerd/typeurl/v2 v2.2.0
 	github.com/containers/podman/v5 v5.2.5
 	github.com/docker/docker v27.3.1+incompatible
+	github.com/falcosecurity/plugin-sdk-go v0.7.4
+	github.com/google/uuid v1.6.0
 	github.com/opencontainers/runtime-spec v1.2.0
 	github.com/stretchr/testify v1.9.0
 	k8s.io/cri-api v0.32.0-alpha.0
@@ -81,7 +83,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-containerregistry v0.20.1 // indirect
 	github.com/google/go-intervals v0.0.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect

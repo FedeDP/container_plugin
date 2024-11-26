@@ -4,6 +4,7 @@ import "C"
 import (
 	"github.com/FedeDP/container-worker/pkg/container"
 	"sync"
+	"unsafe"
 )
 
 /*
@@ -16,11 +17,13 @@ import "C"
 
 import (
 	"context"
+	"github.com/falcosecurity/plugin-sdk-go/pkg/ptr"
 )
 
 var (
-	wg        sync.WaitGroup
-	ctxCancel context.CancelFunc
+	wg           sync.WaitGroup
+	ctxCancel    context.CancelFunc
+	stringBuffer ptr.StringBuffer
 )
 
 //export StartWorker
@@ -33,14 +36,15 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 		if containerJson == "" {
 			return
 		}
-		// Go cannot call C-function pointers.. Instead, use
+		// Go cannot call C-function pointers. Instead, use
 		// a C-function to have it call the function pointer.
-		cstr := C.CString(containerJson)
+		stringBuffer.Write(containerJson)
 		cbool := C.bool(added)
-		C.makeCallback(cstr, cbool, asyncID, cb)
+		cStr := (*C.char)(stringBuffer.CharPtr())
+		C.makeCallback(cStr, cbool, asyncID, cb)
 	}
 
-	generators, err := container.Generators(C.GoString(initCfg))
+	generators, err := container.Generators(ptr.GoString(unsafe.Pointer(initCfg)))
 	if err != nil {
 		return false
 	}
@@ -77,4 +81,5 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 func StopWorker() {
 	ctxCancel()
 	wg.Wait()
+	stringBuffer.Free()
 }
