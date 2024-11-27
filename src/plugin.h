@@ -26,6 +26,14 @@ limitations under the License.
 
 void generate_async_event(const char *json, bool added, int async_type);
 
+enum command_category {
+    CAT_NONE = 0,
+    CAT_CONTAINER,
+    CAT_HEALTHCHECK,
+    CAT_LIVENESS_PROBE,
+    CAT_READINESS_PROBE
+};
+
 class my_plugin
 {
 public:
@@ -89,6 +97,9 @@ public:
     std::string compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
                                                 const falcosecurity::table_reader& tr,
                                                 std::shared_ptr<container_info>& info);
+    void write_thread_category(const falcosecurity::table_entry& thread_entry,
+                               const falcosecurity::table_reader& tr,
+                               const falcosecurity::table_writer& tw);
 
 private:
     // State table
@@ -106,6 +117,12 @@ private:
     falcosecurity::table m_threads_table;
     // Accessors to the thread table "pidns_init_start_ts" field
     falcosecurity::table_field m_threads_field_pidns_init_start_ts;
+    // Accessors to the thread table "category" field
+    falcosecurity::table_field m_threads_field_category;
+    // Accessors to the thread table "vpid" field
+    falcosecurity::table_field m_threads_field_vpid;
+    // Accessors to the thread table "ptid" field
+    falcosecurity::table_field m_threads_field_ptid;
     // Accessors to the thread table "cgroups" table
     falcosecurity::table_field m_threads_field_cgroups;
     // Accessors to the thread table "cgroups" "second" field, ie: the cgroups path

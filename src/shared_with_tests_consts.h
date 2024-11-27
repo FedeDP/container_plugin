@@ -73,6 +73,9 @@ limitations under the License.
 #define CGROUP_SECOND_FIELD_NAME "second"
 #define CONTAINER_ID_FIELD_NAME "container_id"
 #define PIDNS_INIT_START_TS_FIELD_NAME "pidns_init_start_ts"
+#define CATEGORY_FIELD_NAME "category"
+#define VPID_FIELD_NAME "vpid"
+#define PTID_FIELD_NAME "ptid"
 
 /////////////////////////
 // Metrics

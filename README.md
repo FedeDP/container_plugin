@@ -49,66 +49,69 @@ Given that there is no "listener" SDK to attach to, for these engines the `async
 ### Supported Fields
 
 <!-- README-PLUGIN-FIELDS -->
-| NAME                          | TYPE      | ARG                  | DESCRIPTION                                |
-|-------------------------------|-----------|----------------------|--------------------------------------------|
-| `container.id`                | `string`  | None                 | Container ID (first 12B).                  |
-| `container.full_id`           | `string`  | None                 | Container ID.                              |
-| `container.name`              | `string`  | None                 | Container name.                            |
-| `container.image`             | `string`  | None                 | Image name.                                |
-| `container.image.id`          | `string`  | None                 | Image ID.                                  |
-| `container.type`              | `string`  | None                 | Type.                                      |
-| `container.privileged`        | `bool`    | None                 | Privileged.                                |
-| `container.mounts`            | `string`  | None                 | Mounts.                                    |
-| `container.mount`             | `string`  | Idx or Key, Required | Mount.                                     |
-| `container.mount.source`      | `string`  | Idx or Key, Required | Mount Source.                              |
-| `container.mount.dest`        | `string`  | Idx or Key, Required | Mount Destination.                         |
-| `container.mount.mode`        | `string`  | Idx or Key, Required | Mount Mode.                                |
-| `container.mount.rdwr`        | `string`  | Idx or Key, Required | Mount Read/Write.                          |
-| `container.mount.propagation` | `string`  | Idx or Key, Required | Mount Propagation.                         |
-| `container.image.repository`  | `string`  | None                 | Repository.                                |
-| `container.image.tag`         | `string`  | None                 | Image Tag.                                 |
-| `container.image.digest`      | `string`  | None                 | Registry Digest.                           |
-| `container.healthcheck`       | `string`  | None                 | Health Check.                              |
-| `container.liveness_probe`    | `string`  | None                 | Liveness.                                  |
-| `container.readiness_probe`   | `string`  | None                 | Readiness.                                 |
-| `container.start_ts`          | `abstime` | None                 | Container start.                           |
-| `container.duration`          | `reltime` | None                 | Container duration.                        |
-| `container.ip`                | `string`  | None                 | Container IP.                              |
-| `container.cni.json`          | `string`  | None                 | Container's / pod's CNI result json.       |
-| `container.host_pid`          | `bool`    | None                 | Host PID Namespace.                        |
-| `container.host_network`      | `bool`    | None                 | Host Network Namespace.                    |
-| `container.host_ipc`          | `bool`    | None                 | Host IPC Namespace.                        |
-| `container.label`             | `string`  | Key, Required        | Container Label                            |
-| `container.labels`            | `string`  | None                 | Container Labels                           |
-| `k8s.pod.name`                | `string`  | None                 | Pod Name                                   |
-| `k8s.ns.name`                 | `string`  | None                 | Namespace Name                             |
-| `k8s.pod.id`                  | `string`  | None                 | Legacy Pod ID                              |
-| `k8s.pod.uid`                 | `string`  | None                 | Pod UID                                    |
-| `k8s.pod.sandbox_id`          | `string`  | None                 | Pod / Sandbox ID (first 12 chars)          |
-| `k8s.pod.full_sandbox_id`     | `string`  | None                 | Pod / Sandbox ID                           |
-| `k8s.pod.label`               | `string`  | Key, Required        | Pod Label                                  |
-| `k8s.pod.labels`              | `string`  | None                 | Pod Labels                                 |
-| `k8s.pod.ip`                  | `string`  | None                 | Pod Ip                                     |
-| `k8s.pod.cni.json`            | `string`  | None                 | Pod CNI result json                        |
-| `k8s.rc.name`                 | `string`  | None                 | [Deprecated] Replication Controller Name   |
-| `k8s.rc.id`                   | `string`  | None                 | [Deprecated] Replication Controller ID     |
-| `k8s.rc.label`                | `string`  | Key, Required        | [Deprecated] Replication Controller Label  |
-| `k8s.rc.labels`               | `string`  | None                 | [Deprecated] Replication Controller Labels |
-| `k8s.svc.name`                | `string`  | None                 | [Deprecated] Service Name                  |
-| `k8s.svc.id`                  | `string`  | None                 | [Deprecated] Service ID                    |
-| `k8s.svc.label`               | `string`  | Key, Required        | [Deprecated] Service Label                 |
-| `k8s.svc.labels`              | `string`  | None                 | [Deprecated] Service Labels                |
-| `k8s.ns.id`                   | `string`  | None                 | [Deprecated] Namespace ID                  |
-| `k8s.ns.label`                | `string`  | Key, Required        | [Deprecated] Namespace Label               |
-| `k8s.ns.labels`               | `string`  | None                 | [Deprecated] Namespace Labels              |
-| `k8s.rs.name`                 | `string`  | None                 | [Deprecated] Replica Set Name              |
-| `k8s.rs.id`                   | `string`  | None                 | [Deprecated] Replica Set ID                |
-| `k8s.rs.label`                | `string`  | Key, Required        | [Deprecated] Replica Set Label             |
-| `k8s.rs.labels`               | `string`  | None                 | [Deprecated] Replica Set Labels            |
-| `k8s.deployment.name`         | `string`  | None                 | [Deprecated] Deployment Name               |
-| `k8s.deployment.id`           | `string`  | None                 | [Deprecated] Deployment ID                 |
-| `k8s.deployment.label`        | `string`  | Key, Required        | [Deprecated] Deployment Label              |
-| `k8s.deployment.labels`       | `string`  | None                 | [Deprecated] Deployment Labels             |
+| NAME                                | TYPE      | ARG                  | DESCRIPTION                                |
+|-------------------------------------|-----------|----------------------|--------------------------------------------|
+| `container.id`                      | `string`  | None                 | Container ID (first 12B).                  |
+| `container.full_id`                 | `string`  | None                 | Container ID.                              |
+| `container.name`                    | `string`  | None                 | Container name.                            |
+| `container.image`                   | `string`  | None                 | Image name.                                |
+| `container.image.id`                | `string`  | None                 | Image ID.                                  |
+| `container.type`                    | `string`  | None                 | Type.                                      |
+| `container.privileged`              | `bool`    | None                 | Privileged.                                |
+| `container.mounts`                  | `string`  | None                 | Mounts.                                    |
+| `container.mount`                   | `string`  | Idx or Key, Required | Mount.                                     |
+| `container.mount.source`            | `string`  | Idx or Key, Required | Mount Source.                              |
+| `container.mount.dest`              | `string`  | Idx or Key, Required | Mount Destination.                         |
+| `container.mount.mode`              | `string`  | Idx or Key, Required | Mount Mode.                                |
+| `container.mount.rdwr`              | `string`  | Idx or Key, Required | Mount Read/Write.                          |
+| `container.mount.propagation`       | `string`  | Idx or Key, Required | Mount Propagation.                         |
+| `container.image.repository`        | `string`  | None                 | Repository.                                |
+| `container.image.tag`               | `string`  | None                 | Image Tag.                                 |
+| `container.image.digest`            | `string`  | None                 | Registry Digest.                           |
+| `container.healthcheck`             | `string`  | None                 | Health Check.                              |
+| `container.liveness_probe`          | `string`  | None                 | Liveness.                                  |
+| `container.readiness_probe`         | `string`  | None                 | Readiness.                                 |
+| `container.start_ts`                | `abstime` | None                 | Container start.                           |
+| `container.duration`                | `reltime` | None                 | Container duration.                        |
+| `container.ip`                      | `string`  | None                 | Container IP.                              |
+| `container.cni.json`                | `string`  | None                 | Container's / pod's CNI result json.       |
+| `container.host_pid`                | `bool`    | None                 | Host PID Namespace.                        |
+| `container.host_network`            | `bool`    | None                 | Host Network Namespace.                    |
+| `container.host_ipc`                | `bool`    | None                 | Host IPC Namespace.                        |
+| `container.label`                   | `string`  | Key, Required        | Container Label                            |
+| `container.labels`                  | `string`  | None                 | Container Labels                           |
+| `proc.is_container_healthcheck`     | `bool`    | None                 | Process Is Container Healthcheck.          |
+| `proc.is_container_liveness_probe`  | `bool`    | None                 | Process Is Container Liveness.             |
+| `proc.is_container_readiness_probe` | `bool`    | None                 | Process Is Container Readiness.            |
+| `k8s.pod.name`                      | `string`  | None                 | Pod Name                                   |
+| `k8s.ns.name`                       | `string`  | None                 | Namespace Name                             |
+| `k8s.pod.id`                        | `string`  | None                 | Legacy Pod ID                              |
+| `k8s.pod.uid`                       | `string`  | None                 | Pod UID                                    |
+| `k8s.pod.sandbox_id`                | `string`  | None                 | Pod / Sandbox ID (first 12 chars)          |
+| `k8s.pod.full_sandbox_id`           | `string`  | None                 | Pod / Sandbox ID                           |
+| `k8s.pod.label`                     | `string`  | Key, Required        | Pod Label                                  |
+| `k8s.pod.labels`                    | `string`  | None                 | Pod Labels                                 |
+| `k8s.pod.ip`                        | `string`  | None                 | Pod Ip                                     |
+| `k8s.pod.cni.json`                  | `string`  | None                 | Pod CNI result json                        |
+| `k8s.rc.name`                       | `string`  | None                 | [Deprecated] Replication Controller Name   |
+| `k8s.rc.id`                         | `string`  | None                 | [Deprecated] Replication Controller ID     |
+| `k8s.rc.label`                      | `string`  | Key, Required        | [Deprecated] Replication Controller Label  |
+| `k8s.rc.labels`                     | `string`  | None                 | [Deprecated] Replication Controller Labels |
+| `k8s.svc.name`                      | `string`  | None                 | [Deprecated] Service Name                  |
+| `k8s.svc.id`                        | `string`  | None                 | [Deprecated] Service ID                    |
+| `k8s.svc.label`                     | `string`  | Key, Required        | [Deprecated] Service Label                 |
+| `k8s.svc.labels`                    | `string`  | None                 | [Deprecated] Service Labels                |
+| `k8s.ns.id`                         | `string`  | None                 | [Deprecated] Namespace ID                  |
+| `k8s.ns.label`                      | `string`  | Key, Required        | [Deprecated] Namespace Label               |
+| `k8s.ns.labels`                     | `string`  | None                 | [Deprecated] Namespace Labels              |
+| `k8s.rs.name`                       | `string`  | None                 | [Deprecated] Replica Set Name              |
+| `k8s.rs.id`                         | `string`  | None                 | [Deprecated] Replica Set ID                |
+| `k8s.rs.label`                      | `string`  | Key, Required        | [Deprecated] Replica Set Label             |
+| `k8s.rs.labels`                     | `string`  | None                 | [Deprecated] Replica Set Labels            |
+| `k8s.deployment.name`               | `string`  | None                 | [Deprecated] Deployment Name               |
+| `k8s.deployment.id`                 | `string`  | None                 | [Deprecated] Deployment ID                 |
+| `k8s.deployment.label`              | `string`  | Key, Required        | [Deprecated] Deployment Label              |
+| `k8s.deployment.labels`             | `string`  | None                 | [Deprecated] Deployment Labels             |
  
 <!-- /README-PLUGIN-FIELDS -->
 
