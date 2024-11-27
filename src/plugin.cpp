@@ -104,13 +104,19 @@ bool my_plugin::init(falcosecurity::init_input& in) {
     try {
         m_threads_table = t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);
 
+        // pidns_init_start_ts used by TYPE_CONTAINER_START_TS and TYPE_CONTAINER_DURATION extractors
         m_threads_field_pidns_init_start_ts = m_threads_table.get_field(
                 t.fields(), PIDNS_INIT_START_TS_FIELD_NAME, st::SS_PLUGIN_ST_UINT64);
+
+        // vpid and ptid are used to attach the category field to the thread entry
+        m_threads_field_vpid = m_threads_table.get_field(
+                t.fields(), VPID_FIELD_NAME, st::SS_PLUGIN_ST_INT64);
+        m_threads_field_ptid = m_threads_table.get_field(
+                t.fields(), PTID_FIELD_NAME, st::SS_PLUGIN_ST_INT64);
 
         // get the 'cgroups' field accessor from the thread table
         m_threads_field_cgroups = m_threads_table.get_field(
                 t.fields(), CGROUPS_TABLE_NAME, st::SS_PLUGIN_ST_TABLE);
-
         // get the 'second' field accessor from the cgroups table
         m_cgroups_field_second = t.get_subtable_field(
                 m_threads_table, m_threads_field_cgroups, "second",
@@ -119,6 +125,11 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         // Add the container_id field into thread table
         m_container_id_field = m_threads_table.add_field(
                 t.fields(), CONTAINER_ID_FIELD_NAME, st::SS_PLUGIN_ST_STRING);
+
+        // Add the category field into thread table
+        m_threads_field_category = m_threads_table.add_field(
+                t.fields(), CATEGORY_FIELD_NAME, st::SS_PLUGIN_ST_UINT16);
+
     } catch(falcosecurity::plugin_exception e) {
         m_lasterr = "cannot add the '" + std::string(CONTAINER_ID_FIELD_NAME) +
                     "' field into the '" + std::string(THREAD_TABLE_NAME) +

@@ -11,8 +11,11 @@
     - [ ] somehow get rid of re2 usage in `mount_by_source` and `mount_by_dest` to drop the dep
     - [x] make sure that the new container json is exactly the same as the old one
     - [x] implement healthprobes logic
-    - [ ] reimplement `sinsp_container_manager::identify_category()` : https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L488
+    - [x] reimplement `sinsp_container_manager::identify_category()` : https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L488
+    - [ ] finish implementing identify_category logic
+    - [x] implement TYPE_IS_CONTAINER_HEALTHCHECK, TYPE_IS_CONTAINER_LIVENESS_PROBE, TYPE_IS_CONTAINER_READINESS_PROBE extractors and make `theadinfo::m_category` a foreign key
     - [ ] expose plugin containers cache as sinsp state API table
+    - [ ] `threadinfo::m_parent_loop_detected`?? 
 
 - [x] implement new init config key: `label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)`
 

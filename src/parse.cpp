@@ -158,6 +158,69 @@ std::string my_plugin::compute_container_id_for_thread(const falcosecurity::tabl
     return container_id;
 }
 
+// Same logic as https://github.com/falcosecurity/libs/blob/a99a36573f59c0e25965b36f8fa4ae1b10c5d45c/userspace/libsinsp/container.cpp#L438
+void my_plugin::write_thread_category(const falcosecurity::table_entry& thread_entry,
+                                      const falcosecurity::table_reader& tr,
+                                      const falcosecurity::table_writer& tw) {
+    int64_t vpid;
+    m_threads_field_vpid.read_value(tr, thread_entry, vpid);
+    if (vpid == 1) {
+        uint16_t category = CAT_CONTAINER;
+        m_threads_field_category.write_value(tw, thread_entry, category);
+        return;
+    }
+
+    int64_t ptid;
+    m_threads_field_ptid.read_value(tr, thread_entry, ptid);
+    try {
+        auto parent_entry = m_threads_table.get_entry(tr, ptid);
+        uint16_t parent_category;
+        m_threads_field_category.read_value(tr, parent_entry, parent_category);
+        if (parent_category != CAT_NONE) {
+            m_threads_field_category.write_value(tw, thread_entry, parent_category);
+            return;
+        }
+    } catch (falcosecurity::plugin_exception &ex) {
+        // nothing
+        SPDLOG_DEBUG("no parent thread found");
+    }
+
+    bool found_container_init = false;
+    while (!found_container_init) {
+        try {
+            // Move to parent
+            auto entry = m_threads_table.get_entry(tr, ptid);
+
+            // Read vpid and container_id for parent
+            int64_t vpid;
+            std::string container_id;
+            m_threads_field_vpid.read_value(tr, entry, vpid);
+            m_container_id_field.read_value(tr, entry, container_id);
+
+            if (vpid == 1 && container_id != HOST_CONTAINER_ID) {
+                found_container_init = true;
+            } else {
+                // update ptid for next iteration
+                m_threads_field_ptid.read_value(tr, entry, ptid);
+            }
+        } catch (falcosecurity::plugin_exception &ex) {
+            // end of loop
+            break;
+        }
+    }
+    if (!found_container_init) {
+        // TODO: match health probe
+        // cinfo->match_health_probe(tinfo);
+        // switch (ptype) ...
+        return;
+    }
+
+
+    // Default value if anything else failed.
+    uint16_t category = CAT_NONE;
+    m_threads_field_category.write_value(tw, thread_entry, category);
+}
+
 bool my_plugin::parse_new_process_event(
         const falcosecurity::parse_event_input& in) {
     // get tid
@@ -192,6 +255,12 @@ bool my_plugin::parse_new_process_event(
         nlohmann::json j(info);
         generate_async_event(j.dump().c_str(), true, ASYNC_HANDLER_DEFAULT);
     }
+
+    // Write thread category field
+    if (container_id != HOST_CONTAINER_ID) {
+        write_thread_category(thread_entry, tr, tw);
+    }
+
     return true;
 }
 
