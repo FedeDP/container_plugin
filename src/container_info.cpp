@@ -70,7 +70,7 @@ const container_mount_info *container_info::mount_by_dest(
     return NULL;
 }
 
-// TODO reimplement in go
+// TODO reimplement in go, needed by identify_category
 /*container_health_probe::probe_type container_info::match_health_probe(
         sinsp_threadinfo *tinfo) const {
 

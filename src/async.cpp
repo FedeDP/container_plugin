@@ -40,6 +40,7 @@ bool my_plugin::start_async_events(
     }
 
     // Implemented by GO worker.go
+    SPDLOG_DEBUG("starting async go-worker");
     nlohmann::json j(m_cfg);
     return StartWorker(generate_async_event, j.dump().c_str(), ASYNC_HANDLER_GO_WORKER);
 }
@@ -47,12 +48,14 @@ bool my_plugin::start_async_events(
 // We need this API to stop the async thread when the
 // `set_async_event_handler` plugin API will be called.
 bool my_plugin::stop_async_events() noexcept {
+    SPDLOG_DEBUG("stopping async go-worker");
     // Implemented by GO worker.go
     StopWorker();
     return true;
 }
 
 void my_plugin::dump(std::unique_ptr<falcosecurity::async_event_handler> async_handler) {
+    SPDLOG_DEBUG("dumping plugin internal state: {} containers", m_containers.size());
     for (const auto &container : m_containers) {
         falcosecurity::events::asyncevent_e_encoder enc;
         enc.set_tid(1);

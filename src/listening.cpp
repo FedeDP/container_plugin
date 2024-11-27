@@ -5,6 +5,7 @@
 //////////////////////////
 
 bool my_plugin::capture_open(const falcosecurity::capture_listen_input& in) {
+    SPDLOG_DEBUG("enriching initial thread table entries");
     auto& tr = in.get_table_reader();
     auto& tw = in.get_table_writer();
     m_threads_table.iterate_entries(
