@@ -10,8 +10,9 @@
 - [x] use vcpkg for spdlog too
 - [x] build go-worker in the cmake module
 
+- [ ] support container engines "hotplug", ie: container engine that gets started as soon as its socket becomes available
+
 - [ ] expose plugin containers cache as sinsp state API table; needed by `sinsp_network_interfaces::is_ipv4addr_in_local_machine()` :/
-  - [ ] support ipv6 addresses for containers to improve [`sinsp_network_interfaces::is_ipv6addr_in_local_machine`](https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/ifinfo.cpp#L326)?
 
 - [ ] properly send json with all info from go-worker
     - [ ] fix remaining TODOs
