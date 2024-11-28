@@ -22,7 +22,7 @@ func TestContainerd(t *testing.T) {
 	const containerdSocket = "/run/containerd/containerd.sock"
 	client, err := containerd.New(containerdSocket)
 	if err != nil {
-		t.Skip("Socket " + containerdSocket + " mandatory to run containerd tests")
+		t.Skip("Socket "+containerdSocket+" mandatory to run containerd tests:", err.Error())
 	}
 
 	engine, err := newContainerdEngine(context.Background(), containerdSocket)

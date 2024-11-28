@@ -14,7 +14,7 @@ func TestDocker(t *testing.T) {
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv,
 		client.WithAPIVersionNegotiation())
 	if err != nil {
-		t.Skip("Socket " + client.DefaultDockerHost + " mandatory to run docker tests")
+		t.Skip("Socket "+client.DefaultDockerHost+" mandatory to run docker tests:", err.Error())
 	}
 
 	engine, err := newDockerEngine(context.Background(), client.DefaultDockerHost)
