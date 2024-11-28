@@ -1,0 +1,26 @@
+name: CI build
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go-worker/go.mod
+
+      - name: Build plugin library
+        run: make libcontainer.so
+
+      - name: Run go-worker tests
+        run: make C go-worker test
