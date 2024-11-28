@@ -94,13 +94,13 @@ func TestCRIFake(t *testing.T) {
 }
 
 func TestCRI(t *testing.T) {
-	const crioSocket = "/run/containerd/containerd.sock"
-	client, err := remote.NewRemoteRuntimeService(crioSocket, 5*time.Second, nil, nil)
+	const criSocket = "/run/containerd/containerd.sock"
+	client, err := remote.NewRemoteRuntimeService(criSocket, 5*time.Second, nil, nil)
 	if err != nil {
-		t.Skip("Socket " + crioSocket + " mandatory to run cri tests")
+		t.Skip("Socket "+criSocket+" mandatory to run cri tests:", err.Error())
 	}
 
-	engine, err := newCriEngine(context.Background(), crioSocket)
+	engine, err := newCriEngine(context.Background(), criSocket)
 	assert.NoError(t, err)
 
 	id := uuid.New()
@@ -116,7 +116,7 @@ func TestCRI(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Pull image
-	imageClient, err := remote.NewRemoteImageService(crioSocket, 20*time.Second, nil, nil)
+	imageClient, err := remote.NewRemoteImageService(criSocket, 20*time.Second, nil, nil)
 	assert.NoError(t, err)
 	imageSpec := &v1.ImageSpec{
 		Image: "alpine:3.20.3",

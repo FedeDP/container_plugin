@@ -26,7 +26,7 @@ func TestPodman(t *testing.T) {
 
 	podmanCtx, err := bindings.NewConnection(context.Background(), enforceUnixProtocolIfEmpty(podmanSocket))
 	if err != nil {
-		t.Skip("Socket " + podmanSocket + " mandatory to run podman tests")
+		t.Skip("Socket "+podmanSocket+" mandatory to run podman tests:", err.Error())
 	}
 
 	if _, err = images.GetImage(podmanCtx, "alpine:3.20.3", nil); err != nil {
