@@ -31,8 +31,10 @@ func TestContainerd(t *testing.T) {
 	namespacedCtx := namespaces.WithNamespace(context.Background(), "test_ns")
 
 	// Pull image
-	_, err = client.Pull(namespacedCtx, "docker.io/library/alpine:3.20.3")
-	assert.NoError(t, err)
+	if _, err = client.GetImage(namespacedCtx, "docker.io/library/alpine:3.20.3"); err != nil {
+		_, err = client.Pull(namespacedCtx, "docker.io/library/alpine:3.20.3")
+		assert.NoError(t, err)
+	}
 
 	id := uuid.New()
 	var cpuQuota int64 = 2000
@@ -69,7 +71,7 @@ func TestContainerd(t *testing.T) {
 			CPUPeriod:        defaultCpuPeriod,
 			CPUQuota:         cpuQuota,
 			CPUShares:        defaultCpuShares,
-			CPUSetCPUCount:   2, // 0-1
+			CPUSetCPUCount:   2,   // 0-1
 			Env:              nil, // TODO
 			FullID:           ctr.ID(),
 			Labels:           map[string]string{},

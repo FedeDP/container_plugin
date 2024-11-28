@@ -118,10 +118,13 @@ func TestCRI(t *testing.T) {
 	// Pull image
 	imageClient, err := remote.NewRemoteImageService(crioSocket, 20*time.Second, nil, nil)
 	assert.NoError(t, err)
-	_, err = imageClient.PullImage(context.Background(), &v1.ImageSpec{
+	imageSpec := &v1.ImageSpec{
 		Image: "alpine:3.20.3",
-	}, nil, podSandboxConfig)
-	assert.NoError(t, err)
+	}
+	if _, err = imageClient.ImageStatus(context.Background(), imageSpec, false); err != nil {
+		_, err = imageClient.PullImage(context.Background(), imageSpec, nil, podSandboxConfig)
+		assert.NoError(t, err)
+	}
 
 	ctr, err := client.CreateContainer(context.Background(), sandboxName, &v1.ContainerConfig{
 		Metadata: &v1.ContainerMetadata{

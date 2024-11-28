@@ -29,8 +29,10 @@ func TestPodman(t *testing.T) {
 		t.Skip("Socket " + podmanSocket + " mandatory to run podman tests")
 	}
 
-	_, err = images.Pull(podmanCtx, "alpine:3.20.3", nil)
-	assert.NoError(t, err)
+	if _, err = images.GetImage(podmanCtx, "alpine:3.20.3", nil); err != nil {
+		_, err = images.Pull(podmanCtx, "alpine:3.20.3", nil)
+		assert.NoError(t, err)
+	}
 
 	engine, err := newPodmanEngine(context.Background(), podmanSocket)
 	assert.NoError(t, err)
