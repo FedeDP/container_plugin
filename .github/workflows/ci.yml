@@ -44,4 +44,4 @@ jobs:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
       - name: Run go-worker tests
-        run: make C go-worker test
+        run: make -C go-worker test
