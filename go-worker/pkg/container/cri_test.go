@@ -214,7 +214,7 @@ func TestCRI(t *testing.T) {
 		IsCreate: false,
 	}
 	for {
-		event := <-listCh
+		event := waitOnChannelOrTimeout(t, listCh)
 		if event.IsCreate == false {
 			assert.Equal(t, expectedEvent, event)
 			break

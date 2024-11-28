@@ -116,6 +116,6 @@ func TestContainerd(t *testing.T) {
 	}
 
 	// receive the "remove" event
-	event := <-listCh
+	event := waitOnChannelOrTimeout(t, listCh)
 	assert.Equal(t, expectedEvent, event)
 }

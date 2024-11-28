@@ -11,7 +11,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os/user"
 	"testing"
+	"time"
 )
+
+func waitOnChannelOrTimeout(t *testing.T, ch <-chan Event) Event {
+	select {
+	case ret := <-ch:
+		return ret
+	case <-time.After(5 * time.Second):
+		t.Error("timed out waiting for channel")
+	}
+	return Event{}
+}
 
 func TestPodman(t *testing.T) {
 	usr, err := user.Current()
@@ -121,6 +132,6 @@ func TestPodman(t *testing.T) {
 		}},
 		IsCreate: false,
 	}
-	event := <-listCh
+	event := waitOnChannelOrTimeout(t, listCh)
 	assert.Equal(t, expectedEvent, event)
 }

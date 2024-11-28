@@ -101,6 +101,6 @@ func TestDocker(t *testing.T) {
 		IsCreate: false,
 	}
 
-	event := <-listCh
+	event := waitOnChannelOrTimeout(t, listCh)
 	assert.Equal(t, expectedEvent, event)
 }
