@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
 
+# Checks if any concurrent jobs under the same pull request or branch are being executed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: 'ubuntu-latest'
@@ -25,7 +30,7 @@ jobs:
       # Needed by containerd go package
       - name: Install deps
         run:
-          sudo apt-get install -y --no-install-recommends libbtrfs-dev build-essential
+          sudo apt-get install -y --no-install-recommends libbtrfs-dev
 
       - name: Setup Go
         uses: actions/setup-go@v4
