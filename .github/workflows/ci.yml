@@ -8,6 +8,14 @@ jobs:
   build-and-test:
     runs-on: 'ubuntu-latest'
     steps:
+      # Needed by vcpkg caching
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -27,6 +35,8 @@ jobs:
 
       - name: Build plugin library
         run: make libcontainer.so
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
       - name: Run go-worker tests
         run: make C go-worker test
