@@ -44,7 +44,7 @@ target_compile_options(container PUBLIC "$<$<CONFIG:DEBUG>:-DDEBUG>")
 target_compile_features(container PUBLIC cxx_std_17)
 
 # project includes
-target_include_directories(container PRIVATE ${PLUGIN_SDK_INCLUDE} ${WORKER_INCLUDE})
+target_include_directories(container PRIVATE ${PLUGIN_SDK_INCLUDE} ${PLUGIN_SDK_DEPS_INCLUDE} ${WORKER_INCLUDE})
 
 # project linked libraries
 target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 ${WORKER_LIB})
