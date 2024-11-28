@@ -22,15 +22,9 @@ clean:
 	rm -rf build $(OUTPUT)
 	cd go-worker && make clean
 
-build-dir:
-	mkdir -p build
-
-worker: build-dir
-	cd go-worker && make lib && cp libworker.* ../build/
-
 # This Makefile requires CMake installed on the system
-$(OUTPUT): build-dir worker
-	cd build && cmake -DCMAKE_BUILD_TYPE=Release ../ && make container -j6 && cp ./$(OUTPUT) ../$(OUTPUT)
+$(OUTPUT):
+	cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && make -C build/ container -j6 && cp build/$(OUTPUT) $(OUTPUT)
 
 readme:
 	@$(READMETOOL) -p ./$(OUTPUT) -f README.md

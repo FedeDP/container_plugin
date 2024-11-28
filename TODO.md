@@ -6,7 +6,9 @@
   - [ ] finish implementing identify_category logic
   - [x] implement TYPE_IS_CONTAINER_HEALTHCHECK, TYPE_IS_CONTAINER_LIVENESS_PROBE, TYPE_IS_CONTAINER_READINESS_PROBE extractors and make `theadinfo::m_category` a foreign key
 
-- [ ] install re2 as bundled dep (leverage vcpkg?)
+- [x] install re2 as bundled dep (leverage vcpkg)
+- [x] use vcpkg for spdlog too
+- [x] build go-worker in the cmake module
 
 - [ ] expose plugin containers cache as sinsp state API table; needed by `sinsp_network_interfaces::is_ipv4addr_in_local_machine()` :/
   - [ ] support ipv6 addresses for containers to improve [`sinsp_network_interfaces::is_ipv6addr_in_local_machine`](https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/ifinfo.cpp#L326)?
