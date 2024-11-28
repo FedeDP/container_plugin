@@ -24,7 +24,7 @@ clean:
 
 # This Makefile requires CMake installed on the system
 $(OUTPUT):
-	cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && make -C build/ container -j6 && cp build/$(OUTPUT) $(OUTPUT)
+	cmake -B build -S . && make -C build/ container -j6 && cp build/$(OUTPUT) $(OUTPUT)
 
 readme:
 	@$(READMETOOL) -p ./$(OUTPUT) -f README.md
