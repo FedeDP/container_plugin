@@ -14,6 +14,11 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
 
+      # Needed by containerd go package
+      - name: Install deps
+        run:
+          sudo apt-get install libbtrfs-dev -y
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
