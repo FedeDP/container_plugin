@@ -44,6 +44,9 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
+      - name: Build go-worker executable
+        run: make -C go-worker exe
+
       - name: Run go-worker tests
         run: |
           systemctl --user start podman
