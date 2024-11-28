@@ -11,7 +11,8 @@ concurrency:
 
 jobs:
   build-and-test:
-    runs-on: 'ubuntu-latest'
+    # ubuntu24.04 for podman >= 4.x
+    runs-on: 'ubuntu-24.04'
     steps:
       # Needed by vcpkg caching
       - name: Export GitHub Actions cache environment variables
@@ -44,4 +45,6 @@ jobs:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
       - name: Run go-worker tests
-        run: make -C go-worker test
+        run: |
+          systemctl --user start podman
+          make -C go-worker test
