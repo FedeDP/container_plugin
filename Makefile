@@ -20,7 +20,7 @@ all: $(OUTPUT)
 
 clean:
 	rm -rf build $(OUTPUT)
-	cd go-worker && make clean
+	make -C go-worker/ clean
 
 # This Makefile requires CMake installed on the system
 $(OUTPUT):
