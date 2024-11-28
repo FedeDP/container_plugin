@@ -2,11 +2,11 @@ all: lib
 
 .PHONY: lib
 lib:
-	go build -v -o libworker.a -buildmode=c-archive .
+	CGO_ENABLED=1 go build -v -o libworker.a -buildmode=c-archive .
 
 .PHONY: exe
 exe:
-	go build -tags exe -v -o worker  .
+	CGO_ENABLED=1 go build -tags exe -v -o worker  .
 
 clean:
 	rm -rf worker libworker.a libworker.h
