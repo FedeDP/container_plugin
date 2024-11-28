@@ -1,3 +1,5 @@
+include(FetchContent)
+
 message(
   STATUS
     "Fetching plugin-sdk-cpp at 'https://github.com/falcosecurity/plugin-sdk-cpp.git'"
