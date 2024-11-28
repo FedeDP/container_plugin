@@ -51,7 +51,7 @@ func TestContainerd(t *testing.T) {
 				Resources: &specs.LinuxResources{
 					CPU: &specs.LinuxCPU{
 						Quota: &cpuQuota,
-						Cpus:  "1-3",
+						Cpus:  "0-1",
 					},
 				},
 			},
@@ -69,7 +69,7 @@ func TestContainerd(t *testing.T) {
 			CPUPeriod:        defaultCpuPeriod,
 			CPUQuota:         cpuQuota,
 			CPUShares:        defaultCpuShares,
-			CPUSetCPUCount:   3,
+			CPUSetCPUCount:   2, // 0-1
 			Env:              nil, // TODO
 			FullID:           ctr.ID(),
 			Labels:           map[string]string{},

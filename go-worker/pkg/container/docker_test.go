@@ -31,7 +31,7 @@ func TestDocker(t *testing.T) {
 		Privileged: true,
 		Resources: container.Resources{
 			CPUQuota:   2000,
-			CpusetCpus: "1-3",
+			CpusetCpus: "0-1",
 		},
 	}, nil, nil, "test_container")
 	assert.NoError(t, err)
@@ -53,7 +53,7 @@ func TestDocker(t *testing.T) {
 			CPUPeriod:      defaultCpuPeriod,
 			CPUQuota:       2000,
 			CPUShares:      defaultCpuShares,
-			CPUSetCPUCount: 3, // 1-3
+			CPUSetCPUCount: 2, // 0-1
 			Env:            []string{"env=env", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
 			FullID:         ctr.ID,
 			Labels:         map[string]string{"foo": "bar"},

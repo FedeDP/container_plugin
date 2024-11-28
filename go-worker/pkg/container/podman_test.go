@@ -54,7 +54,7 @@ func TestPodman(t *testing.T) {
 			ResourceLimits: &specs.LinuxResources{
 				CPU: &specs.LinuxCPU{
 					Quota: &cpuQuota,
-					Cpus:  "1-3",
+					Cpus:  "0-1",
 				},
 			},
 		},
@@ -78,7 +78,7 @@ func TestPodman(t *testing.T) {
 			CPUPeriod:      defaultCpuPeriod,
 			CPUQuota:       2000,
 			CPUShares:      defaultCpuShares,
-			CPUSetCPUCount: 3, // 1-3
+			CPUSetCPUCount: 2, // 0-1
 			FullID:         ctr.ID,
 			Labels:         map[string]string{"foo": "bar"},
 			Privileged:     true,
