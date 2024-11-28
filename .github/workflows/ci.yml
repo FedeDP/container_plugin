@@ -17,12 +17,13 @@ jobs:
       # Needed by containerd go package
       - name: Install deps
         run:
-          sudo apt-get install libbtrfs-dev -y
+          sudo apt-get install -y --no-install-recommends libbtrfs-dev build-essential
 
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version-file: go-worker/go.mod
+          cache-dependency-path: go-worker/go.sum
 
       - name: Build plugin library
         run: make libcontainer.so

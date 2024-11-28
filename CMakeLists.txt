@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.22)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
-
 if(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "release")
 endif()
 
-# Vcpkg related configs
-include(vcpkg)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # compiler related configs
 include(compiler)
+
+# Vcpkg related configs
+include(vcpkg)
 
 # project metadata
 project(
