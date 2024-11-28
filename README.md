@@ -119,7 +119,7 @@ Given that there is no "listener" SDK to attach to, for these engines the `async
 
 * `containerd` >= 1.7 (https://kubernetes.io/docs/tasks/administer-cluster/switch-to-evented-pleg/, https://github.com/containerd/containerd/pull/7073)
 * `cri-o` >= 1.26 (https://kubernetes.io/docs/tasks/administer-cluster/switch-to-evented-pleg/)
-* `podman` >= v2.0.0 (https://github.com/containers/podman/commit/165aef7766953cd0c0589ffa1abc25022a905adb)
+* `podman` >= v4.0.0 (2.0.0 introduced https://github.com/containers/podman/commit/165aef7766953cd0c0589ffa1abc25022a905adb, but the client library requires 4.0.0)
 
 ## Usage
 
