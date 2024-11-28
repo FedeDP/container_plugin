@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"testing"
 )
 
@@ -19,8 +20,14 @@ func TestDocker(t *testing.T) {
 	engine, err := newDockerEngine(context.Background(), client.DefaultDockerHost)
 	assert.NoError(t, err)
 
-	_, err = dockerClient.ImagePull(context.Background(), "alpine:3.20.3", image.PullOptions{})
-	assert.NoError(t, err)
+	if _, _, err = dockerClient.ImageInspectWithRaw(context.Background(), "alpine:3.20.3"); client.IsErrNotFound(err) {
+		pullRes, err := dockerClient.ImagePull(context.Background(), "alpine:3.20.3", image.PullOptions{})
+		assert.NoError(t, err)
+
+		defer pullRes.Close()
+		_, err = io.Copy(io.Discard, pullRes)
+		assert.NoError(t, err)
+	}
 
 	ctr, err := dockerClient.ContainerCreate(context.Background(), &container.Config{
 		User:   "testuser",
