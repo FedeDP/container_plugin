@@ -30,7 +30,7 @@ jobs:
       # Needed by containerd go package
       - name: Install deps
         run:
-          sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev podman
+          sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -43,10 +43,5 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
-      - name: Set up containerd
-        uses: crazy-max/ghaction-setup-containerd@v3
-
       - name: Run go-worker tests
-        run: |
-          sudo systemctl start podman
-          sudo make -C go-worker test
+        run: make -C go-worker test
