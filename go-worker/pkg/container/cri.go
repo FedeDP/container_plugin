@@ -5,6 +5,7 @@ import (
 	internalapi "k8s.io/cri-api/pkg/apis"
 	v1 "k8s.io/cri-api/pkg/apis/runtime/v1"
 	remote "k8s.io/cri-client/pkg"
+	"sync"
 	"time"
 )
 
@@ -221,36 +222,46 @@ func (c *criEngine) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (c *criEngine) Listen(ctx context.Context) (<-chan Event, error) {
+func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
 	containerEventsCh := make(chan *v1.ContainerEventResponse)
+	wg.Add(1)
 	go func() {
+		defer close(containerEventsCh)
+		defer wg.Done()
 		_ = c.client.GetContainerEvents(ctx, containerEventsCh, nil)
 	}()
 	outCh := make(chan Event)
+	wg.Add(1)
 	go func() {
 		defer close(outCh)
-		for event := range containerEventsCh {
-			if event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT ||
-				event.ContainerEventType == v1.ContainerEventType_CONTAINER_DELETED_EVENT {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event := <-containerEventsCh:
+				if event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT ||
+					event.ContainerEventType == v1.ContainerEventType_CONTAINER_DELETED_EVENT {
 
-				var info Info
-				ctr, err := c.client.ContainerStatus(ctx, event.ContainerId, false)
-				if err != nil || ctr == nil {
-					info = Info{
-						Container{
-							Type:        c.runtime,
-							ID:          event.ContainerId[:shortIDLength],
-							FullID:      event.ContainerId,
-							CreatedTime: nanoSecondsToUnix(event.CreatedAt),
-						},
+					var info Info
+					ctr, err := c.client.ContainerStatus(ctx, event.ContainerId, false)
+					if err != nil || ctr == nil {
+						info = Info{
+							Container{
+								Type:        c.runtime,
+								ID:          event.ContainerId[:shortIDLength],
+								FullID:      event.ContainerId,
+								CreatedTime: nanoSecondsToUnix(event.CreatedAt),
+							},
+						}
+					} else {
+						cPodSandbox := event.GetPodSandboxStatus()
+						info = c.ctrToInfo(ctr.Status, cPodSandbox, ctr.Info)
 					}
-				} else {
-					cPodSandbox := event.GetPodSandboxStatus()
-					info = c.ctrToInfo(ctr.Status, cPodSandbox, ctr.Info)
-				}
-				outCh <- Event{
-					Info:     info,
-					IsCreate: event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT,
+					outCh <- Event{
+						Info:     info,
+						IsCreate: event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT,
+					}
 				}
 			}
 		}

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -211,7 +212,7 @@ type Engine interface {
 	// List lists all running container for the engine
 	List(ctx context.Context) ([]Event, error)
 	// Listen returns a channel where container created/deleted events will be notified
-	Listen(ctx context.Context) (<-chan Event, error)
+	Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error)
 }
 
 func enforceUnixProtocolIfEmpty(socket string) string {

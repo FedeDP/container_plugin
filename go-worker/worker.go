@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/FedeDP/container-worker/pkg/container"
 	"reflect"
+	"sync"
 )
 
 /*
@@ -23,8 +24,9 @@ type asyncCb func(string, bool)
 
 func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.Engine) {
 	var (
-		evt container.Event
-		err error
+		evt      container.Event
+		err      error
+		listenWg sync.WaitGroup
 	)
 
 	channels := make([]<-chan container.Event, len(containerEngines))
@@ -32,7 +34,7 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 	// we will need to select a variable number of channels
 	cases := make([]reflect.SelectCase, 0)
 	for i, engine := range containerEngines {
-		channels[i], err = engine.Listen(ctx)
+		channels[i], err = engine.Listen(ctx, &listenWg)
 		if err != nil {
 			continue
 		}
@@ -52,10 +54,12 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 		chosen, val, _ := reflect.Select(cases)
 		if chosen == len(cases)-1 {
 			// ctx.Done!
-			return
+			break
 		} else {
 			evt, _ = val.Interface().(container.Event)
 			cb(evt.String(), evt.IsCreate)
 		}
 	}
+
+	listenWg.Wait()
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -231,7 +232,7 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (dc *dockerEngine) Listen(ctx context.Context) (<-chan Event, error) {
+func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
 	outCh := make(chan Event)
 
 	flts := filters.NewArgs()
@@ -239,31 +240,38 @@ func (dc *dockerEngine) Listen(ctx context.Context) (<-chan Event, error) {
 	flts.Add("event", string(events.ActionCreate))
 	flts.Add("event", string(events.ActionDestroy))
 	msgs, _ := dc.Events(ctx, events.ListOptions{Filters: flts})
+	wg.Add(1)
 	go func() {
 		defer close(outCh)
-		for msg := range msgs {
-			err := errors.New("inspect useless on action destroy")
-			ctrJson := types.ContainerJSON{}
-			if msg.Action == events.ActionCreate {
-				ctrJson, err = dc.ContainerInspect(ctx, msg.Actor.ID)
-			}
-			if err != nil {
-				// At least send an event with the minimum set of data
-				outCh <- Event{
-					Info: Info{
-						Container{
-							Type:   typeDocker.ToCTValue(),
-							ID:     msg.Actor.ID[:shortIDLength],
-							FullID: msg.Actor.ID,
-							Image:  msg.Actor.Attributes["image"],
-						},
-					},
-					IsCreate: msg.Action == events.ActionCreate,
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg := <-msgs:
+				err := errors.New("inspect useless on action destroy")
+				ctrJson := types.ContainerJSON{}
+				if msg.Action == events.ActionCreate {
+					ctrJson, err = dc.ContainerInspect(ctx, msg.Actor.ID)
 				}
-			} else {
-				outCh <- Event{
-					Info:     dc.ctrToInfo(ctx, ctrJson),
-					IsCreate: msg.Action == events.ActionCreate,
+				if err != nil {
+					// At least send an event with the minimum set of data
+					outCh <- Event{
+						Info: Info{
+							Container{
+								Type:   typeDocker.ToCTValue(),
+								ID:     msg.Actor.ID[:shortIDLength],
+								FullID: msg.Actor.ID,
+								Image:  msg.Actor.Attributes["image"],
+							},
+						},
+						IsCreate: msg.Action == events.ActionCreate,
+					}
+				} else {
+					outCh <- Event{
+						Info:     dc.ctrToInfo(ctx, ctrJson),
+						IsCreate: msg.Action == events.ActionCreate,
+					}
 				}
 			}
 		}

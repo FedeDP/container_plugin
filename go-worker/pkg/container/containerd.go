@@ -9,6 +9,7 @@ import (
 	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"sync"
 )
 
 const typeContainerd engineType = "containerd"
@@ -198,53 +199,60 @@ func (c *containerdEngine) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (c *containerdEngine) Listen(ctx context.Context) (<-chan Event, error) {
+func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
 	outCh := make(chan Event)
 	eventsClient := c.client.EventService()
 	eventsCh, _ := eventsClient.Subscribe(ctx,
 		`topic=="/containers/create"`, `topic=="/containers/delete"`)
+	wg.Add(1)
 	go func() {
 		defer close(outCh)
-		for ev := range eventsCh {
-			var (
-				id       string
-				isCreate bool
-				image    string
-				info     Info
-			)
-			ctrCreate := events.ContainerCreate{}
-			err := typeurl.UnmarshalTo(ev.Event, &ctrCreate)
-			if err == nil {
-				id = ctrCreate.ID
-				isCreate = true
-				image = ctrCreate.Image
-			} else {
-				ctrDelete := events.ContainerDelete{}
-				err = typeurl.UnmarshalTo(ev.Event, &ctrDelete)
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ev := <-eventsCh:
+				var (
+					id       string
+					isCreate bool
+					image    string
+					info     Info
+				)
+				ctrCreate := events.ContainerCreate{}
+				err := typeurl.UnmarshalTo(ev.Event, &ctrCreate)
 				if err == nil {
-					id = ctrDelete.ID
-					isCreate = false
-					image = ""
+					id = ctrCreate.ID
+					isCreate = true
+					image = ctrCreate.Image
+				} else {
+					ctrDelete := events.ContainerDelete{}
+					err = typeurl.UnmarshalTo(ev.Event, &ctrDelete)
+					if err == nil {
+						id = ctrDelete.ID
+						isCreate = false
+						image = ""
+					}
 				}
-			}
-			namespacedContext := namespaces.WithNamespace(ctx, ev.Namespace)
-			container, err := c.client.LoadContainer(namespacedContext, id)
-			if err != nil {
-				// minimum set of infos
-				info = Info{
-					Container{
-						Type:   typeContainerd.ToCTValue(),
-						ID:     id[:shortIDLength],
-						FullID: id,
-						Image:  image,
-					},
+				namespacedContext := namespaces.WithNamespace(ctx, ev.Namespace)
+				container, err := c.client.LoadContainer(namespacedContext, id)
+				if err != nil {
+					// minimum set of infos
+					info = Info{
+						Container{
+							Type:   typeContainerd.ToCTValue(),
+							ID:     id[:shortIDLength],
+							FullID: id,
+							Image:  image,
+						},
+					}
+				} else {
+					info = c.ctrToInfo(namespacedContext, container)
 				}
-			} else {
-				info = c.ctrToInfo(namespacedContext, container)
-			}
-			outCh <- Event{
-				Info:     info,
-				IsCreate: isCreate,
+				outCh <- Event{
+					Info:     info,
+					IsCreate: isCreate,
+				}
 			}
 		}
 	}()
