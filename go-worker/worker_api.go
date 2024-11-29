@@ -44,7 +44,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 		C.makeCallback(cStr, cbool, asyncID, cb)
 	}
 
-	generators, err := container.Generators(ptr.GoString(unsafe.Pointer(initCfg)))
+	generators, inotifier, err := container.Generators(ptr.GoString(unsafe.Pointer(initCfg)))
 	if err != nil {
 		return false
 	}
@@ -72,7 +72,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		workerLoop(ctx, goCb, containerEngines)
+		workerLoop(ctx, goCb, containerEngines, inotifier)
 	}()
 	return true
 }

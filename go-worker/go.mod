@@ -14,6 +14,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	k8s.io/cri-api v0.32.0-alpha.0
 	k8s.io/cri-client v0.31.3
+	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 )
 
 require (
@@ -62,7 +63,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -178,7 +179,6 @@ require (
 	k8s.io/client-go v0.31.3 // indirect
 	k8s.io/component-base v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 	tags.cncf.io/container-device-interface v0.8.0 // indirect
 	tags.cncf.io/container-device-interface/specs-go v0.8.0 // indirect

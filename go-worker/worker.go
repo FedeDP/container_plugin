@@ -20,29 +20,22 @@ import (
 	"context"
 )
 
+const (
+	ctxDoneIdx   = 0
+	inotifierIdx = 1
+)
+
 type asyncCb func(string, bool)
 
-func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.Engine) {
+func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.Engine, inotifier *container.EngineInotifier) {
 	var (
 		evt      container.Event
-		err      error
 		listenWg sync.WaitGroup
 	)
 
-	channels := make([]<-chan container.Event, len(containerEngines))
 	// We need to use a reflect.SelectCase here since
 	// we will need to select a variable number of channels
 	cases := make([]reflect.SelectCase, 0)
-	for i, engine := range containerEngines {
-		channels[i], err = engine.Listen(ctx, &listenWg)
-		if err != nil {
-			continue
-		}
-		cases = append(cases, reflect.SelectCase{
-			Dir:  reflect.SelectRecv,
-			Chan: reflect.ValueOf(channels[i]),
-		})
-	}
 
 	// Emplace back case for `ctx.Done` channel
 	cases = append(cases, reflect.SelectCase{
@@ -50,16 +43,51 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 		Chan: reflect.ValueOf(ctx.Done()),
 	})
 
+	// Emplace back case for inotifier channel if needed
+	inotifierCh := inotifier.Listen()
+	if inotifierCh != nil {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(inotifierCh),
+		})
+	}
+
+	// Emplace back cases for each container engine listener
+	for _, engine := range containerEngines {
+		ch, err := engine.Listen(ctx, &listenWg)
+		if err != nil {
+			continue
+		}
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ch),
+		})
+	}
+
 	for {
 		chosen, val, _ := reflect.Select(cases)
-		if chosen == len(cases)-1 {
+		if chosen == ctxDoneIdx {
 			// ctx.Done!
 			break
+		} else if inotifierCh != nil && chosen == inotifierIdx {
+			// inotifier!
+			engine := inotifier.Process(ctx, val.Interface())
+			if engine != nil {
+				ch, err := engine.Listen(ctx, &listenWg)
+				if err != nil {
+					continue
+				}
+				cases = append(cases, reflect.SelectCase{
+					Dir:  reflect.SelectRecv,
+					Chan: reflect.ValueOf(ch),
+				})
+			}
 		} else {
 			evt, _ = val.Interface().(container.Event)
 			cb(evt.String(), evt.IsCreate)
 		}
 	}
 
+	inotifier.Close()
 	listenWg.Wait()
 }
