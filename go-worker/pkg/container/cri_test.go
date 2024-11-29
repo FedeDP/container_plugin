@@ -8,6 +8,7 @@ import (
 	v1 "k8s.io/cri-api/pkg/apis/runtime/v1"
 	remote "k8s.io/cri-client/pkg"
 	"k8s.io/cri-client/pkg/fake"
+	"sync"
 	"testing"
 	"time"
 )
@@ -191,11 +192,14 @@ func TestCRI(t *testing.T) {
 	assert.True(t, found)
 
 	// Now try the listen API
+	wg := sync.WaitGroup{}
 	cancelCtx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	t.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
 
-	listCh, err := engine.Listen(cancelCtx)
-	assert.NoError(t, err)
+	listCh, err := engine.Listen(cancelCtx, &wg)
 
 	err = client.RemoveContainer(context.Background(), "test_sandbox_test_container_0")
 	assert.NoError(t, err)

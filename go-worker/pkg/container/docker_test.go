@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"sync"
 	"testing"
 )
 
@@ -82,10 +83,14 @@ func TestDocker(t *testing.T) {
 	}
 	assert.True(t, found)
 
+	wg := sync.WaitGroup{}
 	cancelCtx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	listCh, err := engine.Listen(cancelCtx)
-	assert.NoError(t, err)
+	t.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
+
+	listCh, err := engine.Listen(cancelCtx, &wg)
 
 	err = dockerClient.ContainerRemove(context.Background(), ctr.ID, container.RemoveOptions{})
 	assert.NoError(t, err)

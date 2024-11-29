@@ -9,6 +9,7 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/assert"
 	"os/user"
+	"sync"
 	"testing"
 )
 
@@ -97,10 +98,14 @@ func TestContainerd(t *testing.T) {
 	assert.True(t, found)
 
 	// Now try the listen API
+	wg := sync.WaitGroup{}
 	cancelCtx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	t.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
 
-	listCh, err := engine.Listen(cancelCtx)
+	listCh, err := engine.Listen(cancelCtx, &wg)
 	assert.NoError(t, err)
 
 	err = ctr.Delete(namespacedCtx)

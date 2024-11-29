@@ -10,6 +10,7 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/assert"
 	"os/user"
+	"sync"
 	"testing"
 	"time"
 )
@@ -114,10 +115,14 @@ func TestPodman(t *testing.T) {
 	}
 	assert.True(t, found)
 
+	wg := sync.WaitGroup{}
 	cancelCtx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	listCh, err := engine.Listen(cancelCtx)
-	assert.NoError(t, err)
+	t.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
+
+	listCh, err := engine.Listen(cancelCtx, &wg)
 
 	_, err = containers.Remove(podmanCtx, ctr.ID, nil)
 	assert.NoError(t, err)

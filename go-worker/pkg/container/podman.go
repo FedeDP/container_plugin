@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const typePodman engineType = "podman"
@@ -174,7 +175,7 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
+func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
 	stream := true
 	filters := map[string][]string{
 		"type": {string(events.ContainerEventType)},
@@ -184,17 +185,23 @@ func (pc *podmanEngine) Listen(ctx context.Context) (<-chan Event, error) {
 		},
 	}
 	evChn := make(chan types.Event)
+	cancelChan := make(chan bool)
+	wg.Add(1)
 	// producers
 	go func(ch chan types.Event) {
-		_ = system.Events(pc.pCtx, ch, nil, &system.EventsOptions{
+		defer wg.Done()
+		_ = system.Events(pc.pCtx, ch, cancelChan, &system.EventsOptions{
 			Filters: filters,
 			Stream:  &stream,
 		})
 	}(evChn)
 
 	outCh := make(chan Event)
+	wg.Add(1)
 	go func() {
 		defer close(outCh)
+		defer close(cancelChan)
+		defer wg.Done()
 		// Blocking: convert all events from podman to json strings
 		// and send them to the main loop until the channel is closed
 		for {
