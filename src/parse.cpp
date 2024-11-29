@@ -254,6 +254,9 @@ bool my_plugin::parse_new_process_event(
         // Just send the event now.
         nlohmann::json j(info);
         generate_async_event(j.dump().c_str(), true, ASYNC_HANDLER_DEFAULT);
+
+        // Immediately cache the container metadata
+        m_containers[info->m_id] = info;
     }
 
     // Write thread category field

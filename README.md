@@ -127,8 +127,6 @@ Given that there is no "listener" SDK to attach to, for these engines the `async
 
 Here's an example of configuration of `falco.yaml`:
 
-> NOTE: Please note that you can provide values to the config as environment variables. So, for example, you can take advantage of the Kubernetes downward API to provide the node name as an env variable `nodename: ${MY_NODE}`.
-
 ```yaml
 plugins:
   - name: container
@@ -161,8 +159,7 @@ plugins:
 load_plugins: [container]
 ```
 
-**Default Sockets**:
-
+By default, all engines are enabled on **default sockets**:
 * Docker: `/var/run/docker.sock`
 * Podman: `/run/podman/podman.sock` for root, + `/run/user/$uid/podman/podman.sock` for each user in the system
 * Containerd: [`/run/containerd/containerd.sock`, `/run/k3s/containerd/containerd.sock`]
