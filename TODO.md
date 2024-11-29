@@ -10,7 +10,7 @@
 - [x] use vcpkg for spdlog too
 - [x] build go-worker in the cmake module
 
-- [ ] support container engines "hotplug", ie: container engine that gets started as soon as its socket becomes available
+- [x] support container engines "hotplug", ie: container engine that gets started as soon as its socket becomes available
 
 - [ ] expose plugin containers cache as sinsp state API table; needed by `sinsp_network_interfaces::is_ipv4addr_in_local_machine()` :/
 

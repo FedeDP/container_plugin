@@ -4,7 +4,10 @@ import "C"
 import (
 	"context"
 	"encoding/json"
+	"k8s.io/utils/inotify"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -43,6 +46,59 @@ func (t engineType) ToCTValue() int {
 type engineGenerator func(context.Context, string) (Engine, error)
 type EngineGenerator func(ctx context.Context) (Engine, error)
 
+type EngineInotifier struct {
+	watcher           *inotify.Watcher
+	watcherGenerators map[string]EngineGenerator
+}
+
+func (e *EngineInotifier) Listen() <-chan *inotify.Event {
+	if e.watcher == nil {
+		return nil
+	}
+	return e.watcher.Event
+}
+
+func (e *EngineInotifier) Process(ctx context.Context, val interface{}) Engine {
+	ev, _ := val.(*inotify.Event)
+	if cb, ok := e.watcherGenerators[ev.Name]; ok {
+		_ = e.watcher.RemoveWatch(filepath.Dir(ev.Name))
+		engine, _ := cb(ctx)
+		return engine
+	} else {
+		// If the new created path is a folder, check if
+		// it is a subpath of any watcherGenerator socket,
+		// and eventually add a new watch, removing the old one
+		fileInfo, err := os.Stat(ev.Name)
+		if err != nil || !fileInfo.IsDir() {
+			return nil
+		}
+		for socket, cb := range e.watcherGenerators {
+			if strings.HasPrefix(socket, ev.Name) {
+				// Remove old watch
+				_ = e.watcher.RemoveWatch(filepath.Dir(ev.Name))
+				// It may happen that the actual socket has already been created.
+				// Check it and if it is not created yet, add a new inotify watcher.
+				if _, statErr := os.Stat(socket); os.IsNotExist(statErr) {
+					// Add new watch
+					_ = e.watcher.AddWatch(ev.Name, inotify.InCreate|inotify.InIsdir)
+					break
+				} else {
+					engine, _ := cb(ctx)
+					return engine
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (e *EngineInotifier) Close() {
+	if e.watcher == nil {
+		return
+	}
+	_ = e.watcher.Close()
+}
+
 var (
 	engineGenerators = make(map[engineType]engineGenerator)
 	maxLabelLen      = 100 // default value
@@ -58,28 +114,54 @@ type engineCfg struct {
 	LabelMaxLen    int                      `json:"label_max_len"`
 }
 
-func Generators(initCfg string) ([]EngineGenerator, error) {
+func Generators(initCfg string) ([]EngineGenerator, *EngineInotifier, error) {
 	var c engineCfg
 	err := json.Unmarshal([]byte(initCfg), &c)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	maxLabelLen = c.LabelMaxLen
 
 	generators := make([]EngineGenerator, 0)
+	engineNotifier := EngineInotifier{
+		watcher:           nil,
+		watcherGenerators: make(map[string]EngineGenerator),
+	}
 	for engineName, engineGen := range engineGenerators {
-		engineCfg, ok := c.SocketsEngines[string(engineName)]
-		if !ok || !engineCfg.Enabled {
+		eCfg, ok := c.SocketsEngines[string(engineName)]
+		if !ok || !eCfg.Enabled {
 			continue
 		}
 		// For each specified socket, return a closure to generate its engine
-		for _, socket := range engineCfg.Sockets {
-			generators = append(generators, func(ctx context.Context) (Engine, error) {
-				return engineGen(ctx, socket)
-			})
+		for _, socket := range eCfg.Sockets {
+			if _, statErr := os.Stat(socket); os.IsNotExist(statErr) {
+				// Does not exist; emplace back an inotify listener
+				if engineNotifier.watcher == nil {
+					engineNotifier.watcher, _ = inotify.NewWatcher()
+				}
+				if engineNotifier.watcher != nil {
+					dir := filepath.Dir(socket)
+					err = engineNotifier.watcher.AddWatch(dir, inotify.InCreate)
+					if err != nil {
+						// Try to attach watcher to parent dir
+						// eg: /run/user for podman, /run/ for crio, and so on
+						dir = filepath.Dir(dir)
+						err = engineNotifier.watcher.AddWatch(dir, inotify.InCreate)
+					}
+					if err == nil {
+						engineNotifier.watcherGenerators[socket] = func(ctx context.Context) (Engine, error) {
+							return engineGen(ctx, socket)
+						}
+					}
+				}
+			} else {
+				generators = append(generators, func(ctx context.Context) (Engine, error) {
+					return engineGen(ctx, socket)
+				})
+			}
 		}
 	}
-	return generators, nil
+	return generators, &engineNotifier, nil
 }
 
 type portMapping struct {
