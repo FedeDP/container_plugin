@@ -14,6 +14,8 @@
 
 - [ ] expose plugin containers cache as sinsp state API table; needed by `sinsp_network_interfaces::is_ipv4addr_in_local_machine()` :/
 
+- [ ] what to do in case of multiple engines sending info about same container? (eg: docker and containerd)
+
 - [ ] properly send json with all info from go-worker
     - [ ] fix remaining TODOs
     - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early
