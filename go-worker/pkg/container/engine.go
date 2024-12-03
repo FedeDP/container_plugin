@@ -200,21 +200,21 @@ type Container struct {
 	CPUShares        int64             `json:"cpu_shares"`
 	CPUSetCPUCount   int64             `json:"cpuset_cpu_count"`
 	CreatedTime      int64             `json:"created_time"`
-	Env              []string          `json:"env"`
+	Env              []string          `json:"env,omitempty"`
 	FullID           string            `json:"full_id"`
 	HostIPC          bool              `json:"host_ipc"`
 	HostNetwork      bool              `json:"host_network"`
 	HostPID          bool              `json:"host_pid"`
 	Ip               string            `json:"ip"`
 	IsPodSandbox     bool              `json:"is_pod_sandbox"`
-	Labels           map[string]string `json:"labels"`
+	Labels           map[string]string `json:"labels,omitempty"`
 	MemoryLimit      int64             `json:"memory_limit"`
 	SwapLimit        int64             `json:"swap_limit"`
 	PodSandboxID     string            `json:"pod_sandbox_id"` // cri only
 	Privileged       bool              `json:"privileged"`
-	PodSandboxLabels map[string]string `json:"pod_sandbox_labels"` // cri only
-	PortMappings     []portMapping     `json:"port_mappings"`
-	Mounts           []mount           `json:"Mounts"`
+	PodSandboxLabels map[string]string `json:"pod_sandbox_labels,omitempty"` // cri only
+	PortMappings     []portMapping     `json:"port_mappings,omitempty"`
+	Mounts           []mount           `json:"Mounts,omitempty"`
 	HealthcheckProbe *probe            `json:"Healthcheck,omitempty"`
 	LivenessProbe    *probe            `json:"LivenessProbe,omitempty"`
 	ReadinessProbe   *probe            `json:"ReadinessProbe,omitempty"`
