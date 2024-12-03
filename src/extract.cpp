@@ -334,20 +334,12 @@ static inline void concatenate_container_labels(const std::map<std::string, std:
 
 bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
     const auto evt_reader = in.get_event_reader();
-    int64_t thread_id = evt_reader.get_tid();
-    if(thread_id <= 0)
-    {
-        SPDLOG_INFO("unknown thread id for event num '{}' with type '{}'",
-                    evt_reader.get_num(),
-                    int32_t(evt_reader.get_type()));
-        return false;
-    }
+    auto thread_id = evt_reader.get_tid();
 
     std::string container_id;
     falcosecurity::table_entry thread_entry;
     auto tr = in.get_table_reader();
-    try
-    {
+    try {
         // retrieve the thread entry associated with this thread id
         thread_entry = m_threads_table.get_entry(tr, thread_id);
         // retrieve container_id from the entry
@@ -359,18 +351,16 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             SPDLOG_DEBUG("the plugin has no container_id info for the thread id '{}'", thread_id);
             return false;
         }
-    }
-    catch(falcosecurity::plugin_exception e)
-    {
-        SPDLOG_ERROR("cannot extract the container_id for the thread id '{}': {}",
+    } catch(falcosecurity::plugin_exception e) {
+      	// Debug here since many events do not have thread id info (eg: schedswitch)
+        SPDLOG_DEBUG("cannot extract the container_id for the thread id '{}': {}",
                      thread_id, e.what());
         return false;
     }
 
     // Try to find the entry associated with the pod_uid
     auto it = m_containers.find(container_id);
-    if(it == m_containers.end())
-    {
+    if(it == m_containers.end()) {
         SPDLOG_DEBUG("the plugin has no info for the container id '{}'", container_id);
         return false;
     }
@@ -378,8 +368,7 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
     auto cinfo = it->second;
     auto& req = in.get_extract_request();
     const auto field_id = req.get_field_id();
-    switch(field_id)
-    {
+    switch(field_id) {
         case TYPE_CONTAINER_ID:
             req.set_value(cinfo->m_id);
             break;

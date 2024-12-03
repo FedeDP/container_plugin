@@ -70,46 +70,49 @@ void from_json(const nlohmann::json& j, container_port_mapping& port) {
 }
 
 void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) {
+    std::shared_ptr<container_info> info = std::make_shared<container_info>();
     const nlohmann::json& container = j["container"];
-    cinfo->m_type = container.value("type", CT_UNKNOWN);
-    cinfo->m_id = container.value("id", "");
-    cinfo->m_name = container.value("name", "");
-    cinfo->m_image = container.value("image", "");
-    cinfo->m_imagedigest = container.value("imagedigest", "");
-    cinfo->m_imageid = container.value("imageid", "");
-    cinfo->m_imagerepo = container.value("imagerepo", "");
-    cinfo->m_imagetag = container.value("imagetag", "");
-    cinfo->m_container_user = container.value("User", "");
-    cinfo->m_pod_sandbox_cniresult = container.value("cni_json", "");
-    cinfo->m_cpu_period = container.value("cpu_period", 0);
-    cinfo->m_cpu_quota = container.value("cpu_quota", 0);
-    cinfo->m_cpu_shares = container.value("cpu_shares", 0);
-    cinfo->m_cpuset_cpu_count = container.value("cpuset_cpu_count", 0);
-    cinfo->m_created_time = container.value("created_time", 0);
-    cinfo->m_env = container.value("env", std::vector<std::string>{});
-    cinfo->m_full_id = container.value("full_id", "");
-    cinfo->m_host_ipc = container.value("host_ipc", false);
-    cinfo->m_host_network = container.value("host_network", false);
-    cinfo->m_host_pid = container.value("host_pid", false);
-    cinfo->m_container_ip = container.value("ip", 0);
-    cinfo->m_is_pod_sandbox = container.value("is_pod_sandbox", false);
-    cinfo->m_labels = container.value("labels", std::map<std::string, std::string>{});
-    cinfo->m_memory_limit = container.value("memory_limit", 0);
-    cinfo->m_swap_limit = container.value("swap_limit", 0);
-    cinfo->m_pod_sandbox_id = container.value("pod_sandbox_id", "");
-    cinfo->m_privileged = container.value("privileged", false);
-    cinfo->m_pod_sandbox_labels = container.value("pod_sandbox_labels", std::map<std::string, std::string>{});
-    cinfo->m_port_mappings = container.value("port_mappings", std::vector<container_port_mapping>{});
-    cinfo->m_mounts =  container.value("Mounts", std::vector<container_mount_info>{});
+    info->m_type = container.value("type", CT_UNKNOWN);
+    info->m_id = container.value("id", "");
+    info->m_name = container.value("name", "");
+    info->m_image = container.value("image", "");
+    info->m_imagedigest = container.value("imagedigest", "");
+    info->m_imageid = container.value("imageid", "");
+    info->m_imagerepo = container.value("imagerepo", "");
+    info->m_imagetag = container.value("imagetag", "");
+    info->m_container_user = container.value("User", "");
+    info->m_pod_sandbox_cniresult = container.value("cni_json", "");
+    info->m_cpu_period = container.value("cpu_period", 0);
+    info->m_cpu_quota = container.value("cpu_quota", 0);
+    info->m_cpu_shares = container.value("cpu_shares", 0);
+    info->m_cpuset_cpu_count = container.value("cpuset_cpu_count", 0);
+    info->m_created_time = container.value("created_time", 0);
+    info->m_env = container.value("env", std::vector<std::string>{});
+    info->m_full_id = container.value("full_id", "");
+    info->m_host_ipc = container.value("host_ipc", false);
+    info->m_host_network = container.value("host_network", false);
+    info->m_host_pid = container.value("host_pid", false);
+    info->m_container_ip = container.value("ip", "");
+    info->m_is_pod_sandbox = container.value("is_pod_sandbox", false);
+    info->m_labels = container.value("labels", std::map<std::string, std::string>{});
+    info->m_memory_limit = container.value("memory_limit", 0);
+    info->m_swap_limit = container.value("swap_limit", 0);
+    info->m_pod_sandbox_id = container.value("pod_sandbox_id", "");
+    info->m_privileged = container.value("privileged", false);
+    info->m_pod_sandbox_labels = container.value("pod_sandbox_labels", std::map<std::string, std::string>{});
+    info->m_port_mappings = container.value("port_mappings", std::vector<container_port_mapping>{});
+    info->m_mounts =  container.value("Mounts", std::vector<container_mount_info>{});
 
     for (int probe_type = container_health_probe::PT_HEALTHCHECK; probe_type <= container_health_probe::PT_READINESS_PROBE; probe_type++) {
         const auto& probe_name = container_health_probe::probe_type_names[probe_type];
         if (container.contains(probe_name)) {
             container_health_probe probe = container.value(probe_name, container_health_probe());
             probe.m_type = container_health_probe::probe_type(probe_type);
-            cinfo->m_health_probes.push_back(probe);
+            info->m_health_probes.push_back(probe);
         }
     }
+
+    cinfo = info;
 }
 
 void to_json(nlohmann::json& j, const container_mount_info& mount) {

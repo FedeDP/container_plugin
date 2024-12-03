@@ -28,10 +28,9 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
 
-      # Needed by containerd go package
-      - name: Install deps
-        run:
-          sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
+      # Needed by containerd go package - build time dep, no runtime.
+      - name: Install plugin deps
+        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -43,6 +42,12 @@ jobs:
         run: make libcontainer.so
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+      # Needed by podman package - build and runtime dep.
+      # For the go-worker library, it is only a runtime dep,
+      # and is provided by plugin vcpkg configuration.
+      - name: Install go-worker executable deps
+        run: sudo apt-get install -y --no-install-recommends libgpgme-dev
 
       - name: Build go-worker executable
         run: make -C go-worker exe

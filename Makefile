@@ -18,11 +18,13 @@ OUTPUT := lib$(NAME).so
 
 all: $(OUTPUT)
 
+.PHONY: clean
 clean:
 	rm -rf build $(OUTPUT)
 	make -C go-worker/ clean
 
 # This Makefile requires CMake installed on the system
+.PHONY: $(OUTPUT)
 $(OUTPUT):
 	cmake -B build -S . && make -C build/ container -j6 && cp build/$(OUTPUT) $(OUTPUT)
 
