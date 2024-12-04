@@ -15,6 +15,10 @@ bool my_plugin::capture_open(const falcosecurity::capture_listen_input& in) {
                 std::shared_ptr<container_info> info = nullptr;
                 auto container_id = compute_container_id_for_thread(e, tr, info);
                 m_container_id_field.write_value(tw, e, container_id);
+                // Write thread category field
+                if (container_id != HOST_CONTAINER_ID) {
+                    write_thread_category(e, tr, tw);
+                }
                 return true;
             });
     return true;
