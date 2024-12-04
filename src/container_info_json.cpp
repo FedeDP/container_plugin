@@ -69,6 +69,21 @@ void from_json(const nlohmann::json& j, container_port_mapping& port) {
     port.m_container_port = j.value("ContainerPort", 0);
 }
 
+/*
+ * Since some old json pushed json entries like:
+ * "pod_sandbox_labels": null
+ * actually check that key does not hold a null value
+ * when accessing objects.
+ */
+template <typename T>
+static inline void object_from_json(const nlohmann::json& j, const char *key, T& obj) {
+    if (j.contains(key) && !j[key].is_null()) {
+        obj = j[key].get<T>();
+    } else {
+        obj = T();
+    }
+}
+
 void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) {
     std::shared_ptr<container_info> info = std::make_shared<container_info>();
     const nlohmann::json& container = j["container"];
@@ -87,21 +102,21 @@ void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) 
     info->m_cpu_shares = container.value("cpu_shares", 0);
     info->m_cpuset_cpu_count = container.value("cpuset_cpu_count", 0);
     info->m_created_time = container.value("created_time", 0);
-    info->m_env = container.value("env", std::vector<std::string>{});
+    object_from_json(container, "env", info->m_env);
     info->m_full_id = container.value("full_id", "");
     info->m_host_ipc = container.value("host_ipc", false);
     info->m_host_network = container.value("host_network", false);
     info->m_host_pid = container.value("host_pid", false);
     info->m_container_ip = container.value("ip", "");
     info->m_is_pod_sandbox = container.value("is_pod_sandbox", false);
-    info->m_labels = container.value("labels", std::map<std::string, std::string>{});
+    object_from_json(container, "labels", info->m_labels);
     info->m_memory_limit = container.value("memory_limit", 0);
     info->m_swap_limit = container.value("swap_limit", 0);
     info->m_pod_sandbox_id = container.value("pod_sandbox_id", "");
     info->m_privileged = container.value("privileged", false);
-    info->m_pod_sandbox_labels = container.value("pod_sandbox_labels", std::map<std::string, std::string>{});
-    info->m_port_mappings = container.value("port_mappings", std::vector<container_port_mapping>{});
-    info->m_mounts =  container.value("Mounts", std::vector<container_mount_info>{});
+    object_from_json(container, "pod_sandbox_labels", info->m_pod_sandbox_labels);
+    object_from_json(container, "port_mappings", info->m_port_mappings);
+    object_from_json(container, "Mounts", info->m_mounts);
 
     for (int probe_type = container_health_probe::PT_HEALTHCHECK; probe_type <= container_health_probe::PT_READINESS_PROBE; probe_type++) {
         const auto& probe_name = container_health_probe::probe_type_names[probe_type];
