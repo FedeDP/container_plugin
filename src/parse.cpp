@@ -5,17 +5,17 @@
 //////////////////////////
 
 struct sinsp_param {
-    uint16_t param_len;
+    uint32_t param_len;
     uint8_t* param_pointer;
 };
 
 // Obtain a param from a sinsp event
+template <const bool LargePayload=false, typename T=std::conditional_t<LargePayload, uint32_t*, uint16_t*>>
 static inline sinsp_param get_syscall_evt_param(void* evt, uint32_t num_param)
 {
     uint32_t dataoffset = 0;
     // pointer to the lengths array inside the event.
-    auto len = (uint16_t*)((uint8_t*)evt +
-                           sizeof(falcosecurity::_internal::ss_plugin_event));
+    auto len = (T)((uint8_t*)evt + sizeof(falcosecurity::_internal::ss_plugin_event));
     for(uint32_t j = 0; j < num_param; j++)
     {
         // sum lengths of the previous params.
@@ -28,7 +28,6 @@ static inline sinsp_param get_syscall_evt_param(void* evt, uint32_t num_param)
                             ->nparams]) +
             dataoffset};
 }
-
 
 // We need to parse only the async events produced by this plugin. The async
 // events produced by this plugin are injected in the syscall event source,
@@ -118,6 +117,18 @@ bool my_plugin::parse_container_json_event(
     return true;
 }
 
+bool my_plugin::parse_container_json_2_event(
+        const falcosecurity::parse_event_input& in) {
+    auto& evt = in.get_event_reader();
+    auto json_param = get_syscall_evt_param<true>(evt.get_buf(), 0);
+
+    std::string json_str = (char *)json_param.param_pointer;
+    auto json_event = nlohmann::json::parse(json_str);
+
+    auto cinfo = json_event.get<std::shared_ptr<container_info>>();
+    m_containers[cinfo->m_id] = cinfo;
+    return true;
+}
 
 std::string my_plugin::compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
                                                        const falcosecurity::table_reader& tr,
@@ -275,8 +286,10 @@ bool my_plugin::parse_event(const falcosecurity::parse_event_input& in) {
         case PPME_CONTAINER_E:
             return parse_container_event(in);
         case PPME_CONTAINER_JSON_E:
-        case PPME_CONTAINER_JSON_2_E:
             return parse_container_json_event(in);
+        case PPME_CONTAINER_JSON_2_E:
+            // large payload
+            return parse_container_json_2_event(in);
         case PPME_SYSCALL_CLONE_20_X:
         case PPME_SYSCALL_FORK_20_X:
         case PPME_SYSCALL_VFORK_20_X:

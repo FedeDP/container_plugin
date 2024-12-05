@@ -82,6 +82,7 @@ public:
     bool parse_async_event(const falcosecurity::parse_event_input& in);
     bool parse_container_event(const falcosecurity::parse_event_input& in);
     bool parse_container_json_event(const falcosecurity::parse_event_input& in);
+    bool parse_container_json_2_event(const falcosecurity::parse_event_input& in);
     bool parse_new_process_event(const falcosecurity::parse_event_input& in);
     bool parse_event(const falcosecurity::parse_event_input& in);
 
