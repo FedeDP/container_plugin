@@ -9,7 +9,7 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "container_type.h"
-#include "plugin_only_consts.h"
+#include "consts.h"
 
 class container_port_mapping {
 public:
@@ -94,13 +94,7 @@ public:
             m_cpu_quota(0),
             m_cpu_period(100000),
             m_cpuset_cpu_count(0),
-            m_is_pod_sandbox(false),
-            m_container_user("<NA>") {}
-
-    void clear() {
-        this->~container_info();
-        new(this) container_info();
-    }
+            m_is_pod_sandbox(false) {}
 
     const std::vector<std::string> &get_env() const { return m_env; }
 

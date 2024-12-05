@@ -15,8 +15,8 @@ limitations under the License.
 
 */
 
-#include "plugin_only_consts.h"
-#include "shared_with_tests_consts.h"
+#include "consts.h"
+#include "macros.h"
 #include "matchers/matcher.h"
 #include <unordered_map>
 
