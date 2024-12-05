@@ -3,7 +3,8 @@ package container
 import "C"
 import (
 	"context"
-	"encoding/json"
+	"github.com/FedeDP/container-worker/pkg/config"
+	"github.com/FedeDP/container-worker/pkg/event"
 	"k8s.io/utils/inotify"
 	"net/url"
 	"os"
@@ -99,34 +100,17 @@ func (e *EngineInotifier) Close() {
 	_ = e.watcher.Close()
 }
 
-var (
-	engineGenerators = make(map[engineType]engineGenerator)
-	maxLabelLen      = 100 // default value
-)
+// Hooked up by each engine through init()
+var engineGenerators = make(map[engineType]engineGenerator)
 
-type socketsEngine struct {
-	Enabled bool     `json:"enabled"`
-	Sockets []string `json:"sockets"`
-}
-
-type engineCfg struct {
-	SocketsEngines map[string]socketsEngine `json:"engines"`
-	LabelMaxLen    int                      `json:"label_max_len"`
-}
-
-func Generators(initCfg string) ([]EngineGenerator, *EngineInotifier, error) {
-	var c engineCfg
-	err := json.Unmarshal([]byte(initCfg), &c)
-	if err != nil {
-		return nil, nil, err
-	}
-	maxLabelLen = c.LabelMaxLen
-
+func Generators() ([]EngineGenerator, *EngineInotifier, error) {
 	generators := make([]EngineGenerator, 0)
 	engineNotifier := EngineInotifier{
 		watcher:           nil,
 		watcherGenerators: make(map[string]EngineGenerator),
 	}
+
+	c := config.Get()
 	for engineName, engineGen := range engineGenerators {
 		eCfg, ok := c.SocketsEngines[string(engineName)]
 		if !ok || !eCfg.Enabled {
@@ -141,7 +125,7 @@ func Generators(initCfg string) ([]EngineGenerator, *EngineInotifier, error) {
 				}
 				if engineNotifier.watcher != nil {
 					dir := filepath.Dir(socket)
-					err = engineNotifier.watcher.AddWatch(dir, inotify.InCreate)
+					err := engineNotifier.watcher.AddWatch(dir, inotify.InCreate)
 					if err != nil {
 						// Try to attach watcher to parent dir
 						// eg: /run/user for podman, /run/ for crio, and so on
@@ -164,137 +148,11 @@ func Generators(initCfg string) ([]EngineGenerator, *EngineInotifier, error) {
 	return generators, &engineNotifier, nil
 }
 
-type portMapping struct {
-	HostIp        string `json:"HostIp"`
-	HostPort      string `json:"HostPort"`
-	ContainerPort int    `json:"ContainerPort"`
-}
-
-type mount struct {
-	Source      string `json:"Source"`
-	Destination string `json:"Destination"`
-	Mode        string `json:"Mode"`
-	RW          bool   `json:"RW"`
-	Propagation string `json:"Propagation"`
-}
-
-type probe struct {
-	Exe  string   `json:"exe"`
-	Args []string `json:"args"`
-}
-
-// TODO implement healtcheck/liveness/readiness probe related fields
-type Container struct {
-	Type             int               `json:"type"`
-	ID               string            `json:"id"`
-	Name             string            `json:"name"`
-	Image            string            `json:"image"`
-	ImageDigest      string            `json:"imagedigest"`
-	ImageID          string            `json:"imageid"`
-	ImageRepo        string            `json:"imagerepo"`
-	ImageTag         string            `json:"imagetag"`
-	User             string            `json:"User"`
-	CniJson          string            `json:"cni_json"` // cri only
-	CPUPeriod        int64             `json:"cpu_period"`
-	CPUQuota         int64             `json:"cpu_quota"`
-	CPUShares        int64             `json:"cpu_shares"`
-	CPUSetCPUCount   int64             `json:"cpuset_cpu_count"`
-	CreatedTime      int64             `json:"created_time"`
-	Env              []string          `json:"env,omitempty"`
-	FullID           string            `json:"full_id"`
-	HostIPC          bool              `json:"host_ipc"`
-	HostNetwork      bool              `json:"host_network"`
-	HostPID          bool              `json:"host_pid"`
-	Ip               string            `json:"ip"`
-	IsPodSandbox     bool              `json:"is_pod_sandbox"`
-	Labels           map[string]string `json:"labels,omitempty"`
-	MemoryLimit      int64             `json:"memory_limit"`
-	SwapLimit        int64             `json:"swap_limit"`
-	PodSandboxID     string            `json:"pod_sandbox_id"` // cri only
-	Privileged       bool              `json:"privileged"`
-	PodSandboxLabels map[string]string `json:"pod_sandbox_labels,omitempty"` // cri only
-	PortMappings     []portMapping     `json:"port_mappings,omitempty"`
-	Mounts           []mount           `json:"Mounts,omitempty"`
-	HealthcheckProbe *probe            `json:"Healthcheck,omitempty"`
-	LivenessProbe    *probe            `json:"LivenessProbe,omitempty"`
-	ReadinessProbe   *probe            `json:"ReadinessProbe,omitempty"`
-}
-
-// Info struct wraps Container because we need the `container` struct in the json for backward compatibility.
-// Format:
-/*
-{
-  "container": {
-    "type": 0,
-    "id": "2400edb296c5",
-    "name": "sharp_poincare",
-    "image": "fedora:38",
-    "imagedigest": "sha256:b9ff6f23cceb5bde20bb1f79b492b98d71ef7a7ae518ca1b15b26661a11e6a94",
-    "imageid": "0ca0fed353fb77c247abada85aebc667fd1f5fa0b5f6ab1efb26867ba18f2f0a",
-    "imagerepo": "fedora",
-    "imagetag": "38",
-    "User": "",
-    "cni_json": "",
-    "cpu_period": 0,
-    "cpu_quota": 0,
-    "cpu_shares": 0,
-    "cpuset_cpu_count": 0,
-    "created_time": 1730977803,
-    "env": [
-      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-      "DISTTAG=f38container",
-      "FGC=f38",
-      "FBR=f38"
-    ],
-    "full_id": "2400edb296c5d631fef083a30c680f71801b0409a9676ee546c084d0087d7c7d",
-    "host_ipc": false,
-    "host_network": false,
-    "host_pid": false,
-    "ip": "",
-    "is_pod_sandbox": false,
-    "labels": {
-      "maintainer": "Clement Verna <cverna@fedoraproject.org>"
-    },
-    "memory_limit": 0,
-    "swap_limit": 0,
-    "pod_sandbox_id": "",
-    "privileged": false,
-    "pod_sandbox_labels": null,
-    "port_mappings": [],
-    "Mounts": [
-      {
-        "Source": "/home/federico",
-        "Destination": "/home/federico",
-        "Mode": "",
-        "RW": true,
-        "Propagation": "rprivate"
-      }
-    ]
-  }
-}
-*/
-type Info struct {
-	Container `json:"container"`
-}
-
-type Event struct {
-	Info
-	IsCreate bool
-}
-
-func (i *Info) String() string {
-	str, err := json.Marshal(i)
-	if err != nil {
-		return ""
-	}
-	return string(str)
-}
-
 type Engine interface {
 	// List lists all running container for the engine
-	List(ctx context.Context) ([]Event, error)
+	List(ctx context.Context) ([]event.Event, error)
 	// Listen returns a channel where container created/deleted events will be notified
-	Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error)
+	Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.Event, error)
 }
 
 func enforceUnixProtocolIfEmpty(socket string) string {

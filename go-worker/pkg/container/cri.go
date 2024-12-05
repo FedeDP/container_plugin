@@ -2,6 +2,8 @@ package container
 
 import (
 	"context"
+	"github.com/FedeDP/container-worker/pkg/config"
+	"github.com/FedeDP/container-worker/pkg/event"
 	internalapi "k8s.io/cri-api/pkg/apis"
 	v1 "k8s.io/cri-api/pkg/apis/runtime/v1"
 	remote "k8s.io/cri-client/pkg"
@@ -48,7 +50,7 @@ func newCriEngine(ctx context.Context, socket string) (Engine, error) {
 }
 
 func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodSandboxStatus,
-	_ map[string]string) Info {
+	_ map[string]string) event.Info {
 
 	// TODO parse info["info"] as json -> https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L263
 	//
@@ -95,7 +97,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		swapLimit = ctr.GetResources().GetLinux().MemorySwapLimitInBytes
 	}
 
-	mounts := make([]mount, 0)
+	mounts := make([]event.Mount, 0)
 	for _, m := range ctr.Mounts {
 		var propagation string
 		switch m.Propagation {
@@ -108,7 +110,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		default:
 			propagation = "unknown"
 		}
-		mounts = append(mounts, mount{
+		mounts = append(mounts, event.Mount{
 			Source:      m.HostPath,
 			Destination: m.ContainerPath,
 			RW:          !m.Readonly,
@@ -133,7 +135,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	labels := make(map[string]string)
 	for key, val := range ctr.Labels {
-		if len(val) <= maxLabelLen {
+		if len(val) <= config.GetLabelMaxLen() {
 			labels[key] = val
 		}
 	}
@@ -146,13 +148,13 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	podSandboxLabels := make(map[string]string)
 	for key, val := range podSandboxStatus.Labels {
-		if len(val) <= maxLabelLen {
+		if len(val) <= config.GetLabelMaxLen() {
 			podSandboxLabels[key] = val
 		}
 	}
 
-	return Info{
-		Container{
+	return event.Info{
+		Container: event.Container{
 			Type:             c.runtime,
 			ID:               ctr.Id[:shortIDLength],
 			Name:             metadata.Name,
@@ -186,19 +188,19 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 	}
 }
 
-func (c *criEngine) List(ctx context.Context) ([]Event, error) {
+func (c *criEngine) List(ctx context.Context) ([]event.Event, error) {
 	ctrs, err := c.client.ListContainers(ctx, &v1.ContainerFilter{State: &v1.ContainerStateValue{}})
 	if err != nil {
 		return nil, err
 	}
-	evts := make([]Event, len(ctrs))
+	evts := make([]event.Event, len(ctrs))
 	for idx, ctr := range ctrs {
 		container, err := c.client.ContainerStatus(ctx, ctr.Id, false)
 		if err != nil || container.Status == nil {
-			evts[idx] = Event{
+			evts[idx] = event.Event{
 				IsCreate: true,
-				Info: Info{
-					Container{
+				Info: event.Info{
+					Container: event.Container{
 						Type:        c.runtime,
 						ID:          ctr.Id[:shortIDLength],
 						FullID:      ctr.Id,
@@ -213,7 +215,7 @@ func (c *criEngine) List(ctx context.Context) ([]Event, error) {
 			if podSandboxStatus == nil {
 				podSandboxStatus = &v1.PodSandboxStatusResponse{}
 			}
-			evts[idx] = Event{
+			evts[idx] = event.Event{
 				IsCreate: true,
 				Info:     c.ctrToInfo(container.Status, podSandboxStatus.Status, container.Info),
 			}
@@ -222,7 +224,7 @@ func (c *criEngine) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
+func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.Event, error) {
 	containerEventsCh := make(chan *v1.ContainerEventResponse)
 	wg.Add(1)
 	go func() {
@@ -230,7 +232,7 @@ func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Even
 		defer wg.Done()
 		_ = c.client.GetContainerEvents(ctx, containerEventsCh, nil)
 	}()
-	outCh := make(chan Event)
+	outCh := make(chan event.Event)
 	wg.Add(1)
 	go func() {
 		defer close(outCh)
@@ -239,28 +241,28 @@ func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Even
 			select {
 			case <-ctx.Done():
 				return
-			case event := <-containerEventsCh:
-				if event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT ||
-					event.ContainerEventType == v1.ContainerEventType_CONTAINER_DELETED_EVENT {
+			case evt := <-containerEventsCh:
+				if evt.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT ||
+					evt.ContainerEventType == v1.ContainerEventType_CONTAINER_DELETED_EVENT {
 
-					var info Info
-					ctr, err := c.client.ContainerStatus(ctx, event.ContainerId, false)
+					var info event.Info
+					ctr, err := c.client.ContainerStatus(ctx, evt.ContainerId, false)
 					if err != nil || ctr == nil {
-						info = Info{
-							Container{
+						info = event.Info{
+							Container: event.Container{
 								Type:        c.runtime,
-								ID:          event.ContainerId[:shortIDLength],
-								FullID:      event.ContainerId,
-								CreatedTime: nanoSecondsToUnix(event.CreatedAt),
+								ID:          evt.ContainerId[:shortIDLength],
+								FullID:      evt.ContainerId,
+								CreatedTime: nanoSecondsToUnix(evt.CreatedAt),
 							},
 						}
 					} else {
-						cPodSandbox := event.GetPodSandboxStatus()
+						cPodSandbox := evt.GetPodSandboxStatus()
 						info = c.ctrToInfo(ctr.Status, cPodSandbox, ctr.Info)
 					}
-					outCh <- Event{
+					outCh <- event.Event{
 						Info:     info,
-						IsCreate: event.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT,
+						IsCreate: evt.ContainerEventType == v1.ContainerEventType_CONTAINER_CREATED_EVENT,
 					}
 				}
 			}

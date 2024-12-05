@@ -3,6 +3,8 @@ package container
 import (
 	"context"
 	"errors"
+	"github.com/FedeDP/container-worker/pkg/config"
+	"github.com/FedeDP/container-worker/pkg/event"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
@@ -33,7 +35,7 @@ func newDockerEngine(_ context.Context, socket string) (Engine, error) {
 	return &dockerEngine{cl}, nil
 }
 
-func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) Info {
+func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) event.Info {
 	hostCfg := ctr.HostConfig
 	if hostCfg == nil {
 		hostCfg = &container.HostConfig{
@@ -43,9 +45,9 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 			},
 		}
 	}
-	mounts := make([]mount, 0)
+	mounts := make([]event.Mount, 0)
 	for _, m := range ctr.Mounts {
-		mounts = append(mounts, mount{
+		mounts = append(mounts, event.Mount{
 			Source:      m.Source,
 			Destination: m.Destination,
 			Mode:        m.Mode,
@@ -63,14 +65,14 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	if netCfg == nil {
 		netCfg = &types.NetworkSettings{}
 	}
-	portMappings := make([]portMapping, 0)
+	portMappings := make([]event.PortMapping, 0)
 	for port, portBindings := range netCfg.Ports {
 		if port.Proto() != "tcp" {
 			continue
 		}
 		containerPort := port.Int()
 		for _, portBinding := range portBindings {
-			portMappings = append(portMappings, portMapping{
+			portMappings = append(portMappings, event.PortMapping{
 				HostIp:        portBinding.HostIP,
 				HostPort:      portBinding.HostPort,
 				ContainerPort: containerPort,
@@ -136,7 +138,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 
 	labels := make(map[string]string)
 	for key, val := range cfg.Labels {
-		if len(val) <= maxLabelLen {
+		if len(val) <= config.GetLabelMaxLen() {
 			labels[key] = val
 		}
 	}
@@ -166,8 +168,8 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 	cpusetCount := countCPUSet(hostCfg.CpusetCpus)
 
-	return Info{
-		Container{
+	return event.Info{
+		Container: event.Container{
 			Type:           typeDocker.ToCTValue(),
 			ID:             ctr.ID[:shortIDLength],
 			Name:           name,
@@ -199,20 +201,20 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 }
 
-func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
+func (dc *dockerEngine) List(ctx context.Context) ([]event.Event, error) {
 	containers, err := dc.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		return nil, err
 	}
 
-	evts := make([]Event, len(containers))
+	evts := make([]event.Event, len(containers))
 	for idx, ctr := range containers {
 		ctrJson, err := dc.ContainerInspect(ctx, ctr.ID)
 		if err != nil {
 			// Minimum set of infos
-			evts[idx] = Event{
-				Info: Info{
-					Container{
+			evts[idx] = event.Event{
+				Info: event.Info{
+					Container: event.Container{
 						Type:        typeDocker.ToCTValue(),
 						ID:          ctr.ID[:shortIDLength],
 						Image:       ctr.Image,
@@ -224,7 +226,7 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 				IsCreate: true,
 			}
 		}
-		evts[idx] = Event{
+		evts[idx] = event.Event{
 			IsCreate: true,
 			Info:     dc.ctrToInfo(ctx, ctrJson),
 		}
@@ -232,8 +234,8 @@ func (dc *dockerEngine) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
-	outCh := make(chan Event)
+func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.Event, error) {
+	outCh := make(chan event.Event)
 
 	flts := filters.NewArgs()
 	flts.Add("type", string(events.ContainerEventType))
@@ -256,9 +258,9 @@ func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 				}
 				if err != nil {
 					// At least send an event with the minimum set of data
-					outCh <- Event{
-						Info: Info{
-							Container{
+					outCh <- event.Event{
+						Info: event.Info{
+							Container: event.Container{
 								Type:   typeDocker.ToCTValue(),
 								ID:     msg.Actor.ID[:shortIDLength],
 								FullID: msg.Actor.ID,
@@ -268,7 +270,7 @@ func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 						IsCreate: msg.Action == events.ActionCreate,
 					}
 				} else {
-					outCh <- Event{
+					outCh <- event.Event{
 						Info:     dc.ctrToInfo(ctx, ctrJson),
 						IsCreate: msg.Action == events.ActionCreate,
 					}

@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"github.com/FedeDP/container-worker/pkg/config"
 	"github.com/FedeDP/container-worker/pkg/container"
 	"sync"
 	"unsafe"
@@ -44,7 +45,12 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 		C.makeCallback(cStr, cbool, asyncID, cb)
 	}
 
-	generators, inotifier, err := container.Generators(ptr.GoString(unsafe.Pointer(initCfg)))
+	err := config.Load(ptr.GoString(unsafe.Pointer(initCfg)))
+	if err != nil {
+		return false
+	}
+
+	generators, inotifier, err := container.Generators()
 	if err != nil {
 		return false
 	}

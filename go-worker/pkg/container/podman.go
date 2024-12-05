@@ -3,6 +3,8 @@ package container
 import (
 	"context"
 	"errors"
+	"github.com/FedeDP/container-worker/pkg/config"
+	"github.com/FedeDP/container-worker/pkg/event"
 	"github.com/containers/podman/v5/libpod/define"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
@@ -32,7 +34,7 @@ func newPodmanEngine(ctx context.Context, socket string) (Engine, error) {
 	return &podmanEngine{conn}, nil
 }
 
-func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
+func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 	cfg := ctr.Config
 	if cfg == nil {
 		cfg = &define.InspectContainerConfig{}
@@ -50,9 +52,9 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 	name = strings.TrimPrefix(ctr.Name, "/")
 	isPodSandbox = strings.Contains(name, "k8s_POD")
 
-	mounts := make([]mount, 0)
+	mounts := make([]event.Mount, 0)
 	for _, m := range ctr.Mounts {
-		mounts = append(mounts, mount{
+		mounts = append(mounts, event.Mount{
 			Source:      m.Source,
 			Destination: m.Destination,
 			Mode:        m.Mode,
@@ -61,7 +63,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 		})
 	}
 
-	portMappings := make([]portMapping, 0)
+	portMappings := make([]event.PortMapping, 0)
 	for port, portBindings := range netCfg.Ports {
 		if !strings.Contains(port, "/tcp") {
 			continue
@@ -71,7 +73,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 			continue
 		}
 		for _, portBinding := range portBindings {
-			portMappings = append(portMappings, portMapping{
+			portMappings = append(portMappings, event.PortMapping{
 				HostIp:        portBinding.HostIP,
 				HostPort:      portBinding.HostPort,
 				ContainerPort: containerPort,
@@ -91,7 +93,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 
 	labels := make(map[string]string)
 	for key, val := range cfg.Labels {
-		if len(val) <= maxLabelLen {
+		if len(val) <= config.GetLabelMaxLen() {
 			labels[key] = val
 		}
 	}
@@ -108,8 +110,8 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 	}
 	cpusetCount := countCPUSet(hostCfg.CpusetCpus)
 
-	return Info{
-		Container{
+	return event.Info{
+		Container: event.Container{
 			Type:           typePodman.ToCTValue(),
 			ID:             ctr.ID[:shortIDLength],
 			Name:           name,
@@ -141,8 +143,8 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) Info {
 	}
 }
 
-func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
-	evts := make([]Event, 0)
+func (pc *podmanEngine) List(_ context.Context) ([]event.Event, error) {
+	evts := make([]event.Event, 0)
 	all := true
 	cList, err := containers.List(pc.pCtx, &containers.ListOptions{All: &all})
 	if err != nil {
@@ -151,9 +153,9 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 	for _, c := range cList {
 		ctrInfo, err := containers.Inspect(pc.pCtx, c.ID, nil)
 		if err != nil {
-			evts = append(evts, Event{
-				Info: Info{
-					Container{
+			evts = append(evts, event.Event{
+				Info: event.Info{
+					Container: event.Container{
 						Type:        typePodman.ToCTValue(),
 						ID:          c.ID[:shortIDLength],
 						Image:       c.Image,
@@ -165,7 +167,7 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 				IsCreate: true,
 			})
 		} else {
-			evts = append(evts, Event{
+			evts = append(evts, event.Event{
 				Info:     pc.ctrToInfo(ctrInfo),
 				IsCreate: true,
 			})
@@ -175,7 +177,7 @@ func (pc *podmanEngine) List(_ context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
+func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.Event, error) {
 	stream := true
 	filters := map[string][]string{
 		"type": {string(events.ContainerEventType)},
@@ -196,7 +198,7 @@ func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 		})
 	}(evChn)
 
-	outCh := make(chan Event)
+	outCh := make(chan event.Event)
 	wg.Add(1)
 	go func() {
 		defer close(outCh)
@@ -216,9 +218,9 @@ func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 				}
 				if err != nil {
 					// At least send an event with the minimal set of data
-					outCh <- Event{
-						Info: Info{
-							Container{
+					outCh <- event.Event{
+						Info: event.Info{
+							Container: event.Container{
 								Type:   typePodman.ToCTValue(),
 								ID:     ev.Actor.ID[:shortIDLength],
 								FullID: ev.Actor.ID,
@@ -228,7 +230,7 @@ func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 						IsCreate: ev.Action == events.ActionCreate,
 					}
 				} else {
-					outCh <- Event{
+					outCh <- event.Event{
 						Info:     pc.ctrToInfo(ctr),
 						IsCreate: ev.Action == events.ActionCreate,
 					}

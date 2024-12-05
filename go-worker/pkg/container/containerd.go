@@ -2,6 +2,8 @@ package container
 
 import (
 	"context"
+	"github.com/FedeDP/container-worker/pkg/config"
+	"github.com/FedeDP/container-worker/pkg/event"
 	"github.com/containerd/containerd/api/events"
 	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/containers"
@@ -30,7 +32,7 @@ func newContainerdEngine(_ context.Context, socket string) (Engine, error) {
 	return &containerdEngine{client: client}, nil
 }
 
-func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, container containerd.Container) Info {
+func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, container containerd.Container) event.Info {
 	info, err := container.Info(namespacedContext)
 	if err != nil {
 		info = containers.Container{}
@@ -78,7 +80,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 
 	// Mounts related - TODO double check
-	mounts := make([]mount, 0)
+	mounts := make([]event.Mount, 0)
 	for _, m := range spec.Mounts {
 		readOnly := false
 		for _, path := range spec.Linux.ReadonlyPaths {
@@ -87,7 +89,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 				break
 			}
 		}
-		mounts = append(mounts, mount{
+		mounts = append(mounts, event.Mount{
 			Source:      m.Source,
 			Destination: m.Destination,
 			RW:          !readOnly,
@@ -121,7 +123,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 
 	labels := make(map[string]string)
 	for key, val := range info.Labels {
-		if len(val) <= maxLabelLen {
+		if len(val) <= config.GetLabelMaxLen() {
 			labels[key] = val
 		}
 	}
@@ -135,15 +137,15 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		if len(sandboxLabels) > 0 {
 			podSandboxLabels = make(map[string]string)
 			for key, val := range sandboxLabels {
-				if len(val) <= maxLabelLen {
+				if len(val) <= config.GetLabelMaxLen() {
 					podSandboxLabels[key] = val
 				}
 			}
 		}
 	}
 
-	return Info{
-		Container{
+	return event.Info{
+		Container: event.Container{
 			Type:             typeContainerd.ToCTValue(),
 			ID:               container.ID()[:shortIDLength],
 			Name:             "", //  // TODO container.m_name = status.metadata().name(); ??
@@ -177,12 +179,12 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 }
 
-func (c *containerdEngine) List(ctx context.Context) ([]Event, error) {
+func (c *containerdEngine) List(ctx context.Context) ([]event.Event, error) {
 	namespacesList, err := c.client.NamespaceService().List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	evts := make([]Event, 0)
+	evts := make([]event.Event, 0)
 	for _, namespace := range namespacesList {
 		namespacedContext := namespaces.WithNamespace(ctx, namespace)
 		containersList, err := c.client.Containers(namespacedContext)
@@ -190,7 +192,7 @@ func (c *containerdEngine) List(ctx context.Context) ([]Event, error) {
 			continue
 		}
 		for _, container := range containersList {
-			evts = append(evts, Event{
+			evts = append(evts, event.Event{
 				Info:     c.ctrToInfo(namespacedContext, container),
 				IsCreate: true,
 			})
@@ -199,8 +201,8 @@ func (c *containerdEngine) List(ctx context.Context) ([]Event, error) {
 	return evts, nil
 }
 
-func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan Event, error) {
-	outCh := make(chan Event)
+func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.Event, error) {
+	outCh := make(chan event.Event)
 	eventsClient := c.client.EventService()
 	eventsCh, _ := eventsClient.Subscribe(ctx,
 		`topic=="/containers/create"`, `topic=="/containers/delete"`)
@@ -217,7 +219,7 @@ func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-ch
 					id       string
 					isCreate bool
 					image    string
-					info     Info
+					info     event.Info
 				)
 				ctrCreate := events.ContainerCreate{}
 				err := typeurl.UnmarshalTo(ev.Event, &ctrCreate)
@@ -238,8 +240,8 @@ func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-ch
 				container, err := c.client.LoadContainer(namespacedContext, id)
 				if err != nil {
 					// minimum set of infos
-					info = Info{
-						Container{
+					info = event.Info{
+						Container: event.Container{
 							Type:   typeContainerd.ToCTValue(),
 							ID:     id[:shortIDLength],
 							FullID: id,
@@ -249,7 +251,7 @@ func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-ch
 				} else {
 					info = c.ctrToInfo(namespacedContext, container)
 				}
-				outCh <- Event{
+				outCh <- event.Event{
 					Info:     info,
 					IsCreate: isCreate,
 				}

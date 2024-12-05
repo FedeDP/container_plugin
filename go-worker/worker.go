@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/FedeDP/container-worker/pkg/container"
+	"github.com/FedeDP/container-worker/pkg/event"
 	"reflect"
 	"sync"
 )
@@ -29,7 +30,7 @@ type asyncCb func(string, bool)
 
 func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.Engine, inotifier *container.EngineInotifier) {
 	var (
-		evt      container.Event
+		evt      event.Event
 		listenWg sync.WaitGroup
 	)
 
@@ -83,7 +84,7 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 				})
 			}
 		} else {
-			evt, _ = val.Interface().(container.Event)
+			evt, _ = val.Interface().(event.Event)
 			cb(evt.String(), evt.IsCreate)
 		}
 	}

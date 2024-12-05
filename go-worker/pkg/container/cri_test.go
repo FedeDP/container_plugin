@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"github.com/FedeDP/container-worker/pkg/event"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,37 +57,38 @@ func TestCRIFake(t *testing.T) {
 	events, err := engine.List(context.Background())
 	assert.NoError(t, err)
 
-	expectedEvent := Event{
-		Info: Info{Container{
-			Type:             typeCri.ToCTValue(),
-			ID:               "test_sandbox",
-			Name:             "test_container",
-			Image:            "alpine:3.20.3",
-			ImageDigest:      "alpine:3.20.3",
-			User:             "&ContainerUser{Linux:nil,}",
-			CPUPeriod:        defaultCpuPeriod,
-			CPUQuota:         0,
-			CPUShares:        defaultCpuShares,
-			CPUSetCPUCount:   0,
-			Env:              nil, // TODO
-			FullID:           "test_sandbox_test_container_0",
-			Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": "test_sandbox_test_container_0"},
-			PodSandboxID:     "test_sandbox_test_container_0",
-			Privileged:       false, // TODO
-			PodSandboxLabels: map[string]string{},
-			Mounts:           []mount{},
-		}},
+	expectedEvent := event.Event{
+		Info: event.Info{
+			Container: event.Container{
+				Type:             typeCri.ToCTValue(),
+				ID:               "test_sandbox",
+				Name:             "test_container",
+				Image:            "alpine:3.20.3",
+				ImageDigest:      "alpine:3.20.3",
+				User:             "&ContainerUser{Linux:nil,}",
+				CPUPeriod:        defaultCpuPeriod,
+				CPUQuota:         0,
+				CPUShares:        defaultCpuShares,
+				CPUSetCPUCount:   0,
+				Env:              nil, // TODO
+				FullID:           "test_sandbox_test_container_0",
+				Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": "test_sandbox_test_container_0"},
+				PodSandboxID:     "test_sandbox_test_container_0",
+				Privileged:       false, // TODO
+				PodSandboxLabels: map[string]string{},
+				Mounts:           []event.Mount{},
+			}},
 		IsCreate: true,
 	}
 
 	// We don't have this before creation
 	found := false
-	for _, event := range events {
-		if event.FullID == ctr.ContainerId {
+	for _, evt := range events {
+		if evt.FullID == ctr.ContainerId {
 			found = true
 			// We don't have this before creation
-			expectedEvent.CreatedTime = event.CreatedTime
-			assert.Equal(t, expectedEvent, event)
+			expectedEvent.CreatedTime = evt.CreatedTime
+			assert.Equal(t, expectedEvent, evt)
 		}
 	}
 	assert.True(t, found)
@@ -155,38 +157,39 @@ func TestCRI(t *testing.T) {
 	events, err := engine.List(context.Background())
 	assert.NoError(t, err)
 
-	expectedEvent := Event{
-		Info: Info{Container{
-			Type:             typeContainerd.ToCTValue(),
-			ID:               ctr[:shortIDLength],
-			Name:             "test_container",
-			Image:            "docker.io/library/alpine:3.20.3",
-			ImageDigest:      "docker.io/library/alpine@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
-			User:             "&ContainerUser{Linux:nil,}",
-			CPUPeriod:        defaultCpuPeriod,
-			CPUQuota:         2000,
-			CPUShares:        defaultCpuShares,
-			CPUSetCPUCount:   3,
-			Env:              nil, // TODO
-			FullID:           ctr,
-			Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": sandboxName, "io.kubernetes.pod.name": "test", "io.kubernetes.pod.namespace": "default", "io.kubernetes.pod.uid": id.String()},
-			PodSandboxID:     sandboxName,
-			Privileged:       false, // TODO
-			PodSandboxLabels: map[string]string{},
-			Mounts:           []mount{},
-			IsPodSandbox:     true,
-		}},
+	expectedEvent := event.Event{
+		Info: event.Info{
+			Container: event.Container{
+				Type:             typeContainerd.ToCTValue(),
+				ID:               ctr[:shortIDLength],
+				Name:             "test_container",
+				Image:            "docker.io/library/alpine:3.20.3",
+				ImageDigest:      "docker.io/library/alpine@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
+				User:             "&ContainerUser{Linux:nil,}",
+				CPUPeriod:        defaultCpuPeriod,
+				CPUQuota:         2000,
+				CPUShares:        defaultCpuShares,
+				CPUSetCPUCount:   3,
+				Env:              nil, // TODO
+				FullID:           ctr,
+				Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": sandboxName, "io.kubernetes.pod.name": "test", "io.kubernetes.pod.namespace": "default", "io.kubernetes.pod.uid": id.String()},
+				PodSandboxID:     sandboxName,
+				Privileged:       false, // TODO
+				PodSandboxLabels: map[string]string{},
+				Mounts:           []event.Mount{},
+				IsPodSandbox:     true,
+			}},
 		IsCreate: true,
 	}
 
 	found := false
-	for _, event := range events {
-		if event.FullID == ctr {
+	for _, evt := range events {
+		if evt.FullID == ctr {
 			found = true
 			// We don't have these before creation
-			expectedEvent.CreatedTime = event.CreatedTime
-			expectedEvent.Ip = event.Ip
-			assert.Equal(t, expectedEvent, event)
+			expectedEvent.CreatedTime = evt.CreatedTime
+			expectedEvent.Ip = evt.Ip
+			assert.Equal(t, expectedEvent, evt)
 		}
 	}
 	assert.True(t, found)
@@ -208,19 +211,20 @@ func TestCRI(t *testing.T) {
 	assert.NoError(t, err)
 
 	// receive the "remove" event
-	expectedEvent = Event{
-		Info: Info{Container{
-			Type:        typeContainerd.ToCTValue(),
-			ID:          ctr[:shortIDLength],
-			FullID:      ctr,
-			CreatedTime: expectedEvent.CreatedTime,
-		}},
+	expectedEvent = event.Event{
+		Info: event.Info{
+			Container: event.Container{
+				Type:        typeContainerd.ToCTValue(),
+				ID:          ctr[:shortIDLength],
+				FullID:      ctr,
+				CreatedTime: expectedEvent.CreatedTime,
+			}},
 		IsCreate: false,
 	}
 	for {
-		event := waitOnChannelOrTimeout(t, listCh)
-		if event.IsCreate == false {
-			assert.Equal(t, expectedEvent, event)
+		evt := waitOnChannelOrTimeout(t, listCh)
+		if evt.IsCreate == false {
+			assert.Equal(t, expectedEvent, evt)
 			break
 		}
 	}

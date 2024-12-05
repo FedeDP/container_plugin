@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"github.com/FedeDP/container-worker/pkg/event"
 	containerd "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/containerd/containerd/v2/pkg/oci"
@@ -64,35 +65,36 @@ func TestContainerd(t *testing.T) {
 	events, err := engine.List(context.Background())
 	assert.NoError(t, err)
 
-	expectedEvent := Event{
-		Info: Info{Container{
-			Type:             typeContainerd.ToCTValue(),
-			ID:               ctr.ID()[:shortIDLength],
-			Image:            "docker.io/library/alpine:3.20.3",
-			CPUPeriod:        defaultCpuPeriod,
-			CPUQuota:         cpuQuota,
-			CPUShares:        defaultCpuShares,
-			CPUSetCPUCount:   2,   // 0-1
-			Env:              nil, // TODO
-			FullID:           ctr.ID(),
-			Labels:           map[string]string{},
-			PodSandboxID:     "",
-			Privileged:       false, // TODO
-			PodSandboxLabels: nil,
-			Mounts:           []mount{},
-			User:             "testuser",
-		}},
+	expectedEvent := event.Event{
+		Info: event.Info{
+			Container: event.Container{
+				Type:             typeContainerd.ToCTValue(),
+				ID:               ctr.ID()[:shortIDLength],
+				Image:            "docker.io/library/alpine:3.20.3",
+				CPUPeriod:        defaultCpuPeriod,
+				CPUQuota:         cpuQuota,
+				CPUShares:        defaultCpuShares,
+				CPUSetCPUCount:   2,   // 0-1
+				Env:              nil, // TODO
+				FullID:           ctr.ID(),
+				Labels:           map[string]string{},
+				PodSandboxID:     "",
+				Privileged:       false, // TODO
+				PodSandboxLabels: nil,
+				Mounts:           []event.Mount{},
+				User:             "testuser",
+			}},
 		IsCreate: true,
 	}
 
 	found := false
-	for _, event := range events {
-		if event.FullID == ctr.ID() {
+	for _, evt := range events {
+		if evt.FullID == ctr.ID() {
 			found = true
 			// We don't have these before creation
-			expectedEvent.CreatedTime = event.CreatedTime
-			expectedEvent.Ip = event.Ip
-			assert.Equal(t, expectedEvent, event)
+			expectedEvent.CreatedTime = evt.CreatedTime
+			expectedEvent.Ip = evt.Ip
+			assert.Equal(t, expectedEvent, evt)
 		}
 	}
 	assert.True(t, found)
@@ -111,16 +113,17 @@ func TestContainerd(t *testing.T) {
 	err = ctr.Delete(namespacedCtx)
 	assert.NoError(t, err)
 
-	expectedEvent = Event{
-		Info: Info{Container{
-			Type:   typeContainerd.ToCTValue(),
-			ID:     ctr.ID()[:shortIDLength],
-			FullID: ctr.ID(),
-		}},
+	expectedEvent = event.Event{
+		Info: event.Info{
+			Container: event.Container{
+				Type:   typeContainerd.ToCTValue(),
+				ID:     ctr.ID()[:shortIDLength],
+				FullID: ctr.ID(),
+			}},
 		IsCreate: false,
 	}
 
 	// receive the "remove" event
-	event := waitOnChannelOrTimeout(t, listCh)
-	assert.Equal(t, expectedEvent, event)
+	evt := waitOnChannelOrTimeout(t, listCh)
+	assert.Equal(t, expectedEvent, evt)
 }
