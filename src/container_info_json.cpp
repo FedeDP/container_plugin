@@ -49,7 +49,6 @@
 }
 */
 
-
 void from_json(const nlohmann::json& j, container_health_probe& probe) {
     probe.m_args = j.value("args", std::vector<std::string>{});
     probe.m_exe = j.value("exe", "");
@@ -130,6 +129,11 @@ void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) 
     cinfo = info;
 }
 
+void to_json(nlohmann::json& j, const container_health_probe& probe) {
+    j["args"] = probe.m_args;
+    j["exe"] = probe.m_exe;
+}
+
 void to_json(nlohmann::json& j, const container_mount_info& mount) {
     j["Source"] = mount.m_source;
     j["Destination"] = mount.m_dest;
@@ -144,7 +148,7 @@ void to_json(nlohmann::json& j, const container_port_mapping& port) {
     j["ContainerPort"] = port.m_container_port;
 }
 
-void to_json(nlohmann::json& j, const std::shared_ptr<container_info>& cinfo) {
+void to_json(nlohmann::json& j, const std::shared_ptr<const container_info>& cinfo) {
     auto& container = j["container"];
     j["type"] = cinfo->m_type;
     j["id"] = cinfo->m_id;
@@ -181,11 +185,6 @@ void to_json(nlohmann::json& j, const std::shared_ptr<container_info>& cinfo) {
 
     for(auto &probe : cinfo->m_health_probes) {
         const auto probe_type = container_health_probe::probe_type_names[probe.m_type];
-        j[probe_type]["exe"] = probe.m_exe;
-        auto args = nlohmann::json::array();
-        for(auto &arg : probe.m_args) {
-            args.push_back(arg);
-        }
-        j[probe_type]["args"] = args;
+        j[probe_type] = probe;
     }
 }

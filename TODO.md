@@ -16,6 +16,9 @@
 
 - [ ] what to do in case of multiple engines sending info about same container? (eg: docker and containerd)
 
+- [ ] implement lxc/libvirt-lxc support leveraging lxc monitor (or inotify?) https://github.com/lxc/lxc/blob/62f9e7eda4a6cb4230d8019bce0444254d475021/src/lxc/tools/lxc_monitor.c#L320
+  - [ ] we could also leverage inotify by using, as socket, `lxc.lxcpath` variable, that is the folder where all containers are stored for lxc
+
 - [ ] properly send json with all info from go-worker
     - [ ] fix remaining TODOs
     - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early
