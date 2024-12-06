@@ -19,6 +19,14 @@
 - [ ] implement lxc/libvirt-lxc support leveraging lxc monitor (or inotify?) https://github.com/lxc/lxc/blob/62f9e7eda4a6cb4230d8019bce0444254d475021/src/lxc/tools/lxc_monitor.c#L320
   - [ ] we could also leverage inotify by using, as socket, `lxc.lxcpath` variable, that is the folder where all containers are stored for lxc
 
+- [ ] what to do with threads with empty container_id (ie: neither host nor id)? 
+  - assume they are on host and return host info?
+  - don't assume anything and just skip them?
+  - it can happen 2 ways:
+    * there is an interval of time after we scanned proc and before we start the sinsp capture, where new threads created get lost
+    * if clone/exexve syscalls are lost the plugin won't receive them and thus container_id won't be written -> this already happens in sinsp
+    * the latter can be fixed by letting `extract` write the foreign key in the threadtable, so that we store the thread container_id during extraction
+
 - [ ] properly send json with all info from go-worker
     - [ ] fix remaining TODOs
     - [ ] fix: docker is not able to retrieve IP because onContainerCreate is called too early
