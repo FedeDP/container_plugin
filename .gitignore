@@ -4,4 +4,3 @@
 .vscode
 .idea
 build*
-libcontainer.so

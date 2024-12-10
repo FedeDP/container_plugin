@@ -1,6 +1,5 @@
 #include "plugin.h"
 #include <libworker.h>
-#include <mutex>
 
 //////////////////////////
 // Async capability
