@@ -70,6 +70,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 			}
 		}
 	}
+	// TODO: should we leave even if there might be some inotifier attached?
 	if len(containerEngines) == 0 {
 		return false
 	}

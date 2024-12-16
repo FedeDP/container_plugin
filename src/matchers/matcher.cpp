@@ -3,6 +3,7 @@
 #include "bpm.h"
 #include "podman.h"
 #include "cri.h"
+#include "containerd.h"
 #include "lxc.h"
 #include "libvirt_lxc.h"
 #include "static_container.h"
@@ -25,9 +26,13 @@ matcher_manager::matcher_manager(const PluginConfig& cfg) {
         auto docker_engine = std::make_shared<docker>();
         m_matchers.push_back(docker_engine);
     }
-    if(cfg.cri.enabled || cfg.containerd.enabled) {
+    if(cfg.cri.enabled) {
         auto cri_engine = std::make_shared<cri>();
         m_matchers.push_back(cri_engine);
+    }
+    if(cfg.containerd.enabled) {
+      auto containerd_engine = std::make_shared<containerd>();
+      m_matchers.push_back(containerd_engine);
     }
     if(cfg.lxc.enabled) {
         auto lxc_engine = std::make_shared<lxc>();
