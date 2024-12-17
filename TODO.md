@@ -1,7 +1,7 @@
 # TODO
 
 - [x] reimplement `sinsp_container_manager::identify_category()` : https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L488
-  - [ ] finish implementing identify_category logic
+  - [x] finish implementing identify_category logic
 
 - [x] support container engines "hotplug", ie: container engine that gets started as soon as its socket becomes available
 
@@ -21,4 +21,4 @@
     - [ ] send healthprobe related infos
 
 - [x] Implement containerd matcher
-- [ ] Implement some unit tests taken from sinsp
+- [x] Implement some unit tests taken from sinsp

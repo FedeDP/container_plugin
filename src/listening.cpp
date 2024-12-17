@@ -12,14 +12,13 @@ bool my_plugin::capture_open(const falcosecurity::capture_listen_input& in) {
             tr,
             [this, tr, tw](const falcosecurity::table_entry& e)
             {
-                std::shared_ptr<container_info> info = nullptr;
-                auto container_id = compute_container_id_for_thread(e, tr, info);
-                m_container_id_field.write_value(tw, e, container_id);
-                // Write thread category field
-                if (container_id != HOST_CONTAINER_ID) {
-                    write_thread_category(e, tr, tw);
+                try {
+                   on_new_process(e, tr, tw);
+                   return true;
+                } catch (falcosecurity::plugin_exception &e) {
+                    SPDLOG_ERROR("cannot attach container_id to process: {}", e.what());
+                    return false;
                 }
-                return true;
             });
     return true;
 }

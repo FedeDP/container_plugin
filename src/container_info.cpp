@@ -21,9 +21,9 @@ limitations under the License.
 #include "container_info.h"
 
 std::vector<std::string> container_health_probe::probe_type_names =
-        {"Healthcheck", "LivenessProbe", "ReadinessProbe"};
+        {"None", "Healthcheck", "LivenessProbe", "ReadinessProbe"};
 
-container_health_probe::container_health_probe() {}
+container_health_probe::container_health_probe() : m_type(PT_NONE) {}
 
 container_health_probe::container_health_probe(
         const probe_type ptype,
@@ -70,12 +70,11 @@ const container_mount_info *container_info::mount_by_dest(
     return NULL;
 }
 
-// TODO reimplement in go, needed by identify_category
-/*container_health_probe::probe_type container_info::match_health_probe(
-        sinsp_threadinfo *tinfo) const {
+container_health_probe::probe_type container_info::match_health_probe(
+        const std::string &exe, const std::vector<std::string> &args) const {
 
     auto pred = [&](const container_health_probe &p) {
-        return (p.m_health_probe_exe == tinfo->m_exe && p.m_health_probe_args == tinfo->m_args);
+        return (p.m_exe == exe && p.m_args == args);
     };
 
     auto match = std::find_if(m_health_probes.begin(), m_health_probes.end(), pred);
@@ -84,5 +83,5 @@ const container_mount_info *container_info::mount_by_dest(
         return container_health_probe::PT_NONE;
     }
 
-    return match->m_probe_type;
-}*/
+    return match->m_type;
+}
