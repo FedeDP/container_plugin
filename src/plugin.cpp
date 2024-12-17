@@ -114,6 +114,18 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         m_threads_field_ptid = m_threads_table.get_field(
                 t.fields(), PTID_FIELD_NAME, st::SS_PLUGIN_ST_INT64);
 
+        // get the 'args' field accessor from the thread table
+        m_threads_field_args = m_threads_table.get_field(
+                t.fields(), "args", st::SS_PLUGIN_ST_TABLE);
+
+        // get the 'value' field accessor from the args table
+        m_args_field = t.get_subtable_field(m_threads_table, m_threads_field_args,
+                                     "value", st::SS_PLUGIN_ST_STRING);
+
+        // get the 'exe' field accessor from the thread table
+        m_threads_field_exe = m_threads_table.get_field(
+                t.fields(), "exe", st::SS_PLUGIN_ST_STRING);
+
         // get the 'cgroups' field accessor from the thread table
         m_threads_field_cgroups = m_threads_table.get_field(
                 t.fields(), CGROUPS_TABLE_NAME, st::SS_PLUGIN_ST_TABLE);
@@ -129,7 +141,6 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         // Add the category field into thread table
         m_threads_field_category = m_threads_table.add_field(
                 t.fields(), CATEGORY_FIELD_NAME, st::SS_PLUGIN_ST_UINT16);
-
     } catch(falcosecurity::plugin_exception e) {
         m_lasterr = "cannot add the '" + std::string(CONTAINER_ID_FIELD_NAME) +
                     "' field into the '" + std::string(THREAD_TABLE_NAME) +

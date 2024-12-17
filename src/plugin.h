@@ -95,10 +95,14 @@ public:
     //////////////////////////
     // Helpers
     //////////////////////////
+    void on_new_process(const falcosecurity::table_entry& thread_entry,
+                        const falcosecurity::table_reader& tr,
+                        const falcosecurity::table_writer& tw);
     std::string compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
                                                 const falcosecurity::table_reader& tr,
                                                 std::shared_ptr<container_info>& info);
-    void write_thread_category(const falcosecurity::table_entry& thread_entry,
+    void write_thread_category(const std::shared_ptr<const container_info>& cinfo,
+                               const falcosecurity::table_entry& thread_entry,
                                const falcosecurity::table_reader& tr,
                                const falcosecurity::table_writer& tw);
 
@@ -124,6 +128,12 @@ private:
     falcosecurity::table_field m_threads_field_vpid;
     // Accessors to the thread table "ptid" field
     falcosecurity::table_field m_threads_field_ptid;
+    // Accessors to the thread table "args" sub table
+    falcosecurity::table_field m_threads_field_args;
+    // Accessors to the thread table "args" field values
+    falcosecurity::table_field m_args_field;
+    // Accessors to the thread table "exe" field
+    falcosecurity::table_field m_threads_field_exe;
     // Accessors to the thread table "cgroups" table
     falcosecurity::table_field m_threads_field_cgroups;
     // Accessors to the thread table "cgroups" "second" field, ie: the cgroups path

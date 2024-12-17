@@ -170,9 +170,12 @@ std::string my_plugin::compute_container_id_for_thread(const falcosecurity::tabl
 }
 
 // Same logic as https://github.com/falcosecurity/libs/blob/a99a36573f59c0e25965b36f8fa4ae1b10c5d45c/userspace/libsinsp/container.cpp#L438
-void my_plugin::write_thread_category(const falcosecurity::table_entry& thread_entry,
+void my_plugin::write_thread_category(const std::shared_ptr<const container_info>& cinfo,
+    								  const falcosecurity::table_entry& thread_entry,
                                       const falcosecurity::table_reader& tr,
                                       const falcosecurity::table_writer& tw) {
+    using st = falcosecurity::state_value_type;
+
     int64_t vpid;
     m_threads_field_vpid.read_value(tr, thread_entry, vpid);
     if (vpid == 1) {
@@ -195,6 +198,34 @@ void my_plugin::write_thread_category(const falcosecurity::table_entry& thread_e
         // nothing
         SPDLOG_DEBUG("no parent thread found");
     }
+
+    // Read "exe" field
+    std::string exe;
+    m_threads_field_exe.read_value(tr, thread_entry, exe);
+    // Read "args" field: collect args
+    std::vector<std::string> args;
+    auto args_table = m_threads_table.get_subtable(
+                    tr, m_threads_field_args, thread_entry,
+                    st::SS_PLUGIN_ST_INT64);
+    args_table.iterate_entries(
+                    tr,
+                    [this, tr, &args](const falcosecurity::table_entry& e)
+                    {
+                        // read the arg field from the current entry of args
+                        // table
+                        std::string arg;
+                        m_args_field.read_value(tr, e, arg);
+                        if(!arg.empty())
+                        {
+                            args.push_back(arg);
+                        }
+                        return true;
+                    });
+
+    const auto ptype = cinfo->match_health_probe(exe, args);
+	if(ptype == container_health_probe::PT_NONE) {
+		return;
+	}
 
     bool found_container_init = false;
     while (!found_container_init) {
@@ -220,16 +251,57 @@ void my_plugin::write_thread_category(const falcosecurity::table_entry& thread_e
         }
     }
     if (!found_container_init) {
-        // TODO: match health probe
-        // cinfo->match_health_probe(tinfo);
-        // switch (ptype) ...
+        uint16_t category;
+      	// Each health probe type maps to a command category
+		switch(ptype) {
+		case container_health_probe::PT_NONE:
+			break;
+		case container_health_probe::PT_HEALTHCHECK:
+            category = CAT_HEALTHCHECK;
+            m_threads_field_category.write_value(tw, thread_entry, category);
+			break;
+		case container_health_probe::PT_LIVENESS_PROBE:
+            category = CAT_LIVENESS_PROBE;
+            m_threads_field_category.write_value(tw, thread_entry, category);
+			break;
+		case container_health_probe::PT_READINESS_PROBE:
+            category = CAT_READINESS_PROBE;
+            m_threads_field_category.write_value(tw, thread_entry, category);
+			break;
+		}
         return;
     }
+}
 
+void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
+                               const falcosecurity::table_reader& tr,
+                               const falcosecurity::table_writer& tw) {
+	std::shared_ptr<container_info> info = nullptr;
+    auto container_id = compute_container_id_for_thread(thread_entry, tr, info);
+    m_container_id_field.write_value(tw, thread_entry, container_id);
 
-    // Default value if anything else failed.
-    uint16_t category = CAT_NONE;
-    m_threads_field_category.write_value(tw, thread_entry, category);
+    if (info != nullptr) {
+        // Since the matcher also returned a container_info,
+        // it means we do not expect to receive any metadata from the go-worker,
+        // since the engine has no listener SDK.
+        // Just send the event now.
+        nlohmann::json j(info);
+        generate_async_event(j.dump().c_str(), true, ASYNC_HANDLER_DEFAULT);
+
+        // Immediately cache the container metadata
+        m_containers[info->m_id] = info;
+    }
+
+    // Write thread category field
+    if (container_id != HOST_CONTAINER_ID) {
+		auto it = m_containers.find(container_id);
+        if (it != m_containers.end()) {
+            auto cinfo = it->second;
+            write_thread_category(cinfo, thread_entry, tr, tw);
+        } else {
+            SPDLOG_WARN("failed to write thread category, no container found for {}", container_id);
+        }
+    }
 }
 
 bool my_plugin::parse_new_process_event(
@@ -239,34 +311,12 @@ bool my_plugin::parse_new_process_event(
 
     // compute container_id from tid->cgroups
     auto& tr = in.get_table_reader();
+    auto& tw = in.get_table_writer();
 
     // retrieve the thread entry associated with this thread id
     try {
     	auto thread_entry = m_threads_table.get_entry(tr, thread_id);
-
-    	std::shared_ptr<container_info> info = nullptr;
-    	auto container_id = compute_container_id_for_thread(thread_entry, tr, info);
-
-    	// store container_id
-    	auto& tw = in.get_table_writer();
-    	m_container_id_field.write_value(tw, thread_entry, container_id);
-
-    	if (info != nullptr) {
-        	// Since the matcher also returned a container_info,
-        	// it means we do not expect to receive any metadata from the go-worker,
-        	// since the engine has no listener SDK.
-        	// Just send the event now.
-        	nlohmann::json j(info);
-        	generate_async_event(j.dump().c_str(), true, ASYNC_HANDLER_DEFAULT);
-
-        	// Immediately cache the container metadata
-        	m_containers[info->m_id] = info;
-    	}
-
-    	// Write thread category field
-    	if (container_id != HOST_CONTAINER_ID) {
-        	write_thread_category(thread_entry, tr, tw);
-    	}
+        on_new_process(thread_entry, tr, tw);
     	return true;
     } catch (falcosecurity::plugin_exception &e) {
       	SPDLOG_ERROR("cannot attach container_id to new process event for the thread id '{}': {}",

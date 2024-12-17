@@ -55,6 +55,7 @@ class container_health_probe {
 public:
     // The type of health probe
     enum probe_type {
+    	PT_NONE,
         PT_HEALTHCHECK,
         PT_LIVENESS_PROBE,
         PT_READINESS_PROBE
@@ -114,7 +115,8 @@ public:
     }
 
     // Match a process against the set of health probes
-   // container_health_probe::probe_type match_health_probe(sinsp_threadinfo *tinfo) const;
+   container_health_probe::probe_type match_health_probe(
+        const std::string &exe, const std::vector<std::string> &args) const;
 
     std::string m_id;
     std::string m_full_id;

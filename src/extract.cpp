@@ -604,19 +604,34 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
             break;
         case TYPE_IS_CONTAINER_HEALTHCHECK: {
             int16_t category;
-            m_threads_field_category.read_value(tr, thread_entry, category);
+            // Since we do write thread category only if not NONE for containerized processes
+            try {
+              	m_threads_field_category.read_value(tr, thread_entry, category);
+            } catch (...) {
+              	category = CAT_NONE;
+            }
             req.set_value(category == CAT_HEALTHCHECK);
             break;
         }
         case TYPE_IS_CONTAINER_LIVENESS_PROBE: {
             int16_t category;
-            m_threads_field_category.read_value(tr, thread_entry, category);
+            // Since we do write thread category only if not NONE for containerized processes
+           	try {
+              	m_threads_field_category.read_value(tr, thread_entry, category);
+            } catch (...) {
+              	category = CAT_NONE;
+            }
             req.set_value(category == CAT_LIVENESS_PROBE);
             break;
         }
         case TYPE_IS_CONTAINER_READINESS_PROBE: {
             int16_t category;
-            m_threads_field_category.read_value(tr, thread_entry, category);
+            // Since we do write thread category only if not NONE for containerized processes
+           	try {
+              	m_threads_field_category.read_value(tr, thread_entry, category);
+            } catch (...) {
+              	category = CAT_NONE;
+            }
             req.set_value(category == CAT_READINESS_PROBE);
             break;
         }
