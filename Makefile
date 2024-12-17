@@ -28,5 +28,9 @@ clean:
 $(OUTPUT):
 	cmake -B build -S . && make -C build/ container -j6 && cp build/$(OUTPUT) $(OUTPUT)
 
+.PHONY: test
+test: $(OUTPUT)
+	make -C build/ test && build/test/test && make -C go-worker/ test
+
 readme:
 	@$(READMETOOL) -p ./$(OUTPUT) -f README.md
