@@ -52,7 +52,7 @@ jobs:
       - name: Build go-worker executable
         run: make -C go-worker exe
 
-      - name: Run go-worker tests
+      - name: Run tests
         run: |
           systemctl --user start podman
-          make -C go-worker test
+          make test

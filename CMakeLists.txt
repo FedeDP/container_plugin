@@ -52,3 +52,8 @@ target_include_directories(container PRIVATE ${PLUGIN_SDK_INCLUDE} ${PLUGIN_SDK_
 
 # project linked libraries
 target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 PkgConfig::GPGME ${WORKER_LIB})
+
+option(ENABLE_TESTS "Enable build of unit tests" ON)
+if (ENABLE_TESTS)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/test/)
+endif ()

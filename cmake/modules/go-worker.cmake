@@ -15,4 +15,3 @@ set(WORKER_LIB ${CMAKE_SOURCE_DIR}/go-worker/libworker.a)
 set(WORKER_INCLUDE ${CMAKE_SOURCE_DIR}/go-worker)
 
 message(STATUS "Using worker library at '${WORKER_LIB}' with header in ${WORKER_INCLUDE}")
-

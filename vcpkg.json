@@ -5,6 +5,7 @@
   "dependencies": [
     "re2",
     "spdlog",
-    "gpgme"
+    "gpgme",
+    "gtest"
   ]
 }
