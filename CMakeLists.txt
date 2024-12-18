@@ -26,10 +26,6 @@ include(plugin-sdk-cpp)
 # vcpkg dependencies
 find_package(re2 REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-## gpgme is vcpkg installed but comes with pkg-config
-## It is a runtime dep of podman go package.
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GPGME REQUIRED gpgme IMPORTED_TARGET)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
@@ -51,7 +47,7 @@ target_compile_features(container PUBLIC cxx_std_17)
 target_include_directories(container PRIVATE ${PLUGIN_SDK_INCLUDE} ${PLUGIN_SDK_DEPS_INCLUDE} ${WORKER_INCLUDE})
 
 # project linked libraries
-target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 PkgConfig::GPGME ${WORKER_LIB})
+target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 ${WORKER_DEP} ${WORKER_LIB})
 
 option(ENABLE_TESTS "Enable build of unit tests" ON)
 if (ENABLE_TESTS)
