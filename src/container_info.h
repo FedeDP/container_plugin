@@ -94,7 +94,8 @@ public:
             m_cpu_quota(0),
             m_cpu_period(100000),
             m_cpuset_cpu_count(0),
-            m_is_pod_sandbox(false) {}
+            m_is_pod_sandbox(false),
+            m_size_rw_bytes(-1)	{}
 
     const std::vector<std::string> &get_env() const { return m_env; }
 
@@ -125,7 +126,7 @@ public:
     std::string m_imagerepo;
     std::string m_imagetag;
     std::string m_imagedigest;
-    std::string m_container_ip;
+    std::string m_container_ip;  // TODO: to be exposed by state API
     bool m_privileged;
     bool m_host_pid;
     bool m_host_network;
@@ -145,7 +146,7 @@ public:
     std::map<std::string, std::string> m_pod_sandbox_labels;
     std::string m_pod_sandbox_cniresult;
     bool m_is_pod_sandbox;
-    std::string m_container_user;
+    std::string m_container_user; // TODO: to be exposed by state API
 
     /**
      * The time at which the container was created (IN SECONDS), cast from a value of `time_t`
@@ -153,6 +154,7 @@ public:
      * implementation; int64_t is the safest bet. Many default to int64_t anyway (e.g. CRI).
      */
     int64_t m_created_time;
+    int64_t m_size_rw_bytes; // TODO: to be exposed by state API
 };
 
 

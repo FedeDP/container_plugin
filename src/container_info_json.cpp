@@ -101,6 +101,7 @@ void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) 
     info->m_cpu_shares = container.value("cpu_shares", 0);
     info->m_cpuset_cpu_count = container.value("cpuset_cpu_count", 0);
     info->m_created_time = container.value("created_time", 0);
+    info->m_size_rw_bytes = container.value("size", -1);
     object_from_json(container, "env", info->m_env);
     info->m_full_id = container.value("full_id", "");
     info->m_host_ipc = container.value("host_ipc", false);
@@ -165,6 +166,7 @@ void to_json(nlohmann::json& j, const std::shared_ptr<const container_info>& cin
     j["cpu_shares"] = cinfo->m_cpu_shares;
     j["cpuset_cpu_count"] = cinfo->m_cpuset_cpu_count;
     j["created_time"] = cinfo->m_created_time;
+    j["size"] = cinfo->m_size_rw_bytes;
     // TODO: only append a limited set of env?
     // https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/container.cpp#L232
     j["env"] = cinfo->m_env;

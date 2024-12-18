@@ -136,6 +136,7 @@ plugins:
       # verbosity level for the plugin logger
       verbosity: warning # (optional, default: info)
       label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)
+      with_size: false # (optional, default: false; whether to enable container size inspection, which is inherently slow)
       engines:
         docker:
           enabled: true

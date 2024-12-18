@@ -65,6 +65,8 @@ func TestCRIFake(t *testing.T) {
 				Name:             "test_container",
 				Image:            "alpine:3.20.3",
 				ImageDigest:      "alpine:3.20.3",
+				ImageRepo:        "alpine",
+				ImageTag:         "3.20.3",
 				User:             "&ContainerUser{Linux:nil,}",
 				CPUPeriod:        defaultCpuPeriod,
 				CPUQuota:         0,
@@ -77,6 +79,7 @@ func TestCRIFake(t *testing.T) {
 				Privileged:       false, // TODO
 				PodSandboxLabels: map[string]string{},
 				Mounts:           []event.Mount{},
+				Size:             -1,
 			}},
 		IsCreate: true,
 	}
@@ -165,6 +168,8 @@ func TestCRI(t *testing.T) {
 				Name:             "test_container",
 				Image:            "docker.io/library/alpine:3.20.3",
 				ImageDigest:      "docker.io/library/alpine@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
+				ImageRepo:        "docker.io/library/alpine",
+				ImageTag:         "3.20.3",
 				User:             "&ContainerUser{Linux:nil,}",
 				CPUPeriod:        defaultCpuPeriod,
 				CPUQuota:         2000,
@@ -178,6 +183,7 @@ func TestCRI(t *testing.T) {
 				PodSandboxLabels: map[string]string{},
 				Mounts:           []event.Mount{},
 				IsPodSandbox:     true,
+				Size:             -1,
 			}},
 		IsCreate: true,
 	}

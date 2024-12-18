@@ -7,6 +7,7 @@ import (
 	internalapi "k8s.io/cri-api/pkg/apis"
 	v1 "k8s.io/cri-api/pkg/apis/runtime/v1"
 	remote "k8s.io/cri-client/pkg"
+	"strings"
 	"sync"
 	"time"
 )
@@ -55,16 +56,6 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 	// TODO parse info["info"] as json -> https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L263
 	//
 	// then parse env/privileged/image infos https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L481
-
-	image := ctr.GetImage()
-	var img string
-	if image != nil {
-		img = image.Image
-	}
-	metadata := ctr.GetMetadata()
-	if metadata == nil {
-		metadata = &v1.ContainerMetadata{}
-	}
 
 	user := ctr.GetUser()
 	if user == nil {
@@ -153,16 +144,34 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 		}
 	}
 
+	var size int64 = -1
+	if config.GetWithSize() {
+		stats, _ := c.client.ContainerStats(context.TODO(), ctr.Id)
+		if stats != nil {
+			size = int64(stats.GetWritableLayer().GetUsedBytes().GetValue())
+		}
+	}
+
+	var (
+		imageRepo string
+		imageTag  string
+	)
+	imageRepoTag := strings.Split(ctr.GetImage().GetImage(), ":")
+	if len(imageRepoTag) == 2 {
+		imageRepo = imageRepoTag[0]
+		imageTag = imageRepoTag[1]
+	}
+
 	return event.Info{
 		Container: event.Container{
 			Type:             c.runtime,
 			ID:               ctr.Id[:shortIDLength],
-			Name:             metadata.Name,
-			Image:            img,
+			Name:             ctr.GetMetadata().GetName(),
+			Image:            ctr.GetImage().GetImage(),
 			ImageDigest:      ctr.ImageRef,
 			ImageID:          ctr.ImageId,
-			ImageRepo:        "", // TODO
-			ImageTag:         "", // TODO
+			ImageRepo:        imageRepo,
+			ImageTag:         imageTag,
 			User:             user.String(),
 			CniJson:          "", // TODO
 			CPUPeriod:        cpuPeriod,
@@ -184,6 +193,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 			Privileged:       false, // TODO
 			PodSandboxLabels: podSandboxLabels,
 			Mounts:           mounts,
+			Size:             size,
 		},
 	}
 }

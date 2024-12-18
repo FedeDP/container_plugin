@@ -44,6 +44,7 @@ type Container struct {
 	HostNetwork      bool              `json:"host_network"`
 	HostPID          bool              `json:"host_pid"`
 	Ip               string            `json:"ip"`
+	Size             int64             `json:"size"`
 	IsPodSandbox     bool              `json:"is_pod_sandbox"`
 	Labels           map[string]string `json:"labels"`
 	MemoryLimit      int64             `json:"memory_limit"`

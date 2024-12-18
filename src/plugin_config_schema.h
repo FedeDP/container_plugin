@@ -25,6 +25,11 @@ const char plugin_schema_string[] = LONG_STRING_CONST(
          "title":"Max label length",
          "description":"Labels exceeding this limit won't be reported."
       },
+      "with_size":{
+         "type":"boolean",
+         "title":"Inspect containers with size",
+         "description":"Inspect containers size where supported."
+      },
       "engines":{
          "$ref":"#/definitions/Engines",
          "title":"The plugin per-engine configuration",
