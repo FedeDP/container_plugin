@@ -110,6 +110,11 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 	}
 	cpusetCount := countCPUSet(hostCfg.CpusetCpus)
 
+	var size int64 = -1
+	if ctr.SizeRw != nil {
+		size = *ctr.SizeRw
+	}
+
 	return event.Info{
 		Container: event.Container{
 			Type:           typePodman.ToCTValue(),
@@ -139,6 +144,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 			Privileged:     hostCfg.Privileged,
 			PortMappings:   portMappings,
 			Mounts:         mounts,
+			Size:           size,
 		},
 	}
 }
@@ -146,12 +152,13 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 func (pc *podmanEngine) List(_ context.Context) ([]event.Event, error) {
 	evts := make([]event.Event, 0)
 	all := true
+	size := config.GetWithSize()
 	cList, err := containers.List(pc.pCtx, &containers.ListOptions{All: &all})
 	if err != nil {
 		return nil, err
 	}
 	for _, c := range cList {
-		ctrInfo, err := containers.Inspect(pc.pCtx, c.ID, nil)
+		ctrInfo, err := containers.Inspect(pc.pCtx, c.ID, &containers.InspectOptions{Size: &size})
 		if err != nil {
 			evts = append(evts, event.Event{
 				Info: event.Info{
@@ -204,6 +211,7 @@ func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 		defer close(outCh)
 		defer close(cancelChan)
 		defer wg.Done()
+		size := config.GetWithSize()
 		// Blocking: convert all events from podman to json strings
 		// and send them to the main loop until the channel is closed
 		for {
@@ -214,7 +222,7 @@ func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 				err := errors.New("inspect useless on action destroy")
 				ctr := &define.InspectContainerData{}
 				if ev.Action == events.ActionCreate {
-					ctr, err = containers.Inspect(pc.pCtx, ev.Actor.ID, nil)
+					ctr, err = containers.Inspect(pc.pCtx, ev.Actor.ID, &containers.InspectOptions{Size: &size})
 				}
 				if err != nil {
 					// At least send an event with the minimal set of data

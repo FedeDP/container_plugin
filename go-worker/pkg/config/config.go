@@ -14,6 +14,7 @@ type SocketsEngine struct {
 type EngineCfg struct {
 	SocketsEngines map[string]SocketsEngine `json:"engines"`
 	LabelMaxLen    int                      `json:"label_max_len"`
+	WithSize       bool                     `json:"with_size"`
 }
 
 var c EngineCfg
@@ -21,6 +22,7 @@ var c EngineCfg
 // Init sets cfg default values
 func init() {
 	c.LabelMaxLen = defaultLabelMaxLen
+	c.WithSize = false
 }
 
 func Load(initCfg string) error {
@@ -37,4 +39,8 @@ func Get() EngineCfg {
 
 func GetLabelMaxLen() int {
 	return c.LabelMaxLen
+}
+
+func GetWithSize() bool {
+	return c.WithSize
 }

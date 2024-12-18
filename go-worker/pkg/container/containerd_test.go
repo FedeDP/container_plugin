@@ -71,6 +71,8 @@ func TestContainerd(t *testing.T) {
 				Type:             typeContainerd.ToCTValue(),
 				ID:               ctr.ID()[:shortIDLength],
 				Image:            "docker.io/library/alpine:3.20.3",
+				ImageRepo:        "docker.io/library/alpine",
+				ImageTag:         "3.20.3",
 				CPUPeriod:        defaultCpuPeriod,
 				CPUQuota:         cpuQuota,
 				CPUShares:        defaultCpuShares,
@@ -83,6 +85,7 @@ func TestContainerd(t *testing.T) {
 				PodSandboxLabels: nil,
 				Mounts:           []event.Mount{},
 				User:             "testuser",
+				Size:             -1,
 			}},
 		IsCreate: true,
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"strings"
 	"sync"
 )
 
@@ -118,6 +119,27 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 
 	// Image related - TODO
+	var size int64 = -1
+	var (
+		imageName   string
+		imageDigest string
+		imageRepo   string
+		imageTag    string
+	)
+	image, _ := container.Image(context.TODO())
+	if image != nil {
+		imageName = image.Name()
+		imgConfig, _ := image.Config(context.TODO())
+		imageDigest = imgConfig.Digest.String()
+		if config.GetWithSize() {
+			size, _ = image.Size(context.TODO())
+		}
+	}
+	imageRepoTag := strings.Split(info.Image, ":")
+	if len(imageRepoTag) == 2 {
+		imageRepo = imageRepoTag[0]
+		imageTag = imageRepoTag[1]
+	}
 
 	// Network related - TODO
 
@@ -148,12 +170,12 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		Container: event.Container{
 			Type:             typeContainerd.ToCTValue(),
 			ID:               container.ID()[:shortIDLength],
-			Name:             "", //  // TODO container.m_name = status.metadata().name(); ??
+			Name:             container.ID()[:shortIDLength],
 			Image:            info.Image,
-			ImageDigest:      "", // TODO
-			ImageID:          "", // TODO
-			ImageRepo:        "", // TODO
-			ImageTag:         "", // TODO
+			ImageDigest:      imageDigest, // FIXME, empty
+			ImageID:          imageName,   // FIXME, empty
+			ImageRepo:        imageRepo,
+			ImageTag:         imageTag,
 			User:             spec.Process.User.Username,
 			CniJson:          "", // TODO
 			CPUPeriod:        int64(cpuPeriod),
@@ -175,6 +197,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 			Privileged:       false, // TODO implement
 			PodSandboxLabels: podSandboxLabels,
 			Mounts:           mounts,
+			Size:             size,
 		},
 	}
 }

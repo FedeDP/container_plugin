@@ -168,6 +168,11 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 	cpusetCount := countCPUSet(hostCfg.CpusetCpus)
 
+	var size int64 = -1
+	if ctr.SizeRw != nil {
+		size = *ctr.SizeRw
+	}
+
 	return event.Info{
 		Container: event.Container{
 			Type:           typeDocker.ToCTValue(),
@@ -197,6 +202,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 			Privileged:     hostCfg.Privileged,
 			PortMappings:   portMappings,
 			Mounts:         mounts,
+			Size:           size,
 		},
 	}
 }
@@ -209,7 +215,7 @@ func (dc *dockerEngine) List(ctx context.Context) ([]event.Event, error) {
 
 	evts := make([]event.Event, len(containers))
 	for idx, ctr := range containers {
-		ctrJson, err := dc.ContainerInspect(ctx, ctr.ID)
+		ctrJson, _, err := dc.ContainerInspectWithRaw(ctx, ctr.ID, config.GetWithSize())
 		if err != nil {
 			// Minimum set of infos
 			evts[idx] = event.Event{
@@ -254,7 +260,7 @@ func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 				err := errors.New("inspect useless on action destroy")
 				ctrJson := types.ContainerJSON{}
 				if msg.Action == events.ActionCreate {
-					ctrJson, err = dc.ContainerInspect(ctx, msg.Actor.ID)
+					ctrJson, _, err = dc.ContainerInspectWithRaw(ctx, msg.Actor.ID, config.GetWithSize())
 				}
 				if err != nil {
 					// At least send an event with the minimum set of data

@@ -70,6 +70,7 @@ func TestDocker(t *testing.T) {
 				Privileged:     true,
 				Mounts:         []event.Mount{},
 				PortMappings:   []event.PortMapping{},
+				Size:           -1,
 			}},
 		IsCreate: true,
 	}

@@ -35,6 +35,7 @@ struct StaticEngine {
 struct PluginConfig {
     std::string verbosity;
     int label_max_len;
+    bool with_size;
     SimpleEngine bpm;
     SimpleEngine lxc;
     SimpleEngine libvirt_lxc;
@@ -46,6 +47,7 @@ struct PluginConfig {
 
     PluginConfig() {
         label_max_len = DEFAULT_LABEL_MAX_LEN;
+        with_size = false;
     }
 };
 

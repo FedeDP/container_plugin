@@ -20,6 +20,7 @@ void from_json(const nlohmann::json& j, SocketsEngine& engine) {
 void from_json(const nlohmann::json& j, PluginConfig& cfg) {
     cfg.verbosity = j.value("verbosity", "info");
     cfg.label_max_len = j.value("label_max_len", DEFAULT_LABEL_MAX_LEN);
+    cfg.with_size = j.value("with_size", false);
     cfg.bpm = j.value("bpm", SimpleEngine{});
     cfg.lxc = j.value("lxc", SimpleEngine{});
     cfg.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});
@@ -57,6 +58,7 @@ void from_json(const nlohmann::json& j, PluginConfig& cfg) {
 void to_json(nlohmann::json& j, const PluginConfig& cfg)
 {
     j["label_max_len"] = cfg.label_max_len;
+    j["with_size"] = cfg.with_size;
     j["engines"] = nlohmann::json{
             {
                     "docker",
