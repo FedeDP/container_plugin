@@ -1,0 +1,39 @@
+name: Release
+on:
+  push:
+    tags:
+      - '**'
+
+concurrency:
+  group: ci-release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: 'ubuntu-20.04'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+
+      # Needed by containerd go package - build time dep, no runtime.
+      - name: Install plugin deps
+        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go-worker/go.mod
+
+      - name: Build plugin library
+        run: make libcontainer.so
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: libcontainer.so
