@@ -146,18 +146,16 @@ std::string my_plugin::compute_container_id_for_thread(const falcosecurity::tabl
             tr,
             [&](const falcosecurity::table_entry& e)
             {
-                if (!container_id.empty()) {
-                    // Nothing more to do.
-                    // Note: returning false would raise an exception
-                    // instead of stopping the loop :/
-                    return true;
-                }
                 // read the "second" field (aka: the cgroup path)
                 // from the current entry of the cgroups table
                 std::string cgroup;
                 m_cgroups_field_second.read_value(tr, e, cgroup);
                 if(!cgroup.empty()) {
                     m_mgr->match_cgroup(cgroup, container_id, info);
+                    if (!container_id.empty()) {
+                      	// break the loop
+                      	return false;
+                    }
                 }
                 return true;
             }

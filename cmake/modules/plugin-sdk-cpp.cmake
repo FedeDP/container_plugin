@@ -8,7 +8,7 @@ message(
 FetchContent_Declare(
   plugin-sdk-cpp
   GIT_REPOSITORY https://github.com/falcosecurity/plugin-sdk-cpp.git
-  GIT_TAG 582d8a1404e50b2c4d03ebdbed08bb266ca8fe6b) # HEAD of https://github.com/falcosecurity/plugin-sdk-cpp/pull/41
+  GIT_TAG 5e1273e88f915081a2159971a5ec02b301a1526c) # HEAD of https://github.com/falcosecurity/plugin-sdk-cpp/pull/41
 
 FetchContent_MakeAvailable(plugin-sdk-cpp)
 set(PLUGIN_SDK_INCLUDE "${plugin-sdk-cpp_SOURCE_DIR}/include")
