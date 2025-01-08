@@ -52,6 +52,7 @@ void from_json(const nlohmann::json& j, PluginConfig& cfg) {
     if (cfg.containerd.sockets.empty()) {
         cfg.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
         cfg.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
+        cfg.containerd.sockets.emplace_back("/run/host-containerd/containerd.sock"); // bottlerocket host containers socket
     }
 }
 
