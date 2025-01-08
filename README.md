@@ -163,7 +163,7 @@ load_plugins: [container]
 By default, all engines are enabled on **default sockets**:
 * Docker: `/var/run/docker.sock`
 * Podman: `/run/podman/podman.sock` for root, + `/run/user/$uid/podman/podman.sock` for each user in the system
-* Containerd: [`/run/containerd/containerd.sock`, `/run/k3s/containerd/containerd.sock`]
+* Containerd: [`/run/containerd/containerd.sock`, `/run/k3s/containerd/containerd.sock`, `/run/host-containerd/containerd.sock`]
 * Cri: `/run/crio/crio.sock`
 
 ### Rules
