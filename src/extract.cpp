@@ -561,22 +561,22 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
                 if (m_containers.count(sandbox_id) > 0) {
                     sandbox_container_info = m_containers[sandbox_id];
                 }
-                if (field_id == TYPE_K8S_POD_LABEL) {
-                    auto arg_key = req.get_arg_key();
-                    if (sandbox_container_info && sandbox_container_info->m_pod_sandbox_labels.count(arg_key) > 0) {
-                        req.set_value(sandbox_container_info->m_pod_sandbox_labels.at(arg_key));
-                    } else if (cinfo->m_pod_sandbox_labels.count(arg_key) > 0) {
-                        req.set_value(cinfo->m_pod_sandbox_labels.at(arg_key));
-                    }
-                } else {
-                    std::string labels;
-                    if (sandbox_container_info) {
-                        concatenate_container_labels(sandbox_container_info->m_pod_sandbox_labels, &labels);
-                    } else {
-                        concatenate_container_labels(cinfo->m_pod_sandbox_labels, &labels);
-                    }
-                    req.set_value(labels);
+            }
+            if (field_id == TYPE_K8S_POD_LABEL) {
+                auto arg_key = req.get_arg_key();
+                if (sandbox_container_info && sandbox_container_info->m_pod_sandbox_labels.count(arg_key) > 0) {
+                    req.set_value(sandbox_container_info->m_pod_sandbox_labels.at(arg_key));
+                } else if (cinfo->m_pod_sandbox_labels.count(arg_key) > 0) {
+                    req.set_value(cinfo->m_pod_sandbox_labels.at(arg_key));
                 }
+            } else {
+                std::string labels;
+                if (sandbox_container_info) {
+                    concatenate_container_labels(sandbox_container_info->m_pod_sandbox_labels, &labels);
+                } else {
+                    concatenate_container_labels(cinfo->m_pod_sandbox_labels, &labels);
+                }
+                req.set_value(labels);
             }
             break;
         }

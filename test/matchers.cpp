@@ -79,3 +79,25 @@ TEST_F(container_cgroup, containerd_unknown) {
 	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
+
+TEST_F(container_cgroup, containerd) {
+	const std::string cgroup =
+	        "/default/test_container";
+	const std::string expected_container_id = "test_contain"; // first 12 chars
+
+	std::string container_id;
+	std::shared_ptr<container_info> info;
+	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_EQ(expected_container_id, container_id);
+}
+
+TEST_F(container_cgroup, containerd_namespaced) {
+	const std::string cgroup =
+	        "/my_very_long_namespace-1.5/test_container";
+	const std::string expected_container_id = "test_contain"; // first 12 chars
+
+	std::string container_id;
+	std::shared_ptr<container_info> info;
+	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_EQ(expected_container_id, container_id);
+}
