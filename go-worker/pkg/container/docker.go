@@ -176,7 +176,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	return event.Info{
 		Container: event.Container{
 			Type:           typeDocker.ToCTValue(),
-			ID:             ctr.ID[:shortIDLength],
+			ID:             shortContainerID(ctr.ID),
 			Name:           name,
 			Image:          cfg.Image,
 			ImageDigest:    imageDigest,
@@ -222,7 +222,7 @@ func (dc *dockerEngine) List(ctx context.Context) ([]event.Event, error) {
 				Info: event.Info{
 					Container: event.Container{
 						Type:        typeDocker.ToCTValue(),
-						ID:          ctr.ID[:shortIDLength],
+						ID:          shortContainerID(ctr.ID),
 						Image:       ctr.Image,
 						FullID:      ctr.ID,
 						ImageID:     ctr.ImageID,
@@ -268,7 +268,7 @@ func (dc *dockerEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 						Info: event.Info{
 							Container: event.Container{
 								Type:   typeDocker.ToCTValue(),
-								ID:     msg.Actor.ID[:shortIDLength],
+								ID:     shortContainerID(msg.Actor.ID),
 								FullID: msg.Actor.ID,
 								Image:  msg.Actor.Attributes["image"],
 							},

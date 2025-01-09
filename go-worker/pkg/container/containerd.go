@@ -11,6 +11,7 @@ import (
 	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -41,7 +42,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	spec, err := container.Spec(namespacedContext)
 	if err != nil {
 		spec = &oci.Spec{
-			Process: &specs.Process{NoNewPrivileges: true},
+			Process: &specs.Process{},
 			Mounts:  nil,
 		}
 	}
@@ -80,59 +81,61 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		}
 	}
 
-	// Mounts related - TODO double check
+	// Mounts related
 	mounts := make([]event.Mount, 0)
 	for _, m := range spec.Mounts {
 		readOnly := false
-		for _, path := range spec.Linux.ReadonlyPaths {
-			if path == m.Destination {
+		mode := ""
+
+		for _, opt := range m.Options {
+			if opt == "ro" {
 				readOnly = true
-				break
+			} else if strings.HasPrefix(opt, "mode=") {
+				mode = strings.TrimPrefix(opt, "mode=")
 			}
 		}
 		mounts = append(mounts, event.Mount{
 			Source:      m.Source,
 			Destination: m.Destination,
+			Mode:        mode,
 			RW:          !readOnly,
 			Propagation: spec.Linux.RootfsPropagation,
 		})
 	}
 
-	// Namespace related - FIXME
+	// Namespace related - see oci.WithHostNamespace() impl: it just removes the namespace from the list
 	var (
-		hostIPC     bool
-		hostPID     bool
-		hostNetwork bool
+		hostIPC     = true
+		hostPID     = true
+		hostNetwork = true
 	)
 	if spec.Linux != nil {
 		for _, ns := range spec.Linux.Namespaces {
 			if ns.Type == specs.PIDNamespace {
-				hostPID = ns.Path == "host"
+				hostPID = false
 			}
 			if ns.Type == specs.NetworkNamespace {
-				hostNetwork = ns.Path == "host"
+				hostNetwork = false
 			}
 			if ns.Type == specs.IPCNamespace {
-				hostIPC = ns.Path == "host"
+				hostIPC = false
 			}
 		}
 	}
 
-	// Image related - TODO
-	var size int64 = -1
+	// Image related
+	// FIXME: with docker, everything is empty because container.Image below does not return any image.
 	var (
-		imageName   string
 		imageDigest string
 		imageRepo   string
 		imageTag    string
+		imageSize   int64 = -1
 	)
-	image, _ := container.Image(context.TODO())
+	image, _ := container.Image(namespacedContext)
 	if image != nil {
-		imageName = image.Name()
-		imgConfig, _ := image.Config(context.TODO())
-		imageDigest = imgConfig.Digest.String()
+		imageDigest = image.Target().Digest.String()
 		if config.GetWithSize() {
-			size, _ = image.Size(context.TODO())
+			imageSize = image.Target().Size
 		}
 	}
 	imageRepoTag := strings.Split(info.Image, ":")
@@ -166,18 +169,38 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		}
 	}
 
+	// Check for privileged:
+	// see https://github.com/containerd/containerd/blob/main/pkg/oci/spec_opts.go#L1295
+	privileged := true
+	if spec.Linux != nil && spec.Process != nil &&
+		spec.Linux.MaskedPaths == nil && spec.Linux.ReadonlyPaths == nil &&
+		spec.Process.SelinuxLabel == "" &&
+		(spec.Process.ApparmorProfile == "" || spec.Process.ApparmorProfile == "unconfined") &&
+		spec.Linux.Seccomp == nil {
+		for _, m := range spec.Mounts {
+			if m.Type == "sysfs" || m.Type == "cgroup" {
+				for _, o := range m.Options {
+					if o == "ro" {
+						privileged = false
+						break
+					}
+				}
+			}
+		}
+	} else {
+		privileged = false
+	}
+
 	return event.Info{
 		Container: event.Container{
 			Type:             typeContainerd.ToCTValue(),
-			ID:               container.ID()[:shortIDLength],
-			Name:             container.ID()[:shortIDLength],
+			ID:               shortContainerID(container.ID()),
+			Name:             shortContainerID(container.ID()),
 			Image:            info.Image,
-			ImageDigest:      imageDigest, // FIXME, empty
-			ImageID:          imageName,   // FIXME, empty
+			ImageDigest:      imageDigest,
 			ImageRepo:        imageRepo,
 			ImageTag:         imageTag,
-			User:             spec.Process.User.Username,
-			CniJson:          "", // TODO
+			User:             strconv.FormatUint(uint64(spec.Process.User.UID), 10),
 			CPUPeriod:        int64(cpuPeriod),
 			CPUQuota:         cpuQuota,
 			CPUShares:        int64(cpuShares),
@@ -194,10 +217,10 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 			MemoryLimit:      memoryLimit,
 			SwapLimit:        swapLimit,
 			PodSandboxID:     info.SandboxID,
-			Privileged:       false, // TODO implement
+			Privileged:       privileged,
 			PodSandboxLabels: podSandboxLabels,
 			Mounts:           mounts,
-			Size:             size,
+			Size:             imageSize,
 		},
 	}
 }
@@ -266,7 +289,7 @@ func (c *containerdEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-ch
 					info = event.Info{
 						Container: event.Container{
 							Type:   typeContainerd.ToCTValue(),
-							ID:     id[:shortIDLength],
+							ID:     shortContainerID(id),
 							FullID: id,
 							Image:  image,
 						},

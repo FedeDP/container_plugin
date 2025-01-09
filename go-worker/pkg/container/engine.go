@@ -200,3 +200,10 @@ func countCPUSet(cpuSet string) int64 {
 	}
 	return counter
 }
+
+func shortContainerID(id string) string {
+	if len(id) > shortIDLength {
+		return id[:shortIDLength]
+	}
+	return id
+}

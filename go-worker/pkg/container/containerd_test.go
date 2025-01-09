@@ -41,25 +41,33 @@ func TestContainerd(t *testing.T) {
 	id := uuid.New()
 	var cpuQuota int64 = 2000
 	ctr, err := client.NewContainer(namespacedCtx, id.String(), containerd.WithImageName("docker.io/library/alpine:3.20.3"),
-		containerd.WithSpec(&oci.Spec{
-			Process: &specs.Process{
-				User: specs.User{
-					UID:            0,
-					GID:            0,
-					Umask:          nil,
-					AdditionalGids: nil,
-					Username:       "testuser",
+		containerd.WithSpec(
+			&oci.Spec{
+				Process: &specs.Process{
+					User: specs.User{
+						UID: 0,
+						GID: 0,
+					},
 				},
-			},
-			Linux: &specs.Linux{
-				Resources: &specs.LinuxResources{
-					CPU: &specs.LinuxCPU{
-						Quota: &cpuQuota,
-						Cpus:  "0-1",
+				Linux: &specs.Linux{
+					Resources: &specs.LinuxResources{
+						CPU: &specs.LinuxCPU{
+							Quota: &cpuQuota,
+							Cpus:  "0-1",
+						},
 					},
 				},
 			},
-		}))
+			oci.WithHostNamespace(specs.NetworkNamespace),
+			oci.WithLinuxNamespace(specs.LinuxNamespace{
+				Type: specs.PIDNamespace,
+				Path: "/proc/foo",
+			}),
+			oci.WithLinuxNamespace(specs.LinuxNamespace{
+				Type: specs.IPCNamespace,
+				Path: "/proc/foo",
+			}),
+			oci.WithPrivileged))
 	assert.NoError(t, err)
 
 	events, err := engine.List(context.Background())
@@ -69,22 +77,27 @@ func TestContainerd(t *testing.T) {
 		Info: event.Info{
 			Container: event.Container{
 				Type:             typeContainerd.ToCTValue(),
-				ID:               ctr.ID()[:shortIDLength],
+				ID:               shortContainerID(ctr.ID()),
+				Name:             shortContainerID(ctr.ID()),
 				Image:            "docker.io/library/alpine:3.20.3",
 				ImageRepo:        "docker.io/library/alpine",
 				ImageTag:         "3.20.3",
+				ImageDigest:      "sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
 				CPUPeriod:        defaultCpuPeriod,
 				CPUQuota:         cpuQuota,
 				CPUShares:        defaultCpuShares,
-				CPUSetCPUCount:   2,   // 0-1
-				Env:              nil, // TODO
+				CPUSetCPUCount:   2, // 0-1
+				Env:              nil,
 				FullID:           ctr.ID(),
+				HostIPC:          false,
+				HostPID:          false,
+				HostNetwork:      true,
 				Labels:           map[string]string{},
 				PodSandboxID:     "",
-				Privileged:       false, // TODO
+				Privileged:       true,
 				PodSandboxLabels: nil,
 				Mounts:           []event.Mount{},
-				User:             "testuser",
+				User:             "0",
 				Size:             -1,
 			}},
 		IsCreate: true,
@@ -120,7 +133,7 @@ func TestContainerd(t *testing.T) {
 		Info: event.Info{
 			Container: event.Container{
 				Type:   typeContainerd.ToCTValue(),
-				ID:     ctr.ID()[:shortIDLength],
+				ID:     shortContainerID(ctr.ID()),
 				FullID: ctr.ID(),
 			}},
 		IsCreate: false,
