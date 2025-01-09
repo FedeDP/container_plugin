@@ -118,7 +118,7 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 	return event.Info{
 		Container: event.Container{
 			Type:           typePodman.ToCTValue(),
-			ID:             ctr.ID[:shortIDLength],
+			ID:             shortContainerID(ctr.ID),
 			Name:           name,
 			Image:          ctr.ImageName,
 			ImageDigest:    ctr.ImageDigest,
@@ -164,7 +164,7 @@ func (pc *podmanEngine) List(_ context.Context) ([]event.Event, error) {
 				Info: event.Info{
 					Container: event.Container{
 						Type:        typePodman.ToCTValue(),
-						ID:          c.ID[:shortIDLength],
+						ID:          shortContainerID(c.ID),
 						Image:       c.Image,
 						FullID:      c.ID,
 						ImageID:     c.ImageID,
@@ -230,7 +230,7 @@ func (pc *podmanEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan 
 						Info: event.Info{
 							Container: event.Container{
 								Type:   typePodman.ToCTValue(),
-								ID:     ev.Actor.ID[:shortIDLength],
+								ID:     shortContainerID(ev.Actor.ID),
 								FullID: ev.Actor.ID,
 								Image:  ev.Actor.Attributes["image"],
 							},

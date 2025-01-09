@@ -2,11 +2,14 @@ package container
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/FedeDP/container-worker/pkg/config"
 	"github.com/FedeDP/container-worker/pkg/event"
 	internalapi "k8s.io/cri-api/pkg/apis"
 	v1 "k8s.io/cri-api/pkg/apis/runtime/v1"
 	remote "k8s.io/cri-client/pkg"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -50,16 +53,90 @@ func newCriEngine(ctx context.Context, socket string) (Engine, error) {
 	}, nil
 }
 
-func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodSandboxStatus,
-	_ map[string]string) event.Info {
+// Structures that maps container.Info() map
+type criInfo struct {
+	Privileged *bool `json:"privileged"`
+	Config     *struct {
+		Image *struct {
+			Image string `json:"image"`
+		} `json:"image"`
+		Envs []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"envs"`
+		Linux *struct {
+			SecurityContext *struct {
+				Privileged *bool `json:"privileged"`
+			} `json:"security_context"`
+		} `json:"linux"`
+	} `json:"config"`
+	RuntimeSpec *struct {
+		Annotations map[string]string `json:"annotations"`
+		Linux       *struct {
+			SecurityContext *struct {
+				Privileged *bool `json:"privileged"`
+			} `json:"security_context"`
+		} `json:"linux"`
+	} `json:"runtimeSpec"`
+}
 
-	// TODO parse info["info"] as json -> https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L263
-	//
-	// then parse env/privileged/image infos https://github.com/falcosecurity/libs/blob/master/userspace/libsinsp/cri.hpp#L481
+func (info *criInfo) getPrivileged() bool {
+	if info.RuntimeSpec != nil &&
+		info.RuntimeSpec.Linux != nil &&
+		info.RuntimeSpec.Linux.SecurityContext != nil &&
+		info.RuntimeSpec.Linux.SecurityContext.Privileged != nil {
+		return *info.RuntimeSpec.Linux.SecurityContext.Privileged
+	}
 
-	user := ctr.GetUser()
-	if user == nil {
-		user = &v1.ContainerUser{}
+	if info.Config != nil &&
+		info.Config.Linux != nil &&
+		info.Config.Linux.SecurityContext != nil &&
+		info.Config.Linux.SecurityContext.Privileged != nil {
+		return *info.Config.Linux.SecurityContext.Privileged
+	}
+
+	if info.Privileged != nil {
+		return *info.Privileged
+	}
+
+	return false
+}
+
+func (info *criInfo) getEnvs() []string {
+	var env []string
+
+	if info.Config != nil &&
+		info.Config.Envs != nil {
+		for _, e := range info.Config.Envs {
+			env = append(env, fmt.Sprintf("%s=%s", e.Key, e.Value))
+		}
+	}
+	return env
+}
+
+func (info *criInfo) getAnnotation(key string) (string, bool) {
+	if info.RuntimeSpec != nil {
+		val, ok := info.RuntimeSpec.Annotations[key]
+		return val, ok
+	}
+	return "", false
+}
+
+func (info *criInfo) getImage() string {
+	if info.Config != nil &&
+		info.Config.Image != nil {
+		return info.Config.Image.Image
+	}
+	return ""
+}
+
+func (c *criEngine) ctrToInfo(ctx context.Context, ctr *v1.ContainerStatus, podSandboxStatus *v1.PodSandboxStatus,
+	info map[string]string) event.Info {
+
+	var ctrInfo criInfo
+	jsonInfo, present := info["info"]
+	if present {
+		_ = json.Unmarshal([]byte(jsonInfo), &ctrInfo)
 	}
 
 	// Cpu related
@@ -146,40 +223,99 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 
 	var size int64 = -1
 	if config.GetWithSize() {
-		stats, _ := c.client.ContainerStats(context.TODO(), ctr.Id)
+		stats, _ := c.client.ContainerStats(ctx, ctr.Id)
 		if stats != nil {
 			size = int64(stats.GetWritableLayer().GetUsedBytes().GetValue())
 		}
 	}
 
+	// image_ref may be one of two forms:
+	// host/image@sha256:digest
+	// sha256:digest
+	// See https://github.com/therealbobo/libs/blob/8267fbb909167541c7f7ed655c93a7dc0c1d615b/userspace/libsinsp/cri.hpp#L320
+	// for the original c++ implementation.
+	imageName := ctr.GetImage().GetImage()
+	imageRef := ctr.GetImageRef()
 	var (
-		imageRepo string
-		imageTag  string
+		imageRepo   string
+		imageTag    string
+		imageID     string
+		imageDigest string
 	)
-	imageRepoTag := strings.Split(ctr.GetImage().GetImage(), ":")
+	getTagFromImage := false
+	digestStart := strings.Index(imageRef, "sha256:")
+	switch digestStart {
+	case 0: // sha256:digest
+		imageDigest = imageRef
+	case -1:
+		break
+	default: // host/image@sha256:digest
+		if imageRef[digestStart-1] == '@' {
+			imageName = imageRef[:digestStart-1]
+			imageDigest = imageRef[digestStart:]
+			getTagFromImage = true
+		}
+	}
+
+	if imageName == "" || strings.HasPrefix(imageName, "sha256") {
+		var (
+			present bool
+			val     string
+		)
+		if val, present = ctrInfo.getAnnotation("io.kubernetes.cri.image-name"); !present {
+			if val, present = ctrInfo.getAnnotation("io.kubernetes.cri-o.Image"); !present {
+				val, present = ctrInfo.getAnnotation("io.kubernetes.cri-o.ImageName")
+			}
+		}
+		if present {
+			imageName = val
+			getTagFromImage = false
+		}
+	}
+
+	imageRepoTag := strings.Split(imageName, ":")
+	imageRepo = imageRepoTag[0]
 	if len(imageRepoTag) == 2 {
-		imageRepo = imageRepoTag[0]
 		imageTag = imageRepoTag[1]
+	}
+
+	if getTagFromImage {
+		imageRepoTag = strings.Split(ctr.GetImage().GetImage(), ":")
+		if len(imageRepoTag) == 2 {
+			imageTag = imageRepoTag[1]
+			imageName += ":" + imageTag
+		}
+	}
+
+	imageStr := ctrInfo.getImage()
+	imageStrs := strings.Split(imageStr, ":")
+	if len(imageStrs) == 2 {
+		imageID = imageStrs[1]
+	} else {
+		imageID = imageStr
+	}
+	if imageID == "" {
+		imageID = ctr.GetImageId()
 	}
 
 	return event.Info{
 		Container: event.Container{
 			Type:             c.runtime,
-			ID:               ctr.Id[:shortIDLength],
+			ID:               shortContainerID(ctr.Id),
 			Name:             ctr.GetMetadata().GetName(),
-			Image:            ctr.GetImage().GetImage(),
-			ImageDigest:      ctr.ImageRef,
-			ImageID:          ctr.ImageId,
+			Image:            imageName,
+			ImageDigest:      imageDigest,
+			ImageID:          imageID,
 			ImageRepo:        imageRepo,
 			ImageTag:         imageTag,
-			User:             user.String(),
+			User:             strconv.FormatInt(ctr.GetUser().GetLinux().GetUid(), 10),
 			CniJson:          "", // TODO
 			CPUPeriod:        cpuPeriod,
 			CPUQuota:         cpuQuota,
 			CPUShares:        cpuShares,
 			CPUSetCPUCount:   cpusetCount,
 			CreatedTime:      nanoSecondsToUnix(ctr.CreatedAt),
-			Env:              nil, // TODO
+			Env:              ctrInfo.getEnvs(),
 			FullID:           ctr.Id,
 			HostIPC:          podSandboxStatus.Linux.Namespaces.Options.Ipc == v1.NamespaceMode_NODE,
 			HostNetwork:      podSandboxStatus.Linux.Namespaces.Options.Network == v1.NamespaceMode_NODE,
@@ -190,7 +326,7 @@ func (c *criEngine) ctrToInfo(ctr *v1.ContainerStatus, podSandboxStatus *v1.PodS
 			MemoryLimit:      memoryLimit,
 			SwapLimit:        swapLimit,
 			PodSandboxID:     podSandboxID,
-			Privileged:       false, // TODO
+			Privileged:       ctrInfo.getPrivileged(),
 			PodSandboxLabels: podSandboxLabels,
 			Mounts:           mounts,
 			Size:             size,
@@ -205,14 +341,15 @@ func (c *criEngine) List(ctx context.Context) ([]event.Event, error) {
 	}
 	evts := make([]event.Event, len(ctrs))
 	for idx, ctr := range ctrs {
-		container, err := c.client.ContainerStatus(ctx, ctr.Id, false)
+		// verbose true to return container.Info
+		container, err := c.client.ContainerStatus(ctx, ctr.Id, true)
 		if err != nil || container.Status == nil {
 			evts[idx] = event.Event{
 				IsCreate: true,
 				Info: event.Info{
 					Container: event.Container{
 						Type:        c.runtime,
-						ID:          ctr.Id[:shortIDLength],
+						ID:          shortContainerID(ctr.Id),
 						FullID:      ctr.Id,
 						ImageID:     ctr.ImageId,
 						CreatedTime: nanoSecondsToUnix(ctr.CreatedAt),
@@ -227,7 +364,7 @@ func (c *criEngine) List(ctx context.Context) ([]event.Event, error) {
 			}
 			evts[idx] = event.Event{
 				IsCreate: true,
-				Info:     c.ctrToInfo(container.Status, podSandboxStatus.Status, container.Info),
+				Info:     c.ctrToInfo(ctx, container.Status, podSandboxStatus.Status, container.GetInfo()),
 			}
 		}
 	}
@@ -256,19 +393,20 @@ func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan even
 					evt.ContainerEventType == v1.ContainerEventType_CONTAINER_DELETED_EVENT {
 
 					var info event.Info
-					ctr, err := c.client.ContainerStatus(ctx, evt.ContainerId, false)
+					// verbose true to return container.Info
+					ctr, err := c.client.ContainerStatus(ctx, evt.ContainerId, true)
 					if err != nil || ctr == nil {
 						info = event.Info{
 							Container: event.Container{
 								Type:        c.runtime,
-								ID:          evt.ContainerId[:shortIDLength],
+								ID:          shortContainerID(evt.ContainerId),
 								FullID:      evt.ContainerId,
 								CreatedTime: nanoSecondsToUnix(evt.CreatedAt),
 							},
 						}
 					} else {
 						cPodSandbox := evt.GetPodSandboxStatus()
-						info = c.ctrToInfo(ctr.Status, cPodSandbox, ctr.Info)
+						info = c.ctrToInfo(ctx, ctr.Status, cPodSandbox, ctr.GetInfo())
 					}
 					outCh <- event.Event{
 						Info:     info,

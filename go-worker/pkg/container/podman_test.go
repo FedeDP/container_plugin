@@ -83,7 +83,7 @@ func TestPodman(t *testing.T) {
 		Info: event.Info{
 			Container: event.Container{
 				Type:           typePodman.ToCTValue(),
-				ID:             ctr.ID[:shortIDLength],
+				ID:             shortContainerID(ctr.ID),
 				Name:           "test_container",
 				Image:          "docker.io/library/alpine:3.20.3",
 				ImageDigest:    "sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
@@ -135,7 +135,7 @@ func TestPodman(t *testing.T) {
 		Info: event.Info{
 			Container: event.Container{
 				Type:   typePodman.ToCTValue(),
-				ID:     ctr.ID[:shortIDLength],
+				ID:     shortContainerID(ctr.ID),
 				FullID: ctr.ID,
 				Image:  "docker.io/library/alpine:3.20.3",
 			}},

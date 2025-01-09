@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/FedeDP/container-worker/pkg/event"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,191 @@ import (
 	"testing"
 	"time"
 )
+
+func TestCRIInfoMap(t *testing.T) {
+	jsonInfo := `
+{
+"sandboxID": "7c81e23f249ed06a6a804edcc89eb74e3c44e326257d8709db3a7a74bbbd2efb",
+"pid": 0,
+"removing": false,
+"snapshotKey": "570b00d1f91393c91dfc131d7887f37def66902e360e63a7526e7c74fae53c0d",
+"snapshotter": "overlayfs",
+"runtimeType": "io.containerd.runc.v2",
+"runtimeOptions": null,
+"config": {
+  "metadata": {
+	"name": "test_container"
+  },
+  "image": {
+	"image": "alpine:3.20.3"
+  },
+  "envs": [
+	{
+	  "key": "test",
+	  "value": "container"
+	}
+  ],
+  "labels": {
+	"foo": "bar"
+  },
+  "linux": {
+	"resources": {
+	  "cpu_quota": 2000,
+	  "cpuset_cpus": "1-3"
+	},
+	"security_context": {}
+  }
+},
+"runtimeSpec": {
+  "ociVersion": "1.1.0",
+  "process": {
+	"user": {
+	  "uid": 0,
+	  "gid": 0,
+	  "additionalGids": [
+		0,
+		1,
+		2,
+		3,
+		4,
+		6,
+		10,
+		11,
+		20,
+		26,
+		27
+	  ]
+	},
+	"args": [
+	  "/bin/sh"
+	],
+	"env": [
+	  "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+	  "HOSTNAME=federico.dipierro",
+	  "test=container"
+	],
+	"cwd": "/",
+	"capabilities": {
+	  "bounding": [
+		"CAP_CHOWN",
+		"CAP_DAC_OVERRIDE",
+		"CAP_FSETID",
+		"CAP_FOWNER",
+		"CAP_MKNOD",
+		"CAP_NET_RAW",
+		"CAP_SETGID",
+		"CAP_SETUID",
+		"CAP_SETFCAP",
+		"CAP_SETPCAP",
+		"CAP_NET_BIND_SERVICE",
+		"CAP_SYS_CHROOT",
+		"CAP_KILL",
+		"CAP_AUDIT_WRITE"
+	  ],
+	  "effective": [
+		"CAP_CHOWN",
+		"CAP_DAC_OVERRIDE",
+		"CAP_FSETID",
+		"CAP_FOWNER",
+		"CAP_MKNOD",
+		"CAP_NET_RAW",
+		"CAP_SETGID",
+		"CAP_SETUID",
+		"CAP_SETFCAP",
+		"CAP_SETPCAP",
+		"CAP_NET_BIND_SERVICE",
+		"CAP_SYS_CHROOT",
+		"CAP_KILL",
+		"CAP_AUDIT_WRITE"
+	  ],
+	  "permitted": [
+		"CAP_CHOWN",
+		"CAP_DAC_OVERRIDE",
+		"CAP_FSETID",
+		"CAP_FOWNER",
+		"CAP_MKNOD",
+		"CAP_NET_RAW",
+		"CAP_SETGID",
+		"CAP_SETUID",
+		"CAP_SETFCAP",
+		"CAP_SETPCAP",
+		"CAP_NET_BIND_SERVICE",
+		"CAP_SYS_CHROOT",
+		"CAP_KILL",
+		"CAP_AUDIT_WRITE"
+	  ]
+	},
+	"apparmorProfile": "cri-containerd.apparmor.d",
+	"oomScoreAdj": 0
+  },
+  "root": {
+	"path": "rootfs"
+  },
+  "mounts": [
+	{
+	  "destination": "/proc",
+	  "type": "proc",
+	  "source": "proc",
+	  "options": [
+		"nosuid",
+		"noexec",
+		"nodev"
+	  ]
+	},
+	{
+	  "destination": "/dev",
+	  "type": "tmpfs",
+	  "source": "tmpfs",
+	  "options": [
+		"nosuid",
+		"strictatime",
+		"mode=755",
+		"size=65536k"
+	  ]
+	}
+  ],
+  "annotations": {
+	"io.kubernetes.cri.container-name": "test_container",
+	"io.kubernetes.cri.container-type": "container",
+	"io.kubernetes.cri.image-name": "docker.io/library/alpine:3.20.3",
+	"io.kubernetes.cri.sandbox-id": "7c81e23f249ed06a6a804edcc89eb74e3c44e326257d8709db3a7a74bbbd2efb",
+	"io.kubernetes.cri.sandbox-name": "test",
+	"io.kubernetes.cri.sandbox-namespace": "default",
+	"io.kubernetes.cri.sandbox-uid": "04688d49-005b-46ec-a200-18ed04a954fb"
+  },
+  "linux": {
+	"resources": {
+	  "devices": [
+		{
+		  "allow": false,
+		  "access": "rwm"
+		}
+	  ],
+	  "memory": {},
+	  "cpu": {
+		"quota": 2000,
+		"cpus": "1-3"
+	  }
+	},
+	"cgroupsPath": "/k8s.io/570b00d1f91393c91dfc131d7887f37def66902e360e63a7526e7c74fae53c0d",
+	"namespaces": [
+	  {
+		"type": "pid",
+		"path": "/proc/293715/ns/pid"
+	  },
+	  {
+		"type": "ipc",
+		"path": "/proc/293715/ns/ipc"
+	  }
+	]
+  }
+}
+}
+`
+	var ctrInfo criInfo
+	err := json.Unmarshal([]byte(jsonInfo), &ctrInfo)
+	assert.NoError(t, err)
+}
 
 func TestCRIFake(t *testing.T) {
 	endpoint, err := fake.GenerateEndpoint()
@@ -64,19 +250,20 @@ func TestCRIFake(t *testing.T) {
 				ID:               "test_sandbox",
 				Name:             "test_container",
 				Image:            "alpine:3.20.3",
-				ImageDigest:      "alpine:3.20.3",
+				ImageDigest:      "",
+				ImageID:          "",
 				ImageRepo:        "alpine",
 				ImageTag:         "3.20.3",
-				User:             "&ContainerUser{Linux:nil,}",
+				User:             "0",
 				CPUPeriod:        defaultCpuPeriod,
 				CPUQuota:         0,
 				CPUShares:        defaultCpuShares,
 				CPUSetCPUCount:   0,
-				Env:              nil, // TODO
+				Env:              nil, // not returned in fake mode
 				FullID:           "test_sandbox_test_container_0",
 				Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": "test_sandbox_test_container_0"},
 				PodSandboxID:     "test_sandbox_test_container_0",
-				Privileged:       false, // TODO
+				Privileged:       false,
 				PodSandboxLabels: map[string]string{},
 				Mounts:           []event.Mount{},
 				Size:             -1,
@@ -164,22 +351,23 @@ func TestCRI(t *testing.T) {
 		Info: event.Info{
 			Container: event.Container{
 				Type:             typeContainerd.ToCTValue(),
-				ID:               ctr[:shortIDLength],
+				ID:               shortContainerID(ctr),
 				Name:             "test_container",
 				Image:            "docker.io/library/alpine:3.20.3",
-				ImageDigest:      "docker.io/library/alpine@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
+				ImageDigest:      "sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
+				ImageID:          "3.20.3",
 				ImageRepo:        "docker.io/library/alpine",
 				ImageTag:         "3.20.3",
-				User:             "&ContainerUser{Linux:nil,}",
+				User:             "0",
 				CPUPeriod:        defaultCpuPeriod,
 				CPUQuota:         2000,
 				CPUShares:        defaultCpuShares,
 				CPUSetCPUCount:   3,
-				Env:              nil, // TODO
+				Env:              []string{"test=container"},
 				FullID:           ctr,
 				Labels:           map[string]string{"foo": "bar", "io.kubernetes.sandbox.id": sandboxName, "io.kubernetes.pod.name": "test", "io.kubernetes.pod.namespace": "default", "io.kubernetes.pod.uid": id.String()},
 				PodSandboxID:     sandboxName,
-				Privileged:       false, // TODO
+				Privileged:       false,
 				PodSandboxLabels: map[string]string{},
 				Mounts:           []event.Mount{},
 				IsPodSandbox:     true,
