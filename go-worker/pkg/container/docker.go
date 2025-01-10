@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/FedeDP/container-worker/pkg/config"
 	"github.com/FedeDP/container-worker/pkg/event"
@@ -15,7 +16,10 @@ import (
 	"time"
 )
 
-const typeDocker engineType = "docker"
+const (
+	typeDocker                engineType = "docker"
+	k8sLastAppliedConfigLabel            = "io.kubernetes.container.last-applied-config"
+)
 
 func init() {
 	engineGenerators[typeDocker] = newDockerEngine
@@ -33,6 +37,67 @@ func newDockerEngine(_ context.Context, socket string) (Engine, error) {
 		return nil, err
 	}
 	return &dockerEngine{cl}, nil
+}
+
+type Probe struct {
+	Exec *struct {
+		Command []string `json:"command"`
+	} `json:"exec"`
+}
+
+type Healthcheck struct {
+	Test []string `json:"Test"`
+}
+
+type k8sPodSpecInfo struct {
+	Spec *struct {
+		Containers []struct {
+			LivenessProbe  *Probe       `json:"livenessProbe"`
+			ReadinessProbe *Probe       `json:"readinessProbe"`
+			Healthcheck    *Healthcheck `json:"healthcheck"`
+		} `json:"containers"`
+	} `json:"spec"`
+}
+
+// normalizeArg removes pairs of leading/trailing " or ' chars, if present
+func normalizeArg(val string) string {
+	strings.TrimPrefix(val, `"`)
+	strings.TrimPrefix(val, `'`)
+	return val
+}
+
+func parseLivenessReadinessProbe(probe *Probe) *event.Probe {
+	if probe == nil || probe.Exec == nil || probe.Exec.Command == nil {
+		return nil
+	}
+	p := event.Probe{}
+	p.Exe = normalizeArg(probe.Exec.Command[0])
+	for _, arg := range probe.Exec.Command[1:] {
+		p.Args = append(p.Args, normalizeArg(arg))
+	}
+	return &p
+}
+
+func parseHealthcheckProbe(hcheck *container.HealthConfig) *event.Probe {
+	if hcheck == nil || len(hcheck.Test) <= 1 {
+		return nil
+	}
+	p := event.Probe{}
+
+	switch hcheck.Test[0] {
+	case "CMD":
+		p.Exe = normalizeArg(hcheck.Test[1])
+		for _, arg := range hcheck.Test[2:] {
+			p.Args = append(p.Args, normalizeArg(arg))
+		}
+	case "CMD-SHELL":
+		p.Exe = "/bin/sh"
+		p.Args = append(p.Args, "-c")
+		p.Args = append(p.Args, hcheck.Test[1])
+	default:
+		return nil
+	}
+	return &p
 }
 
 func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) event.Info {
@@ -137,10 +202,29 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 
 	labels := make(map[string]string)
+	var (
+		livenessProbe    *event.Probe = nil
+		readinessProbe   *event.Probe = nil
+		healthcheckProbe *event.Probe = nil
+	)
 	for key, val := range cfg.Labels {
 		if len(val) <= config.GetLabelMaxLen() {
 			labels[key] = val
 		}
+		if key == k8sLastAppliedConfigLabel {
+			var k8sPodInfo k8sPodSpecInfo
+			err = json.Unmarshal([]byte(val), &k8sPodInfo)
+			if err == nil {
+				if k8sPodInfo.Spec.Containers[0].LivenessProbe != nil {
+					livenessProbe = parseLivenessReadinessProbe(k8sPodInfo.Spec.Containers[0].LivenessProbe)
+				} else if k8sPodInfo.Spec.Containers[0].ReadinessProbe != nil {
+					readinessProbe = parseLivenessReadinessProbe(k8sPodInfo.Spec.Containers[0].ReadinessProbe)
+				}
+			}
+		}
+	}
+	if livenessProbe == nil && readinessProbe == nil && cfg.Healthcheck != nil {
+		healthcheckProbe = parseHealthcheckProbe(cfg.Healthcheck)
 	}
 
 	ip := netCfg.IPAddress
@@ -175,34 +259,37 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 
 	return event.Info{
 		Container: event.Container{
-			Type:           typeDocker.ToCTValue(),
-			ID:             shortContainerID(ctr.ID),
-			Name:           name,
-			Image:          cfg.Image,
-			ImageDigest:    imageDigest,
-			ImageID:        imageID,
-			ImageRepo:      imageRepo,
-			ImageTag:       imageTag,
-			User:           cfg.User,
-			CPUPeriod:      cpuPeriod,
-			CPUQuota:       hostCfg.CPUQuota,
-			CPUShares:      cpuShares,
-			CPUSetCPUCount: cpusetCount,
-			CreatedTime:    createdTime.Unix(),
-			Env:            cfg.Env,
-			FullID:         ctr.ID,
-			HostIPC:        hostCfg.IpcMode.IsHost(),
-			HostNetwork:    hostCfg.NetworkMode.IsHost(),
-			HostPID:        hostCfg.PidMode.IsHost(),
-			Ip:             ip,
-			IsPodSandbox:   isPodSandbox,
-			Labels:         labels,
-			MemoryLimit:    hostCfg.Memory,
-			SwapLimit:      hostCfg.MemorySwap,
-			Privileged:     hostCfg.Privileged,
-			PortMappings:   portMappings,
-			Mounts:         mounts,
-			Size:           size,
+			Type:             typeDocker.ToCTValue(),
+			ID:               shortContainerID(ctr.ID),
+			Name:             name,
+			Image:            cfg.Image,
+			ImageDigest:      imageDigest,
+			ImageID:          imageID,
+			ImageRepo:        imageRepo,
+			ImageTag:         imageTag,
+			User:             cfg.User,
+			CPUPeriod:        cpuPeriod,
+			CPUQuota:         hostCfg.CPUQuota,
+			CPUShares:        cpuShares,
+			CPUSetCPUCount:   cpusetCount,
+			CreatedTime:      createdTime.Unix(),
+			Env:              cfg.Env,
+			FullID:           ctr.ID,
+			HostIPC:          hostCfg.IpcMode.IsHost(),
+			HostNetwork:      hostCfg.NetworkMode.IsHost(),
+			HostPID:          hostCfg.PidMode.IsHost(),
+			Ip:               ip,
+			IsPodSandbox:     isPodSandbox,
+			Labels:           labels,
+			MemoryLimit:      hostCfg.Memory,
+			SwapLimit:        hostCfg.MemorySwap,
+			Privileged:       hostCfg.Privileged,
+			PortMappings:     portMappings,
+			Mounts:           mounts,
+			Size:             size,
+			LivenessProbe:    livenessProbe,
+			ReadinessProbe:   readinessProbe,
+			HealthcheckProbe: healthcheckProbe,
 		},
 	}
 }
