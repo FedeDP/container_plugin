@@ -22,7 +22,7 @@ func main() {
 	initCfg := `
    {
       "label_max_len": 100,
-      "with_size": false,
+      "with_size": true,
       "engines": {
 		  "containerd":{
 			 "enabled":true,

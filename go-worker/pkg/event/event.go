@@ -21,7 +21,6 @@ type Probe struct {
 	Args []string `json:"args"`
 }
 
-// TODO implement healtcheck/liveness/readiness probe related fields
 type Container struct {
 	Type             int               `json:"type"`
 	ID               string            `json:"id"`

@@ -131,6 +131,8 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 		imageTag    string
 		imageSize   int64 = -1
 	)
+	// TODO this is an extra API call; shall we move it behing config.GetWithSize()?
+	// Or rename `with_size` option with something more generic like `full_info`?
 	image, _ := container.Image(namespacedContext)
 	if image != nil {
 		imageDigest = image.Target().Digest.String()

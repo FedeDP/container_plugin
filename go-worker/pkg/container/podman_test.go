@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/FedeDP/container-worker/pkg/event"
+	"github.com/containers/image/v5/manifest"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/containers/podman/v5/pkg/bindings/images"
@@ -73,6 +74,11 @@ func TestPodman(t *testing.T) {
 				},
 			},
 		},
+		ContainerHealthCheckConfig: specgen.ContainerHealthCheckConfig{
+			HealthConfig: &manifest.Schema2HealthConfig{
+				Test: []string{"CMD-SHELL", "echo hello world"},
+			},
+		},
 	}, nil)
 	assert.NoError(t, err)
 
@@ -101,6 +107,10 @@ func TestPodman(t *testing.T) {
 				Mounts:         []event.Mount{},
 				PortMappings:   []event.PortMapping{},
 				Size:           -1,
+				HealthcheckProbe: &event.Probe{
+					Exe:  "/bin/sh",
+					Args: []string{"-c", "echo hello world"},
+				},
 			}},
 		IsCreate: true,
 	}

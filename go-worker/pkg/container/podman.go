@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/FedeDP/container-worker/pkg/config"
 	"github.com/FedeDP/container-worker/pkg/event"
@@ -10,6 +11,7 @@ import (
 	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/containers/podman/v5/pkg/bindings/system"
 	"github.com/containers/podman/v5/pkg/domain/entities/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"strconv"
 	"strings"
@@ -92,10 +94,37 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 	}
 
 	labels := make(map[string]string)
+	var (
+		livenessProbe    *event.Probe = nil
+		readinessProbe   *event.Probe = nil
+		healthcheckProbe *event.Probe = nil
+	)
 	for key, val := range cfg.Labels {
 		if len(val) <= config.GetLabelMaxLen() {
 			labels[key] = val
 		}
+		if key == k8sLastAppliedConfigLabel {
+			var k8sPodInfo k8sPodSpecInfo
+			err := json.Unmarshal([]byte(val), &k8sPodInfo)
+			if err == nil {
+				if k8sPodInfo.Spec.Containers[0].LivenessProbe != nil {
+					livenessProbe = parseLivenessReadinessProbe(k8sPodInfo.Spec.Containers[0].LivenessProbe)
+				} else if k8sPodInfo.Spec.Containers[0].ReadinessProbe != nil {
+					readinessProbe = parseLivenessReadinessProbe(k8sPodInfo.Spec.Containers[0].ReadinessProbe)
+				}
+			}
+		}
+	}
+	if livenessProbe == nil && readinessProbe == nil && cfg.Healthcheck != nil {
+		hConfig := container.HealthConfig{
+			Test:          cfg.Healthcheck.Test,
+			Interval:      cfg.Healthcheck.Interval,
+			Timeout:       cfg.Healthcheck.Timeout,
+			StartPeriod:   cfg.Healthcheck.StartPeriod,
+			StartInterval: cfg.Healthcheck.StartInterval,
+			Retries:       cfg.Healthcheck.Retries,
+		}
+		healthcheckProbe = parseHealthcheckProbe(&hConfig)
 	}
 
 	var (
@@ -117,34 +146,37 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 
 	return event.Info{
 		Container: event.Container{
-			Type:           typePodman.ToCTValue(),
-			ID:             shortContainerID(ctr.ID),
-			Name:           name,
-			Image:          ctr.ImageName,
-			ImageDigest:    ctr.ImageDigest,
-			ImageID:        ctr.Image,
-			ImageRepo:      imageRepo,
-			ImageTag:       imageTag,
-			User:           cfg.User,
-			CPUPeriod:      cpuPeriod,
-			CPUQuota:       hostCfg.CpuQuota,
-			CPUShares:      cpuShares,
-			CPUSetCPUCount: cpusetCount,
-			CreatedTime:    ctr.Created.Unix(),
-			Env:            cfg.Env,
-			FullID:         ctr.ID,
-			HostIPC:        hostCfg.IpcMode == "host",
-			HostNetwork:    hostCfg.NetworkMode == "host",
-			HostPID:        hostCfg.PidMode == "host",
-			Ip:             netCfg.IPAddress,
-			IsPodSandbox:   isPodSandbox,
-			Labels:         labels,
-			MemoryLimit:    hostCfg.Memory,
-			SwapLimit:      hostCfg.MemorySwap,
-			Privileged:     hostCfg.Privileged,
-			PortMappings:   portMappings,
-			Mounts:         mounts,
-			Size:           size,
+			Type:             typePodman.ToCTValue(),
+			ID:               shortContainerID(ctr.ID),
+			Name:             name,
+			Image:            ctr.ImageName,
+			ImageDigest:      ctr.ImageDigest,
+			ImageID:          ctr.Image,
+			ImageRepo:        imageRepo,
+			ImageTag:         imageTag,
+			User:             cfg.User,
+			CPUPeriod:        cpuPeriod,
+			CPUQuota:         hostCfg.CpuQuota,
+			CPUShares:        cpuShares,
+			CPUSetCPUCount:   cpusetCount,
+			CreatedTime:      ctr.Created.Unix(),
+			Env:              cfg.Env,
+			FullID:           ctr.ID,
+			HostIPC:          hostCfg.IpcMode == "host",
+			HostNetwork:      hostCfg.NetworkMode == "host",
+			HostPID:          hostCfg.PidMode == "host",
+			Ip:               netCfg.IPAddress,
+			IsPodSandbox:     isPodSandbox,
+			Labels:           labels,
+			MemoryLimit:      hostCfg.Memory,
+			SwapLimit:        hostCfg.MemorySwap,
+			Privileged:       hostCfg.Privileged,
+			PortMappings:     portMappings,
+			Mounts:           mounts,
+			Size:             size,
+			LivenessProbe:    livenessProbe,
+			ReadinessProbe:   readinessProbe,
+			HealthcheckProbe: healthcheckProbe,
 		},
 	}
 }
