@@ -52,6 +52,7 @@ bool match_one_container_id(const std::string &cgroup,
  */
 bool matches_runc_cgroup(const std::string &cgroup,
                         const libsinsp::runc::cgroup_layout *layout,
-                        std::string &container_id);
+                        std::string &container_id,
+                        bool is_containerd=false);
 }  // namespace runc
 }  // namespace libsinsp

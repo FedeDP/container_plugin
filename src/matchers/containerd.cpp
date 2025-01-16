@@ -6,7 +6,7 @@
 
 using namespace libsinsp::runc;
 
-static re2::RE2 pattern("^/([A-Za-z0-9]+(?:[._-](?:[A-Za-z0-9]+))*)/$", re2::RE2::POSIX);
+static re2::RE2 pattern("/([A-Za-z0-9]+(?:[._-](?:[A-Za-z0-9]+))*)/");
 
 bool containerd::resolve(const std::string& cgroup, std::string& container_id) {
 	std::string containerd_namespace;
@@ -20,7 +20,7 @@ bool containerd::resolve(const std::string& cgroup, std::string& container_id) {
 		out << "/" << containerd_namespace << "/";
 		auto layout_str = out.str();
 		cgroup_layout CONTAINERD_CGROUP_LAYOUT[] = {{layout_str.c_str(), ""}, {nullptr, nullptr}};
-		return matches_runc_cgroup(cgroup, CONTAINERD_CGROUP_LAYOUT, container_id);
+		return matches_runc_cgroup(cgroup, CONTAINERD_CGROUP_LAYOUT, container_id, true);
 	}
 	return false;
 }
