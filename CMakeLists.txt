@@ -6,6 +6,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+# From now on, we have VCPKG_ARCH variable
+include(arch)
+
 # compiler related configs
 include(compiler)
 
