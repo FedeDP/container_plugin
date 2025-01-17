@@ -18,25 +18,33 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ amd64, arm64 ]
-    container:
-      image: ubuntu:20.04
+    container: golang:1.23-bullseye
     steps:
+      # libbtrfs-dev is needed by containerd go package - build time dep, no runtime.
+      # Vcpkg also needs ninja since on arm64 VCPKG_FORCE_SYSTEM_BINARIES must be enabled.
+      - name: Install plugin deps
+        run: apt-get update && apt-get install -y --no-install-recommends git make build-essential autotools-dev automake libtool pkg-config libbtrfs-dev curl zip unzip tar ninja-build
+
+      - name: Install updated cmake version ⛓️
+        run: |
+          curl -L -o /tmp/cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.31.4/cmake-3.31.4-linux-$(uname -m).tar.gz
+          gzip -d /tmp/cmake.tar.gz
+          tar -xpf /tmp/cmake.tar --directory=/tmp
+          cp -R /tmp/cmake-3.31.4-linux-$(uname -m)/* /usr
+          rm -rf /tmp/cmake-3.31.4-linux-$(uname -m)
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'recursive'
 
-      # Needed by containerd go package - build time dep, no runtime.
-      - name: Install plugin deps
-        run: apt-get update && apt-get install -y --no-install-recommends libbtrfs-dev
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go-worker/go.mod
+      - name: Safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Build plugin library
+        env:
+          VCPKG_FORCE_SYSTEM_BINARIES: 'true'
         run: make libcontainer.so
 
       - name: Upload artifact
@@ -62,7 +70,7 @@ jobs:
         with:
           name: libcontainer-arm64
 
-      - name: Rename amd64 library
+      - name: Rename arm64 library
         run: mv libcontainer.so libcontainer_arm64.so
 
       - name: Release
