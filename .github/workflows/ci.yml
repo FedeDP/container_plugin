@@ -57,7 +57,11 @@ jobs:
       - name: Build go-worker executable
         run: make -C go-worker exe
 
-      - name: Run tests
+      # Podman is not shipped by beta github arm64 runners:
+      # https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-22-image.md#not-installed-software
+      # Building tests fail with: "faccessat /home/runneradmin/.config/containers/storage.conf: permission denied"
+      - name: Run tests (x64 only)
+        if: matrix.arch == 'amd64'
         run: |
           systemctl --user start podman
           make test
