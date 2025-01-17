@@ -11,8 +11,13 @@ concurrency:
 
 jobs:
   build-and-test:
+    name: build-and-test-${{ matrix.arch }}
     # ubuntu24.04 for podman >= 4.x
-    runs-on: 'ubuntu-24.04'
+    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
     steps:
       # Needed by vcpkg caching
       - name: Export GitHub Actions cache environment variables
