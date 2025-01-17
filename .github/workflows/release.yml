@@ -13,7 +13,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: 'ubuntu-20.04'
+    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-22.04-arm') || 'ubuntu-22.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
+    container:
+      image: ubuntu:20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,7 +29,7 @@ jobs:
 
       # Needed by containerd go package - build time dep, no runtime.
       - name: Install plugin deps
-        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev
+        run: apt-get update && apt-get install -y --no-install-recommends libbtrfs-dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -33,7 +39,35 @@ jobs:
       - name: Build plugin library
         run: make libcontainer.so
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-${{ matrix.arch }}
+          path: 'libcontainer.so'
+
+  release:
+    needs: [build]
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Download amd64 plugin
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: libcontainer-amd64
+
+      - name: Rename amd64 library
+        run: mv libcontainer.so libcontainer_amd64.so
+
+      - name: Download arm64 plugin
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: libcontainer-arm64
+
+      - name: Rename amd64 library
+        run: mv libcontainer.so libcontainer_arm64.so
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: libcontainer.so
+          files: |
+            libcontainer_amd64.so
+            libcontainer_arm64.so
