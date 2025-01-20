@@ -153,6 +153,7 @@ std::string my_plugin::compute_container_id_for_thread(const falcosecurity::tabl
                 if(!cgroup.empty()) {
                     m_mgr->match_cgroup(cgroup, container_id, info);
                     if (!container_id.empty()) {
+                        SPDLOG_DEBUG("Matched container_id: {} from cgroup {}", container_id, cgroup);
                       	// break the loop
                       	return false;
                     }

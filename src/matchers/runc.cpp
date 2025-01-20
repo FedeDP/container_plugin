@@ -51,7 +51,7 @@ bool match_one_container_id(const std::string &cgroup,
 
     // For containerd, make sure to skip systemd host cgroups
     if(is_containerd && !endswith(cgroup, ".service") &&
-       !endswith(cgroup, ".slice")) {
+       !endswith(cgroup, ".slice") && !endswith(cgroup, ".scope")) {
         const size_t reported_len = end_pos - start_pos >= REPORTED_CONTAINER_ID_LENGTH
                                       ? REPORTED_CONTAINER_ID_LENGTH
                                       : end_pos - start_pos;

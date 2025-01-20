@@ -16,7 +16,7 @@ TEST_F(container_cgroup, containerd_cgroupfs) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -28,7 +28,7 @@ TEST_F(container_cgroup, crio_cgroupfs) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -41,7 +41,7 @@ TEST_F(container_cgroup, crio_systemd) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -52,7 +52,7 @@ TEST_F(container_cgroup, docker_cgroupfs) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -64,7 +64,7 @@ TEST_F(container_cgroup, docker_systemd) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -76,7 +76,7 @@ TEST_F(container_cgroup, containerd_unknown) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -87,7 +87,7 @@ TEST_F(container_cgroup, containerd) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
 }
 
@@ -98,6 +98,15 @@ TEST_F(container_cgroup, containerd_namespaced) {
 
 	std::string container_id;
 	std::shared_ptr<container_info> info;
-	EXPECT_EQ(true,  m_mgr.match_cgroup(cgroup, container_id, info));
+	EXPECT_TRUE(m_mgr.match_cgroup(cgroup, container_id, info));
 	EXPECT_EQ(expected_container_id, container_id);
+}
+
+TEST_F(container_cgroup, non_container_cgroup) {
+	const std::string cgroup =
+			"/user.slice/user-1000.slice/user@1000.service/init.scope";
+
+	std::string container_id;
+	std::shared_ptr<container_info> info;
+	EXPECT_FALSE(m_mgr.match_cgroup(cgroup, container_id, info));
 }
