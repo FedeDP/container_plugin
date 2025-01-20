@@ -312,6 +312,16 @@ bool my_plugin::parse_new_process_event(
     auto& tr = in.get_table_reader();
     auto& tw = in.get_table_writer();
 
+    // - For execve/execveat we exclude failed syscall events (ret<0)
+    // - For clone/fork/vfork/clone3 we exclude failed syscall events (ret<0)
+    // res is first param
+    auto res_param = get_syscall_evt_param(in.get_event_reader().get_buf(), 0);
+    int64_t ret = 0;
+    memcpy(&ret, res_param.param_pointer, sizeof(ret));
+    if(ret < 0) {
+        return false;
+    }
+
     // retrieve the thread entry associated with this thread id
     try {
     	auto thread_entry = m_threads_table.get_entry(tr, thread_id);
