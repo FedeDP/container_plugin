@@ -1,5 +1,6 @@
 #include "plugin.h"
 #include <libworker.h>
+#include <sys/time.h>
 
 //////////////////////////
 // Async capability
@@ -15,13 +16,23 @@ std::vector<std::string> my_plugin::get_async_event_sources() {
     return ASYNC_EVENT_SOURCES;
 }
 
+static inline uint64_t get_current_time_ns(int sec_shift) {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	tv.tv_sec += sec_shift;
+	return tv.tv_sec * (uint64_t)1000000000 + tv.tv_usec * 1000;
+}
+
 void generate_async_event(const char *json, bool added, int async_type) {
     falcosecurity::events::asyncevent_e_encoder enc;
     enc.set_tid(1);
     std::string msg = json;
     if (added) {
+        // leave ts=-1 (default value) to ensure that the event is grabbed asap
         enc.set_name(ASYNC_EVENT_NAME_ADDED);
     } else {
+        // set ts = now + 1s to leave some space for enqueued syscalls to be enriched
+        enc.set_ts(get_current_time_ns(1));
         enc.set_name(ASYNC_EVENT_NAME_REMOVED);
     }
     enc.set_data((void*)msg.c_str(), msg.size() + 1);
