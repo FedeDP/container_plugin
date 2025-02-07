@@ -23,8 +23,6 @@ limitations under the License.
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_sinks.h>
 
-#define HOST_CONTAINER_ID "host"
-
 // Sinsp events used in the plugin
 using _et = falcosecurity::event_type;
 constexpr auto PPME_ASYNCEVENT_E = (_et)402;

@@ -103,7 +103,8 @@ bool my_plugin::init(falcosecurity::init_input& in) {
 
     try {
       	// Expose containers as libsinsp state table
-      	t.add_table(get_table());
+        t.add_table(get_table());
+
         m_threads_table = t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);
 
         // pidns_init_start_ts used by TYPE_CONTAINER_START_TS and TYPE_CONTAINER_DURATION extractors
@@ -151,8 +152,8 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         return false;
     }
 
-    // Initialize dummy "host" fake container entry
-    m_containers[HOST_CONTAINER_ID] = container_info::host_container_info();
+    // Initialize dummy host container entry
+    m_containers[""] = container_info::host_container_info();
 
 
     // Initialize metrics

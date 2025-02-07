@@ -11,6 +11,8 @@
 #include "container_type.h"
 #include "consts.h"
 
+#define HOST_CONTAINER_ID "host"
+
 class container_port_mapping {
 public:
     container_port_mapping(): m_host_ip(0), m_host_port(0), m_container_port(0) {}
@@ -112,6 +114,7 @@ public:
         host_info->m_id = HOST_CONTAINER_ID;
         host_info->m_full_id = HOST_CONTAINER_ID;
         host_info->m_name = HOST_CONTAINER_ID;
+        host_info->m_type = CT_HOST;
         return host_info;
     }
 

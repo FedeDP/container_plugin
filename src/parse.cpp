@@ -161,10 +161,6 @@ std::string my_plugin::compute_container_id_for_thread(const falcosecurity::tabl
                 return true;
             }
     );
-    if (container_id == "") {
-        // Could not find any matching container_id; HOST!
-        container_id = HOST_CONTAINER_ID;
-    }
     return container_id;
 }
 
@@ -238,7 +234,7 @@ void my_plugin::write_thread_category(const std::shared_ptr<const container_info
             m_threads_field_vpid.read_value(tr, entry, vpid);
             m_container_id_field.read_value(tr, entry, container_id);
 
-            if (vpid == 1 && container_id != HOST_CONTAINER_ID) {
+            if (vpid == 1 && !container_id.empty()) {
                 found_container_init = true;
             } else {
                 // update ptid for next iteration
@@ -292,8 +288,8 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
     }
 
     // Write thread category field
-    if (container_id != HOST_CONTAINER_ID) {
-		auto it = m_containers.find(container_id);
+    if (!container_id.empty()) {
+        auto it = m_containers.find(container_id);
         if (it != m_containers.end()) {
             auto cinfo = it->second;
             write_thread_category(cinfo, thread_entry, tr, tw);
@@ -303,12 +299,10 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
     }
 }
 
-bool my_plugin::parse_new_process_event(
-        const falcosecurity::parse_event_input& in) {
+bool my_plugin::parse_new_process_event(const falcosecurity::parse_event_input& in) {
     // get tid
     auto thread_id = in.get_event_reader().get_tid();
 
-    // compute container_id from tid->cgroups
     auto& tr = in.get_table_reader();
     auto& tw = in.get_table_writer();
 
