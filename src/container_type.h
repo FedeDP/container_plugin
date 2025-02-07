@@ -15,6 +15,7 @@ enum container_type {
     CT_PODMAN = 11,
 
     // Default value, may be changed if necessary
+    CT_HOST = 0xfffe,
     CT_UNKNOWN = 0xffff
 };
 
@@ -50,6 +51,9 @@ static std::string inline to_string(enum container_type ct) {
     case CT_PODMAN:
         return "podman";
         break;
+    case CT_HOST:
+      	return "host";
+      	break;
     default:
         return "";
     }

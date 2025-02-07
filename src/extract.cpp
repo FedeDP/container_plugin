@@ -344,13 +344,6 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         thread_entry = m_threads_table.get_entry(tr, thread_id);
         // retrieve container_id from the entry
         m_container_id_field.read_value(tr, thread_entry, container_id);
-        if (container_id == "") {
-            // This should only happen in case a clone/fork was lost
-            // and our parse_new_process_event() callback was not called.
-            // Nothing we can do.
-            SPDLOG_DEBUG("the plugin has no container_id info for the thread id '{}'", thread_id);
-            return false;
-        }
     } catch(falcosecurity::plugin_exception e) {
       	// Debug here since many events do not have thread id info (eg: schedswitch)
         SPDLOG_DEBUG("cannot extract the container_id for the thread id '{}': {}",
@@ -358,7 +351,7 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         return false;
     }
 
-    // Try to find the entry associated with the pod_uid
+    // Try to find the entry associated with the container_id
     auto it = m_containers.find(container_id);
     if(it == m_containers.end()) {
         SPDLOG_DEBUG("the plugin has no info for the container id '{}'", container_id);
