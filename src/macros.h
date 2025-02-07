@@ -22,8 +22,10 @@ limitations under the License.
 /////////////////////////
 // Async capability
 /////////////////////////
-#define ASYNC_EVENT_NAME_ADDED "container_added"
-#define ASYNC_EVENT_NAME_REMOVED "container_removed"
+// This is the same name as the pre-existing container event (PPME_CONTAINER_JSON_E) to avoid touching the rules
+// (eg: https://github.com/falcosecurity/rules/blob/d8415c1bc13e6607b477360afda3dae66d2abd16/rules/falco-incubating_rules.yaml#L300)
+#define ASYNC_EVENT_NAME_ADDED "container"
+#define ASYNC_EVENT_NAME_REMOVED "container_removed" // the removed event is a whole new event and is only generated for listeners engines (by the go-worker).
 #define ASYNC_EVENT_NAMES                                                      \
     {                                                                          \
         ASYNC_EVENT_NAME_ADDED, ASYNC_EVENT_NAME_REMOVED                       \
