@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 #define DEFAULT_LABEL_MAX_LEN 100
 
@@ -18,6 +19,12 @@ struct SocketsEngine {
 
     SocketsEngine() {
         enabled = true;
+    }
+
+    void log_sockets() const {
+     	for (const auto& socket : sockets) {
+            SPDLOG_DEBUG("Enabled container runtime socket at '{}'", socket);
+     	}
     }
 };
 

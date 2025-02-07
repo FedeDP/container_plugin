@@ -106,6 +106,8 @@ public:
                                const falcosecurity::table_reader& tr,
                                const falcosecurity::table_writer& tw);
 
+    falcosecurity::_internal::ss_plugin_table_input& get_table();
+
 private:
     // State table
     std::unordered_map<std::string, std::shared_ptr<const container_info>> m_containers;
