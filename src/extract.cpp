@@ -351,19 +351,23 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
         return false;
     }
 
+    auto& req = in.get_extract_request();
+    const auto field_id = req.get_field_id();
+
     // Try to find the entry associated with the container_id
     auto it = m_containers.find(container_id);
     if(it == m_containers.end()) {
         SPDLOG_DEBUG("the plugin has no info for the container id '{}'", container_id);
-        return false;
+        if (field_id != TYPE_CONTAINER_ID) {
+            // Can't return anything but container.id field.
+        	return false;
+        }
     }
 
     auto cinfo = it->second;
-    auto& req = in.get_extract_request();
-    const auto field_id = req.get_field_id();
     switch(field_id) {
         case TYPE_CONTAINER_ID:
-            req.set_value(cinfo->m_id);
+            req.set_value(container_id);
             break;
         case TYPE_CONTAINER_FULL_CONTAINER_ID:
             req.set_value(cinfo->m_full_id);

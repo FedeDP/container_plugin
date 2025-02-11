@@ -299,7 +299,7 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
             auto cinfo = it->second;
             write_thread_category(cinfo, thread_entry, tr, tw);
         } else {
-            SPDLOG_WARN("failed to write thread category, no container found for {}", container_id);
+            SPDLOG_DEBUG("failed to write thread category, no container found for {}", container_id);
         }
     }
 }
