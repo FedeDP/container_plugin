@@ -66,8 +66,10 @@ bool my_plugin::parse_async_event(
     auto json_event = nlohmann::json::parse(json_charbuf_pointer);
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
     if (added) {
+        SPDLOG_TRACE("Adding container: {}", cinfo->m_id);
         m_containers[cinfo->m_id] = cinfo;
     } else {
+        SPDLOG_TRACE("Removing container: {}", cinfo->m_id);
         m_containers.erase(cinfo->m_id);
     }
 
@@ -100,6 +102,7 @@ bool my_plugin::parse_container_event(
     cinfo->m_type = tp;
     cinfo->m_name = name;
     cinfo->m_image = image;
+    SPDLOG_TRACE("Adding container from old container event: {}", cinfo->m_id);
     m_containers[id] = cinfo;
     return true;
 }
@@ -113,6 +116,7 @@ bool my_plugin::parse_container_json_event(
     auto json_event = nlohmann::json::parse(json_str);
 
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
+    SPDLOG_TRACE("Adding container from old container_json event: {}", cinfo->m_id);
     m_containers[cinfo->m_id] = cinfo;
     return true;
 }
@@ -126,6 +130,7 @@ bool my_plugin::parse_container_json_2_event(
     auto json_event = nlohmann::json::parse(json_str);
 
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
+    SPDLOG_TRACE("Adding container from old container_json_2 event: {}", cinfo->m_id);
     m_containers[cinfo->m_id] = cinfo;
     return true;
 }
