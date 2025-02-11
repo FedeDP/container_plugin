@@ -94,11 +94,6 @@ bool my_plugin::init(falcosecurity::init_input& in) {
 
     SPDLOG_DEBUG("init the plugin");
 
-    // Remove this log when we reach `1.0.0`
-    SPDLOG_WARN("[EXPERIMENTAL] This plugin is in active development "
-                "and may undergo changes in behavior without prioritizing "
-                "backward compatibility.");
-
     m_mgr = std::make_unique<matcher_manager>(m_cfg);
 
     try {
