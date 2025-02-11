@@ -358,8 +358,13 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
     auto it = m_containers.find(container_id);
     if(it == m_containers.end()) {
         SPDLOG_DEBUG("the plugin has no info for the container id '{}'", container_id);
-        if (field_id != TYPE_CONTAINER_ID) {
-            // Can't return anything but container.id field.
+        if (field_id != TYPE_CONTAINER_ID &&
+            field_id != TYPE_CONTAINER_START_TS &&
+            field_id != TYPE_CONTAINER_DURATION &&
+            field_id != TYPE_IS_CONTAINER_HEALTHCHECK &&
+            field_id != TYPE_IS_CONTAINER_LIVENESS_PROBE &&
+            field_id != TYPE_IS_CONTAINER_READINESS_PROBE) {
+            // Can't return anything but those fields.
         	return false;
         }
     }
