@@ -7,7 +7,7 @@ require (
 	github.com/containerd/containerd/v2 v2.0.0-rc.6
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/containers/image/v5 v5.34.0
-	github.com/containers/podman/v5 v5.4.0-rc3
+	github.com/containers/podman/v5 v5.4.0
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/falcosecurity/plugin-sdk-go v0.7.4
 	github.com/google/uuid v1.6.0
