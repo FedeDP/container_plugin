@@ -68,6 +68,7 @@ bool my_plugin::parse_async_event(
     if (added) {
         SPDLOG_TRACE("Adding container: {}", cinfo->m_id);
         m_containers[cinfo->m_id] = cinfo;
+        m_last_container = cinfo;
     } else {
         SPDLOG_TRACE("Removing container: {}", cinfo->m_id);
         m_containers.erase(cinfo->m_id);
@@ -104,6 +105,7 @@ bool my_plugin::parse_container_event(
     cinfo->m_image = image;
     SPDLOG_TRACE("Adding container from old container event: {}", cinfo->m_id);
     m_containers[id] = cinfo;
+    m_last_container = cinfo;
     return true;
 }
 
@@ -118,6 +120,7 @@ bool my_plugin::parse_container_json_event(
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
     SPDLOG_TRACE("Adding container from old container_json event: {}", cinfo->m_id);
     m_containers[cinfo->m_id] = cinfo;
+    m_last_container = cinfo;
     return true;
 }
 
@@ -132,6 +135,7 @@ bool my_plugin::parse_container_json_2_event(
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
     SPDLOG_TRACE("Adding container from old container_json_2 event: {}", cinfo->m_id);
     m_containers[cinfo->m_id] = cinfo;
+    m_last_container = cinfo;
     return true;
 }
 

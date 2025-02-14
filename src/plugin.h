@@ -111,6 +111,7 @@ public:
 private:
     // State table
     std::unordered_map<std::string, std::shared_ptr<const container_info>> m_containers;
+    std::shared_ptr<const container_info> m_last_container;
 
     std::vector<falcosecurity::metric> m_metrics;
 
