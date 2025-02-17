@@ -8,7 +8,7 @@
 #include "libvirt_lxc.h"
 #include "static_container.h"
 
-matcher_manager::matcher_manager(const PluginConfig& cfg) {
+matcher_manager::matcher_manager(const Engines& cfg) {
     if(cfg.static_ctr.enabled) {
         // Configured with a static engine; add it and return.
         auto engine = std::make_shared<static_container>(cfg.static_ctr.id,
