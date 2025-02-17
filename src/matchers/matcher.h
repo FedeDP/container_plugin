@@ -18,7 +18,7 @@ public:
 
 class matcher_manager {
 public:
-    matcher_manager(const PluginConfig& cfg);
+    matcher_manager(const Engines& cfg);
 
     bool match_cgroup(const std::string& cgroup, std::string& container_id, std::shared_ptr<container_info>& ctr);
 

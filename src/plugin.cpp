@@ -94,7 +94,7 @@ bool my_plugin::init(falcosecurity::init_input& in) {
 
     SPDLOG_DEBUG("init the plugin");
 
-    m_mgr = std::make_unique<matcher_manager>(m_cfg);
+    m_mgr = std::make_unique<matcher_manager>(m_cfg.engines);
 
     try {
       	// Expose containers as libsinsp state table

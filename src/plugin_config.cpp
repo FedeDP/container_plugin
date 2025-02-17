@@ -17,77 +17,84 @@ void from_json(const nlohmann::json& j, SocketsEngine& engine) {
     engine.sockets = j.value("sockets", std::vector<std::string>{});
 }
 
+void from_json(const nlohmann::json& j, Engines& engines) {
+    engines.bpm = j.value("bpm", SimpleEngine{});
+    engines.lxc = j.value("lxc", SimpleEngine{});
+    engines.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});
+    engines.static_ctr = j.value("static", StaticEngine{});
+
+    engines.docker = j.value("docker", SocketsEngine{});
+    engines.podman = j.value("podman", SocketsEngine{});
+    engines.cri = j.value("cri", SocketsEngine{});
+    engines.containerd = j.value("containerd", SocketsEngine{});
+}
+
 void from_json(const nlohmann::json& j, PluginConfig& cfg) {
     cfg.verbosity = j.value("verbosity", "info");
     cfg.label_max_len = j.value("label_max_len", DEFAULT_LABEL_MAX_LEN);
     cfg.with_size = j.value("with_size", false);
-    cfg.bpm = j.value("bpm", SimpleEngine{});
-    cfg.lxc = j.value("lxc", SimpleEngine{});
-    cfg.libvirt_lxc = j.value("libvirt_lxc", SimpleEngine{});
-    cfg.static_ctr = j.value("static", StaticEngine{});
+    cfg.engines = j.value("engines", Engines{});
 
-    cfg.docker = j.value("docker", SocketsEngine{});
-    if (cfg.docker.sockets.empty()) {
-        cfg.docker.sockets.emplace_back("/var/run/docker.sock");
+    // Set default sockets if emtpy
+    if (cfg.engines.docker.sockets.empty()) {
+        cfg.engines.docker.sockets.emplace_back("/var/run/docker.sock");
     }
-
-    cfg.podman = j.value("podman", SocketsEngine{});
-    if (cfg.podman.sockets.empty()) {
-        cfg.podman.sockets.emplace_back("/run/podman/podman.sock");
+     if (cfg.engines.podman.sockets.empty()) {
+        cfg.engines.podman.sockets.emplace_back("/run/podman/podman.sock");
         for (const auto & entry : std::filesystem::directory_iterator("/run/user")) {
             if (entry.is_directory()) {
                 if (std::filesystem::exists(entry.path().string() + "/podman/podman.sock")) {
-                    cfg.podman.sockets.emplace_back(entry.path().string() + "/podman/podman.sock");
+                    cfg.engines.podman.sockets.emplace_back(entry.path().string() + "/podman/podman.sock");
                 }
             }
         }
     }
-
-    cfg.cri = j.value("cri", SocketsEngine{});
-    if (cfg.cri.sockets.empty()) {
-        cfg.cri.sockets.emplace_back("/run/crio/crio.sock");
+    if (cfg.engines.cri.sockets.empty()) {
+        cfg.engines.cri.sockets.emplace_back("/run/crio/crio.sock");
     }
-
-    cfg.containerd = j.value("containerd", SocketsEngine{});
-    if (cfg.containerd.sockets.empty()) {
-        cfg.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
-        cfg.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
-        cfg.containerd.sockets.emplace_back("/run/host-containerd/containerd.sock"); // bottlerocket host containers socket
+    if (cfg.engines.containerd.sockets.empty()) {
+        cfg.engines.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
+        cfg.engines.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
+        cfg.engines.containerd.sockets.emplace_back("/run/host-containerd/containerd.sock"); // bottlerocket host containers socket
     }
 }
 
-void to_json(nlohmann::json& j, const PluginConfig& cfg)
-{
-    j["label_max_len"] = cfg.label_max_len;
-    j["with_size"] = cfg.with_size;
-    j["engines"] = nlohmann::json{
-            {
+void to_json(nlohmann::json& j, const Engines& engines) {
+    j = nlohmann::json{
+      {
                     "docker",
                     {
-                            {"enabled", cfg.docker.enabled },
-                            {"sockets", cfg.docker.sockets }
+                            {"enabled", engines.docker.enabled },
+                            {"sockets", engines.docker.sockets }
                     }
             },
             {
                     "podman",
                     {
-                            {"enabled", cfg.podman.enabled },
-                            {"sockets", cfg.podman.sockets }
+                            {"enabled", engines.podman.enabled },
+                            {"sockets", engines.podman.sockets }
                     }
             },
             {
                     "cri",
                     {
-                            {"enabled", cfg.cri.enabled },
-                            {"sockets", cfg.cri.sockets }
+                            {"enabled", engines.cri.enabled },
+                            {"sockets", engines.cri.sockets }
                     }
             },
             {
                     "containerd",
                     {
-                            {"enabled", cfg.containerd.enabled },
-                            {"sockets", cfg.containerd.sockets }
+                            {"enabled", engines.containerd.enabled },
+                            {"sockets", engines.containerd.sockets }
                     }
             }
     };
+
+}
+
+void to_json(nlohmann::json& j, const PluginConfig& cfg) {
+    j["label_max_len"] = cfg.label_max_len;
+    j["with_size"] = cfg.with_size;
+    j["engines"] = cfg.engines;
 }

@@ -39,10 +39,7 @@ struct StaticEngine {
     }
 };
 
-struct PluginConfig {
-    std::string verbosity;
-    int label_max_len;
-    bool with_size;
+struct Engines {
     SimpleEngine bpm;
     SimpleEngine lxc;
     SimpleEngine libvirt_lxc;
@@ -51,6 +48,13 @@ struct PluginConfig {
     SocketsEngine cri;
     SocketsEngine containerd;
     StaticEngine static_ctr;
+};
+
+struct PluginConfig {
+    std::string verbosity;
+    int label_max_len;
+    bool with_size;
+    Engines engines;
 
     PluginConfig() {
         label_max_len = DEFAULT_LABEL_MAX_LEN;
@@ -65,8 +69,10 @@ struct PluginConfig {
 void from_json(const nlohmann::json& j, StaticEngine& engine);
 void from_json(const nlohmann::json& j, SimpleEngine& engine);
 void from_json(const nlohmann::json& j, SocketsEngine& engine);
+void from_json(const nlohmann::json& j, Engines& engines);
 void from_json(const nlohmann::json& j, PluginConfig& cfg);
 
 // Build the json object to be passed to the go-worker as init config.
 // See go-worker/engine.go::cfg struct for the format
+void to_json(nlohmann::json& j, const Engines& engines);
 void to_json(nlohmann::json& j, const PluginConfig& cfg);

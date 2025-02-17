@@ -3,7 +3,7 @@
 
 class container_cgroup : public testing::Test {
   public:
-    container_cgroup() : m_mgr(PluginConfig{}) {}
+    container_cgroup() : m_mgr(Engines{}) {}
     ~container_cgroup() {}
     matcher_manager m_mgr;
 };
