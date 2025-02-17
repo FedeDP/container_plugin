@@ -50,11 +50,12 @@ void from_json(const nlohmann::json& j, PluginConfig& cfg) {
         }
     }
     if (cfg.engines.cri.sockets.empty()) {
+        cfg.engines.cri.sockets.emplace_back("/run/containerd/containerd.sock");
         cfg.engines.cri.sockets.emplace_back("/run/crio/crio.sock");
+        cfg.engines.cri.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
+        cfg.engines.cri.sockets.emplace_back("/run/host-containerd/containerd.sock");
     }
     if (cfg.engines.containerd.sockets.empty()) {
-        cfg.engines.containerd.sockets.emplace_back("/run/containerd/containerd.sock");
-        cfg.engines.containerd.sockets.emplace_back("/run/k3s/containerd/containerd.sock");
         cfg.engines.containerd.sockets.emplace_back("/run/host-containerd/containerd.sock"); // bottlerocket host containers socket
     }
 }

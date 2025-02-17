@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	typeCri  engineType = "cri"
-	typeCrio engineType = "cri-o"
+	typeCri   engineType = "cri"
+	typeCrio  engineType = "cri-o"
+	maxCNILen            = 4096
 )
 
 func init() {
@@ -130,8 +131,23 @@ func (info *criInfo) getImage() string {
 	return ""
 }
 
+type CNIInterface struct {
+	Name       string  `json:"name"`
+	MTU        uint    `json:"mtu"`
+	SocketPath *string `json:"socketPath"`
+	PciID      *string `json:"pciID"`
+}
+type cniSandboxInfo struct {
+	CNIResult *struct {
+		Interfaces []*CNIInterface `json:"interfaces"`
+	} `json:"cniResult"`
+	RuntimeSpec *struct {
+		Annotations map[string]string `json:"annotations"`
+	} `json:"runtimeSpec"`
+}
+
 func (c *criEngine) ctrToInfo(ctx context.Context, ctr *v1.ContainerStatus, podSandboxStatus *v1.PodSandboxStatus,
-	info map[string]string) event.Info {
+	info map[string]string, sandboxInfo map[string]string) event.Info {
 
 	var ctrInfo criInfo
 	jsonInfo, present := info["info"]
@@ -199,6 +215,33 @@ func (c *criEngine) ctrToInfo(ctx context.Context, ctr *v1.ContainerStatus, podS
 		}
 	} else {
 		podSandboxID = podSandboxStatus.Id
+	}
+
+	var cniJson string
+	var cniInfo cniSandboxInfo
+	jsonInfo, present = sandboxInfo["info"]
+	if present {
+		err := json.Unmarshal([]byte(jsonInfo), &cniInfo)
+		if err == nil {
+			if cniInfo.CNIResult != nil && cniInfo.CNIResult.Interfaces != nil {
+				ifaces := make([]*CNIInterface, 0)
+				for _, iface := range cniInfo.CNIResult.Interfaces {
+					if iface.Name != "lo" && iface.Name != "veth" {
+						ifaces = append(ifaces, iface)
+					}
+				}
+				bytes, err := json.Marshal(ifaces)
+				if err != nil {
+					cniJson = string(bytes)
+				}
+			} else if val, ok := cniInfo.RuntimeSpec.Annotations["io.kubernetes.cri-o.CNIResult"]; ok {
+				cniJson = val
+			}
+
+			if len(cniJson) > maxCNILen {
+				cniJson = cniJson[:maxCNILen]
+			}
+		}
 	}
 
 	labels := make(map[string]string)
@@ -309,7 +352,7 @@ func (c *criEngine) ctrToInfo(ctx context.Context, ctr *v1.ContainerStatus, podS
 			ImageRepo:        imageRepo,
 			ImageTag:         imageTag,
 			User:             strconv.FormatInt(ctr.GetUser().GetLinux().GetUid(), 10),
-			CniJson:          "", // TODO
+			CniJson:          cniJson,
 			CPUPeriod:        cpuPeriod,
 			CPUQuota:         cpuQuota,
 			CPUShares:        cpuShares,
@@ -358,13 +401,13 @@ func (c *criEngine) List(ctx context.Context) ([]event.Event, error) {
 				},
 			}
 		} else {
-			podSandboxStatus, _ := c.client.PodSandboxStatus(ctx, ctr.PodSandboxId, false)
+			podSandboxStatus, _ := c.client.PodSandboxStatus(ctx, ctr.GetPodSandboxId(), false)
 			if podSandboxStatus == nil {
 				podSandboxStatus = &v1.PodSandboxStatusResponse{}
 			}
 			evts[idx] = event.Event{
 				IsCreate: true,
-				Info:     c.ctrToInfo(ctx, container.Status, podSandboxStatus.Status, container.GetInfo()),
+				Info:     c.ctrToInfo(ctx, container.Status, podSandboxStatus.GetStatus(), container.GetInfo(), podSandboxStatus.GetInfo()),
 			}
 		}
 	}
@@ -406,7 +449,11 @@ func (c *criEngine) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan even
 						}
 					} else {
 						cPodSandbox := evt.GetPodSandboxStatus()
-						info = c.ctrToInfo(ctx, ctr.Status, cPodSandbox, ctr.GetInfo())
+						podSandboxStatus, _ := c.client.PodSandboxStatus(ctx, cPodSandbox.GetId(), false)
+						if podSandboxStatus == nil {
+							podSandboxStatus = &v1.PodSandboxStatusResponse{}
+						}
+						info = c.ctrToInfo(ctx, ctr.GetStatus(), cPodSandbox, ctr.GetInfo(), podSandboxStatus.GetInfo())
 					}
 					outCh <- event.Event{
 						Info:     info,

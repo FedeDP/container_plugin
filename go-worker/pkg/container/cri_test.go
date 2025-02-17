@@ -211,6 +211,20 @@ func TestCRIFake(t *testing.T) {
 	engine, err := newCriEngine(context.Background(), endpoint)
 	assert.NoError(t, err)
 
+	id := uuid.New()
+	podSandboxConfig := &v1.PodSandboxConfig{
+		Metadata: &v1.PodSandboxMetadata{
+			Name:      "test_sandbox",
+			Uid:       id.String(),
+			Namespace: "default",
+			Attempt:   0,
+		},
+	}
+	_, err = fakeRuntime.RunPodSandbox(context.Background(), &v1.RunPodSandboxRequest{
+		Config: podSandboxConfig,
+	})
+	assert.NoError(t, err)
+
 	ctr, err := fakeRuntime.CreateContainer(context.Background(), &v1.CreateContainerRequest{
 		Config: &v1.ContainerConfig{
 			Metadata: &v1.ContainerMetadata{
