@@ -384,11 +384,16 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input& in) {
                 field_id != TYPE_IS_CONTAINER_HEALTHCHECK &&
                 field_id != TYPE_IS_CONTAINER_LIVENESS_PROBE &&
                 field_id != TYPE_IS_CONTAINER_READINESS_PROBE) {
-                // Can't return anything but those fields.
-                return false;
+                // Can't return anything but those fields without containers metadata.
+                
+                // Set an empty extracted value to let `return true` below work
+                // See https://github.com/falcosecurity/libs/blob/0d94d2bc55d4ccde870bc0c076423a1e13814079/userspace/libsinsp/plugin_filtercheck.cpp#L172
+                req.set_value("");
+                return true; // go on to extract other fields if needed, perhaps they'll be one of the above
             }
+        } else {
+            cinfo = it->second;
         }
-        cinfo = it->second;
     }
 
     switch(field_id) {
