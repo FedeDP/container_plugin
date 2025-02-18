@@ -48,6 +48,12 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-${{ matrix.arch }}
+          path: 'libcontainer.so'
+
       # Needed by podman package - build and runtime dep.
       # For the go-worker library, it is only a runtime dep,
       # and is provided by plugin vcpkg configuration.
@@ -65,3 +71,32 @@ jobs:
         run: |
           systemctl --user start podman
           make test
+
+  falco-tests:
+    needs: [build-and-test]
+    name: falco-tests-${{ matrix.arch }}
+    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
+    container:
+      image: falcosecurity/falco:master-debian
+    steps:
+      - name: Download library
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: libcontainer-${{ matrix.arch }}
+          path: /usr/share/falco/plugins/
+
+      - name: Run falcosecurity/testing Falco tests
+        uses: falcosecurity/testing@main
+        with:
+          test-falco: 'true'
+          test-falcoctl: 'false'
+          test-k8saudit: 'false'
+          test-dummy: 'false'
+          static: 'false'
+          test-drivers: 'false'
+          show-all: 'true'
+          sudo: ''
