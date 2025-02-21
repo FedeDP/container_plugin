@@ -1,5 +1,4 @@
 #include <plugin.h>
-#include <arpa/inet.h>
 
 //////////////////////////
 // Extract capability
@@ -78,6 +77,17 @@ std::vector<std::string> my_plugin::get_extract_event_sources() {
 
 std::vector<falcosecurity::field_info> my_plugin::get_fields() {
     using ft = falcosecurity::field_value_type;
+
+	// Weird cxx20 syntax for designated initializers
+    falcosecurity::field_arg req_both_arg;
+    req_both_arg.key = true;
+    req_both_arg.index = true;
+    req_both_arg.required = true;
+
+    falcosecurity::field_arg req_key_arg;
+    req_key_arg.key = true;
+    req_key_arg.required = true;
+
     // Use an array to perform a static_assert one the size.
     const falcosecurity::field_info fields[] = {
             {ft::FTYPE_STRING, "container.id", "Container ID",
@@ -124,32 +134,32 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "returned. The information has the format 'source:dest:mode:rdrw:propagation'. If there "
                     "is no mount with the specified index or matching the provided source, returns the string "
                     "\"none\" instead of a NULL value. In instances of userspace container engine lookup "
-                    "delays, this field may not be available yet.", {.key = true, .index = true, .required = true}},
+                    "delays, this field may not be available yet.", req_both_arg},
             {ft::FTYPE_STRING, "container.mount.source", "Mount Source",
                     "The mount source, specified by number (e.g. container.mount.source[0]) or mount "
                     "destination (container.mount.source[/host/lib/modules]). The pathname can be a glob. In "
                     "instances of userspace container engine lookup delays, this field may not be available "
-                    "yet.", {.key = true, .index = true, .required = true}},
+                    "yet.", req_both_arg},
             {ft::FTYPE_STRING, "container.mount.dest", "Mount Destination",
                     "The mount destination, specified by number (e.g. container.mount.dest[0]) or mount "
                     "source (container.mount.dest[/lib/modules]). The pathname can be a glob. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet.",
-                    {.key = true, .index = true, .required = true}},
+                    req_both_arg},
             {ft::FTYPE_STRING, "container.mount.mode", "Mount Mode",
                     "The mount mode, specified by number (e.g. container.mount.mode[0]) or mount source "
                     "(container.mount.mode[/usr/local]). The pathname can be a glob. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet.",
-                    {.key = true, .index = true, .required = true}},
+                    req_both_arg},
             {ft::FTYPE_STRING, "container.mount.rdwr", "Mount Read/Write",
                     "The mount rdwr value, specified by number (e.g. container.mount.rdwr[0]) or mount source "
                     "(container.mount.rdwr[/usr/local]). The pathname can be a glob. In instances of "
                     "userspace container engine lookup delays, this field may not be available yet.",
-                    {.key = true, .index = true, .required = true}},
+                    req_both_arg},
             {ft::FTYPE_STRING, "container.mount.propagation", "Mount Propagation",
                     "The mount propagation value, specified by number (e.g. container.mount.propagation[0]) "
                     "or mount source (container.mount.propagation[/usr/local]). The pathname can be a glob. "
                     "In instances of userspace container engine lookup delays, this field may not be "
-                    "available yet.", {.key = true, .index = true, .required = true}},
+                    "available yet.", req_both_arg},
             {ft::FTYPE_STRING, "container.image.repository", "Repository",
                     "The container image repository (e.g. falcosecurity/falco). In instances of userspace "
                     "container engine lookup delays, this field may not be available yet."},
@@ -198,7 +208,7 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
             {ft::FTYPE_BOOL, "container.host_ipc", "Host IPC Namespace",
                     "'true' if the container is running in the host IPC namespace, 'false' otherwise."},
             {ft::FTYPE_STRING, "container.label", "Container Label",
-                    "Container label. E.g. 'container.label.foo'.", {.key = true, .required = true}},
+                    "Container label. E.g. 'container.label.foo'.", req_key_arg},
             {ft::FTYPE_STRING, "container.labels", "Container Labels",
                     "Container comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
             {ft::FTYPE_BOOL, "proc.is_container_healthcheck", "Process Is Container Healthcheck",
@@ -249,7 +259,7 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "'k8s.pod.label[app.kubernetes.io/name]', 'k8s.pod.label.app.kubernetes.io/name' or "
                     "'k8s.pod.label[custom-label_one]' are all valid. This field is extracted from the "
                     "container runtime socket simultaneously as we look up the 'container.*' fields. In cases "
-                    "of lookup delays, it may not be available yet.",  {.key = true, .required = true}},
+                    "of lookup delays, it may not be available yet.",  req_key_arg},
             {ft::FTYPE_STRING, "k8s.pod.labels", "Pod Labels",
                     "The Kubernetes pod comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'. This "
                     "field is extracted from the container runtime socket simultaneously as we look up the "
@@ -274,7 +284,7 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
             {ft::FTYPE_STRING, "k8s.rc.id", "[Deprecated] Replication Controller ID",
                     "Kubernetes replication controller id."},
             {ft::FTYPE_STRING, "k8s.rc.label", "[Deprecated] Replication Controller Label",
-                    "Kubernetes replication controller label. E.g. 'k8s.rc.label.foo'.",  {.key = true, .required = true}},
+                    "Kubernetes replication controller label. E.g. 'k8s.rc.label.foo'.",  req_key_arg},
             {ft::FTYPE_STRING, "k8s.rc.labels", "[Deprecated] Replication Controller Labels",
                     "Kubernetes replication controller comma-separated key/value labels. E.g. "
                     "'foo1:bar1,foo2:bar2'."},
@@ -284,13 +294,13 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
                     "Kubernetes service id (can return more than one value, concatenated)."},
             {ft::FTYPE_STRING, "k8s.svc.label", "[Deprecated] Service Label",
                     "Kubernetes service label. E.g. 'k8s.svc.label.foo' (can return more than one value, "
-                    "concatenated).",  {.key = true, .required = true}},
+                    "concatenated).",  req_key_arg},
             {ft::FTYPE_STRING, "k8s.svc.labels", "[Deprecated] Service Labels",
                     "Kubernetes service comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
             {ft::FTYPE_STRING, "k8s.ns.id", "[Deprecated] Namespace ID",
                     "Kubernetes namespace id."},
             {ft::FTYPE_STRING, "k8s.ns.label", "[Deprecated] Namespace Label",
-                    "Kubernetes namespace label. E.g. 'k8s.ns.label.foo'.",  {.key = true, .required = true}},
+                    "Kubernetes namespace label. E.g. 'k8s.ns.label.foo'.",  req_key_arg},
             {ft::FTYPE_STRING, "k8s.ns.labels", "[Deprecated] Namespace Labels",
                     "Kubernetes namespace comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
             {ft::FTYPE_STRING, "k8s.rs.name", "[Deprecated] Replica Set Name",
@@ -298,7 +308,7 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
             {ft::FTYPE_STRING, "k8s.rs.id", "[Deprecated] Replica Set ID",
                     "Kubernetes replica set id."},
             {ft::FTYPE_STRING, "k8s.rs.label", "[Deprecated] Replica Set Label",
-                    "Kubernetes replica set label. E.g. 'k8s.rs.label.foo'.",  {.key = true, .required = true}},
+                    "Kubernetes replica set label. E.g. 'k8s.rs.label.foo'.",  req_key_arg},
             {ft::FTYPE_STRING, "k8s.rs.labels", "[Deprecated] Replica Set Labels",
                     "Kubernetes replica set comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
             {ft::FTYPE_STRING, "k8s.deployment.name", "[Deprecated] Deployment Name",
@@ -306,7 +316,7 @@ std::vector<falcosecurity::field_info> my_plugin::get_fields() {
             {ft::FTYPE_STRING, "k8s.deployment.id", "[Deprecated] Deployment ID",
                     "Kubernetes deployment id."},
             {ft::FTYPE_STRING, "k8s.deployment.label", "[Deprecated] Deployment Label",
-                    "Kubernetes deployment label. E.g. 'k8s.rs.label.foo'.",  {.key = true, .required = true}},
+                    "Kubernetes deployment label. E.g. 'k8s.rs.label.foo'.",  req_key_arg},
             {ft::FTYPE_STRING, "k8s.deployment.labels", "[Deprecated] Deployment Labels",
                     "Kubernetes deployment comma-separated key/value labels. E.g. 'foo1:bar1,foo2:bar2'."},
     };
