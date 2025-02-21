@@ -12,9 +12,21 @@
 # specific language governing permissions and limitations under the License.
 #
 
-
 NAME := container
-OUTPUT := lib$(NAME).so
+
+ifeq ($(OS),Windows_NT)
+    detected_OS := Windows
+else
+    detected_OS := $(shell sh -c 'uname 2>/dev/null || echo Unknown')
+endif
+
+ifeq ($(detected_OS),Windows)
+    OUTPUT := lib$(NAME).dll
+else ifeq ($(detected_OS),Darwin)
+	OUTPUT := lib$(NAME).dylib
+else
+	OUTPUT := lib$(NAME).so
+endif
 
 all: $(OUTPUT)
 

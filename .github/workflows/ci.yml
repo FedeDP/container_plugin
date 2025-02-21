@@ -10,6 +10,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-others:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+
+      - name: Build plugin library (without ASYNC capability)
+        run: make
+
+      - name: Upload artifact - windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-win
+          path: 'libcontainer.dll'
+
+      - name: Upload artifact - osx
+        if: ${{ matrix.os == 'macos-latest' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-osx
+          path: 'libcontainer.dylib'
+
   build-and-test:
     name: build-and-test-${{ matrix.arch }}
     # ubuntu24.04 for podman >= 4.x
@@ -44,7 +74,7 @@ jobs:
           cache-dependency-path: go-worker/go.sum
 
       - name: Build plugin library
-        run: make libcontainer.so
+        run: make
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
