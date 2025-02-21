@@ -72,6 +72,42 @@ jobs:
           systemctl --user start podman
           make test
 
+  build-static:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.18
+    steps:
+      - name: Install deps ⛓️
+        run: |
+          apk add bash curl gcc g++ cmake make git autoconf automake m4 libtool patch binutils ninja-is-really-ninja pkgconfig unzip zip 
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+
+      - name: Git safe directory
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go-worker/go.mod
+          cache-dependency-path: go-worker/go.sum
+
+      - name: Build plugin library
+        env:
+          VCPKG_FORCE_SYSTEM_BINARIES: 'true'
+        run: make libcontainer.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-static
+          path: 'libcontainer.so'
+
   falco-tests:
     needs: [build-and-test]
     name: falco-tests-${{ matrix.arch }}
