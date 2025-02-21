@@ -8,13 +8,24 @@
     },
     {
       "name": "spdlog"
-    },
-    {
-      "name": "gpgme",
-      "platform": "linux"
-    },
-    {
-      "name": "gtest"
     }
-  ]
+  ],
+  "features": {
+    "async": {
+      "description": "Enable ASYNC capability",
+      "dependencies": [
+        {
+          "name": "gpgme"
+        }
+      ]
+    },
+    "tests": {
+      "description": "Enable tests",
+      "dependencies": [
+        {
+          "name": "gtest"
+        }
+      ]
+    }
+  }
 }
