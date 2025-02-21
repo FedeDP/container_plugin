@@ -6,9 +6,6 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
-# From now on, we have VCPKG_ARCH variable
-include(arch)
-
 # compiler related configs
 include(compiler)
 
@@ -16,19 +13,19 @@ include(compiler)
 include(vcpkg)
 
 # Include capabilities module.
-# This also defines CAPS_SOURCES
-# and appends `gpgme` dep to vcpkg VCPKG_MANIFEST_FEATURES,
-# since it is required by go-worker.
+# This also defines CAPS_SOURCES and
+# eventually appends `gpgme` dep to vcpkg VCPKG_MANIFEST_FEATURES,
+# only if CAP_ASYNC is enabled, since it is required by go-worker.
 include(caps)
 
 option(ENABLE_TESTS "Enable build of unit tests" ON)
-if (ENABLE_TESTS)
+if(ENABLE_TESTS)
     list(APPEND VCPKG_MANIFEST_FEATURES "tests")
 endif()
 
 # project metadata
 project(
-        container
+        container-plugin
         VERSION 0.1.0
         DESCRIPTION "Falco container metadata enrichment Plugin"
         LANGUAGES CXX)
@@ -37,7 +34,6 @@ file(GLOB SOURCES src/*.cpp src/matchers/*.cpp)
 
 # project target
 add_library(container SHARED ${SOURCES} ${CAPS_SOURCES})
-set_target_properties(container PROPERTIES CXX_EXTENSIONS OFF)
 
 # dependencies
 if(ENABLE_ASYNC)
@@ -51,12 +47,14 @@ find_package(re2 REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 # project compilation options
-target_compile_options(container PRIVATE "-fPIC")
-target_compile_options(container PRIVATE "-Wl,-z,relro,-z,now")
-target_compile_options(container PRIVATE "-fstack-protector-strong")
+set_property(TARGET container PROPERTY POSITION_INDEPENDENT_CODE ON)
+if (NOT MSVC)
+    target_compile_options(container PRIVATE "-Wl,-z,relro,-z,now")
+    target_compile_options(container PRIVATE "-fstack-protector-strong")
+endif()
 # When compiling in Debug mode, this will define the DEBUG symbol for use in your code.
 target_compile_options(container PUBLIC "$<$<CONFIG:DEBUG>:-DDEBUG>")
-target_compile_features(container PUBLIC cxx_std_17)
+target_compile_features(container PUBLIC cxx_std_20)
 
 # project includes
 target_include_directories(container PRIVATE src/ ${PLUGIN_SDK_INCLUDE} ${PLUGIN_SDK_DEPS_INCLUDE} ${WORKER_INCLUDE})
@@ -64,6 +62,6 @@ target_include_directories(container PRIVATE src/ ${PLUGIN_SDK_INCLUDE} ${PLUGIN
 # project linked libraries
 target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 ${WORKER_DEP} ${WORKER_LIB})
 
-if (ENABLE_TESTS)
+if(ENABLE_TESTS)
     add_subdirectory(${CMAKE_SOURCE_DIR}/test/)
 endif()

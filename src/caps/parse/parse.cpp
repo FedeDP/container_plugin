@@ -75,7 +75,7 @@ bool my_plugin::parse_async_event(
     }
 
     // Update n_containers metric
-    m_metrics.at(0).set_value(m_containers.size() - 1);
+    m_metrics.at(0).set_value((uint64_t)m_containers.size() - 1);
 
     // Update n_missing metric
     auto val = m_metrics.at(1).value.u64;

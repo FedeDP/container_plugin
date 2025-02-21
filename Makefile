@@ -21,11 +21,14 @@ else
 endif
 
 ifeq ($(detected_OS),Windows)
-    OUTPUT := lib$(NAME).dll
+    OUTPUT := $(NAME).dll
+    OUTPUT_FILE := build/Release/$(OUTPUT)
 else ifeq ($(detected_OS),Darwin)
-	OUTPUT := lib$(NAME).dylib
+    OUTPUT := lib$(NAME).dylib
+    OUTPUT_FILE := build/$(OUTPUT)
 else
-	OUTPUT := lib$(NAME).so
+    OUTPUT := lib$(NAME).so
+    OUTPUT_FILE := build/$(OUTPUT)
 endif
 
 all: $(OUTPUT)
@@ -38,7 +41,7 @@ clean:
 # This Makefile requires CMake installed on the system
 .PHONY: $(OUTPUT)
 $(OUTPUT):
-	cmake -B build -S . && make -C build/ container -j6 && cp build/$(OUTPUT) $(OUTPUT)
+	cmake -B build -S . && cmake --build build --target $(NAME) --parallel 6 --config Release && cp $(OUTPUT_FILE) $(OUTPUT)
 
 .PHONY: test
 test: $(OUTPUT)

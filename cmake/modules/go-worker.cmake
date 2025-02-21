@@ -1,5 +1,8 @@
 include(ExternalProject)
 
+# From now on, we have VCPKG_ARCH variable
+include(arch)
+
 message(STATUS "Building go-worker static library")
 
 ## gpgme is vcpkg installed but comes with pkg-config

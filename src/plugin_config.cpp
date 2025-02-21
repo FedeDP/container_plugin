@@ -41,12 +41,16 @@ void from_json(const nlohmann::json& j, PluginConfig& cfg) {
     }
      if (cfg.engines.podman.sockets.empty()) {
         cfg.engines.podman.sockets.emplace_back("/run/podman/podman.sock");
-        for (const auto & entry : std::filesystem::directory_iterator("/run/user")) {
-            if (entry.is_directory()) {
-                if (std::filesystem::exists(entry.path().string() + "/podman/podman.sock")) {
-                    cfg.engines.podman.sockets.emplace_back(entry.path().string() + "/podman/podman.sock");
+        try {
+            for (const auto & entry : std::filesystem::directory_iterator("/run/user")) {
+                if (entry.is_directory()) {
+                    if (std::filesystem::exists(entry.path().string() + "/podman/podman.sock")) {
+                        cfg.engines.podman.sockets.emplace_back(entry.path().string() + "/podman/podman.sock");
+                    }
                 }
             }
+        } catch (...) {
+            // No error; perhaps /run/user does not exist.
         }
     }
     if (cfg.engines.cri.sockets.empty()) {

@@ -78,7 +78,7 @@ static const ss_plugin_table_fieldinfo *list_table_fields(ss_plugin_table_t* t, 
 static ss_plugin_table_field_t* get_table_field(ss_plugin_table_t* t,
                                                 const char* name,
                                                 ss_plugin_state_type data_type) {
-	for (ssize_t i = 0; i < fields.size(); i++) {
+	for (unsigned long i = 0; i < fields.size(); i++) {
         if (strcmp(fields[i].name, name) == 0) {
           	// note: shifted by 1 so that we never return 0 (interpreted as NULL)
 			return (ss_plugin_table_field_t*)(i + 1);
