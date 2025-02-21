@@ -8,10 +8,13 @@ macro(ADD_CAP cap)
         string(TOLOWER ${cap} lower_cap)
         file(GLOB_RECURSE SOURCES src/caps/${lower_cap}/*.cpp)
         list(APPEND CAPS_SOURCES ${SOURCES})
+
+        # Append to vcpkg manifest features - only useful for ASYNC cap
+        list(APPEND VCPKG_MANIFEST_FEATURES ${lower_cap})
     endif()
 endmacro()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     # Linux only
     ADD_CAP(ASYNC)
 endif()

@@ -15,16 +15,23 @@ include(compiler)
 # Vcpkg related configs
 include(vcpkg)
 
+# Include capabilities module.
+# This also defines CAPS_SOURCES
+# and appends `gpgme` dep to vcpkg VCPKG_MANIFEST_FEATURES,
+# since it is required by go-worker.
+include(caps)
+
+option(ENABLE_TESTS "Enable build of unit tests" ON)
+if (ENABLE_TESTS)
+    list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
+
 # project metadata
 project(
         container
         VERSION 0.1.0
         DESCRIPTION "Falco container metadata enrichment Plugin"
         LANGUAGES CXX)
-
-# Include capabilities module.
-# This also defines CAPS_SOURCES.
-include(caps)
 
 file(GLOB SOURCES src/*.cpp src/matchers/*.cpp)
 
@@ -57,7 +64,6 @@ target_include_directories(container PRIVATE src/ ${PLUGIN_SDK_INCLUDE} ${PLUGIN
 # project linked libraries
 target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 ${WORKER_DEP} ${WORKER_LIB})
 
-option(ENABLE_TESTS "Enable build of unit tests" ON)
 if (ENABLE_TESTS)
     add_subdirectory(${CMAKE_SOURCE_DIR}/test/)
-endif ()
+endif()
