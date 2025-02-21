@@ -20,11 +20,13 @@ limitations under the License.
 #include "matchers/matcher.h"
 #include <unordered_map>
 
+#ifdef _HAS_ASYNC
 #define ASYNC_HANDLER_DEFAULT 0
 #define ASYNC_HANDLER_GO_WORKER 1
 #define ASYNC_HANDLER_MAX 2
 
 void generate_async_event(const char *json, bool added, int async_type);
+#endif
 
 enum command_category {
     CAT_NONE = 0,
@@ -55,6 +57,7 @@ public:
     bool init(falcosecurity::init_input& in);
     const std::vector<falcosecurity::metric>& get_metrics();
 
+#ifdef _HAS_ASYNC
     //////////////////////////
     // Async capability
     //////////////////////////
@@ -64,7 +67,9 @@ public:
     bool start_async_events(std::shared_ptr<falcosecurity::async_event_handler_factory> f);
     bool stop_async_events() noexcept;
     void dump(std::unique_ptr<falcosecurity::async_event_handler> async_handler);
+#endif
 
+#ifdef _HAS_EXTRACT
     //////////////////////////
     // Extract capability
     //////////////////////////
@@ -72,7 +77,9 @@ public:
     std::vector<std::string> get_extract_event_sources();
     std::vector<falcosecurity::field_info> get_fields();
     bool extract(const falcosecurity::extract_fields_input& in);
+#endif
 
+#ifdef _HAS_PARSE
     //////////////////////////
     // Parse capability
     //////////////////////////
@@ -85,12 +92,15 @@ public:
     bool parse_container_json_2_event(const falcosecurity::parse_event_input& in);
     bool parse_new_process_event(const falcosecurity::parse_event_input& in);
     bool parse_event(const falcosecurity::parse_event_input& in);
+#endif
 
+#ifdef _HAS_LISTENING
     //////////////////////////
     // Listening capability
     //////////////////////////
     bool capture_open(const falcosecurity::capture_listen_input& in);
     bool capture_close(const falcosecurity::capture_listen_input& in);
+#endif
 
     //////////////////////////
     // Helpers
