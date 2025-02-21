@@ -1,11 +1,20 @@
 {
   "name": "container-plugin",
-  "version-string": "0.0.1",
+  "version-string": "0.1.0",
   "license": "MIT",
   "dependencies": [
-    "re2",
-    "spdlog",
-    "gpgme",
-    "gtest"
+    {
+      "name": "re2"
+    },
+    {
+      "name": "spdlog"
+    },
+    {
+      "name": "gpgme",
+      "platform": "linux"
+    },
+    {
+      "name": "gtest"
+    }
   ]
 }
