@@ -12,7 +12,7 @@ pkg_check_modules(GPGME REQUIRED gpgme IMPORTED_TARGET)
 
 # Pkg config paths to all gpgme libs (libgpgme, libgpg-error and libassuan)
 # to be passed down to go-worker to let it find the needed deps.
-set(VCPKG_PKGCONFIG_PATH "${CMAKE_SOURCE_DIR}/vcpkg/packages/gpgme_${VCPKG_ARCH}-linux-release/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libgpg-error_${VCPKG_ARCH}-linux-release/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libassuan_${VCPKG_ARCH}-linux-release/lib/pkgconfig/")
+set(VCPKG_PKGCONFIG_PATH "${CMAKE_SOURCE_DIR}/vcpkg/packages/gpgme_${VCPKG_ARCH}-linux/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libgpg-error_${VCPKG_ARCH}-linux/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libassuan_${VCPKG_ARCH}-linux/lib/pkgconfig/")
 
 ExternalProject_Add(go-worker
         DEPENDS PkgConfig::GPGME
