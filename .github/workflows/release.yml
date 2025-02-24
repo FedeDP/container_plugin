@@ -53,8 +53,38 @@ jobs:
           name: libcontainer-${{ matrix.arch }}
           path: 'libcontainer.so'
 
+  build-others:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+
+      - name: Build plugin library (without ASYNC capability)
+        run: make
+
+      - name: Upload artifact - windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-win
+          path: 'container.dll'
+
+      - name: Upload artifact - osx
+        if: ${{ matrix.os == 'macos-latest' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: libcontainer-osx
+          path: 'libcontainer.dylib'
+
   release:
-    needs: [build]
+    needs: [build, build-others]
     runs-on: 'ubuntu-latest'
     steps:
       - name: Download amd64 plugin
@@ -73,9 +103,27 @@ jobs:
       - name: Rename arm64 library
         run: mv libcontainer.so libcontainer_arm64.so
 
+      - name: Download osx plugin
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: libcontainer-osx
+
+      - name: Rename osx library
+        run: mv libcontainer.dylib libcontainer_no_async_cap.dylib
+
+      - name: Download win plugin
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: libcontainer-win
+
+      - name: Rename win library
+        run: mv container.dll container_no_async_cap.dll
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             libcontainer_amd64.so
             libcontainer_arm64.so
+            libcontainer_no_async_cap.dylib
+            container_no_async_cap.dll
