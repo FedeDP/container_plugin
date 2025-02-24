@@ -31,6 +31,8 @@ else
     OUTPUT_FILE := build/$(OUTPUT)
 endif
 
+PROJECT_ROOT_DIR = $(shell git rev-parse --show-toplevel)
+
 all: $(OUTPUT)
 
 .PHONY: clean
@@ -49,3 +51,7 @@ test: $(OUTPUT)
 
 readme:
 	@$(READMETOOL) -p ./$(OUTPUT) -f README.md
+
+# Requires clang-format-18
+fmt:
+	git ls-files --directory ${PROJECT_ROOT_DIR} | grep -E '\.(cpp|h|c)$$' | xargs clang-format-18 -Werror --style=file:${PROJECT_ROOT_DIR}/.clang-format -i --verbose
