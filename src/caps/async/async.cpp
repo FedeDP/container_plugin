@@ -1,6 +1,6 @@
 #include <plugin.h>
 #include <libworker.h>
-#include <sys/time.h>
+#include <chrono>
 
 //////////////////////////
 // Async capability
@@ -21,10 +21,9 @@ std::vector<std::string> my_plugin::get_async_event_sources()
 
 static inline uint64_t get_current_time_ns(int sec_shift)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    tv.tv_sec += sec_shift;
-    return tv.tv_sec * (uint64_t)1000000000 + tv.tv_usec * 1000;
+    std::chrono::nanoseconds ns =
+            std::chrono::system_clock::now().time_since_epoch();
+    return ns.count();
 }
 
 void generate_async_event(const char *json, bool added, int async_type)
