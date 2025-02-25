@@ -15,7 +15,8 @@
       "description": "Enable ASYNC capability",
       "dependencies": [
         {
-          "name": "gpgme"
+          "name": "gpgme",
+          "platform": "linux"
         }
       ]
     },

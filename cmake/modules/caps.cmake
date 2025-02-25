@@ -14,10 +14,7 @@ macro(ADD_CAP cap)
     endif()
 endmacro()
 
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-    # Linux only
-    ADD_CAP(ASYNC)
-endif()
+ADD_CAP(ASYNC)
 ADD_CAP(EXTRACT)
 ADD_CAP(LISTENING)
 ADD_CAP(PARSE)

@@ -32,13 +32,19 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
 
-      - name: Build plugin library (without ASYNC capability) - CACHED
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go-worker/go.mod
+          cache-dependency-path: go-worker/go.sum
+
+      - name: Build plugin library - CACHED
         if: inputs.caching_enabled
         run: make
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
-      - name: Build plugin library (without ASYNC capability)
+      - name: Build plugin library
         if: inputs.caching_enabled != true
         run: make
 
