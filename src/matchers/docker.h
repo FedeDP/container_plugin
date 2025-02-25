@@ -2,6 +2,7 @@
 
 #include "matcher.h"
 
-class docker : public cgroup_matcher {
+class docker : public cgroup_matcher
+{
     bool resolve(const std::string& cgroup, std::string& container_id) override;
 };
