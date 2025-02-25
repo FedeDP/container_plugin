@@ -20,18 +20,14 @@
     "cpuset_cpu_count": 0,
     "created_time": 1730971086,
     "env": [],
-    "full_id": "32a1026ccb88a551e2a38eb8f260b4700aefec7e8c007344057e58a9fa302374",
-    "host_ipc": false,
-    "host_network": false,
-    "host_pid": false,
-    "id": "32a1026ccb88",
-    "image": "fedora:38",
-    "imagedigest": "sha256:b9ff6f23cceb5bde20bb1f79b492b98d71ef7a7ae518ca1b15b26661a11e6a94",
-    "imageid": "0ca0fed353fb77c247abada85aebc667fd1f5fa0b5f6ab1efb26867ba18f2f0a",
-    "imagerepo": "fedora",
-    "imagetag": "38",
-    "ip": "172.17.0.2",
-    "is_pod_sandbox": false,
+    "full_id":
+"32a1026ccb88a551e2a38eb8f260b4700aefec7e8c007344057e58a9fa302374", "host_ipc":
+false, "host_network": false, "host_pid": false, "id": "32a1026ccb88", "image":
+"fedora:38", "imagedigest":
+"sha256:b9ff6f23cceb5bde20bb1f79b492b98d71ef7a7ae518ca1b15b26661a11e6a94",
+    "imageid":
+"0ca0fed353fb77c247abada85aebc667fd1f5fa0b5f6ab1efb26867ba18f2f0a", "imagerepo":
+"fedora", "imagetag": "38", "ip": "172.17.0.2", "is_pod_sandbox": false,
     "labels": {
       "maintainer": "Clement Verna <cverna@fedoraproject.org>"
     },
@@ -49,12 +45,14 @@
 }
 */
 
-void from_json(const nlohmann::json& j, container_health_probe& probe) {
+void from_json(const nlohmann::json& j, container_health_probe& probe)
+{
     probe.m_args = j.value("args", std::vector<std::string>{});
     probe.m_exe = j.value("exe", "");
 }
 
-void from_json(const nlohmann::json& j, container_mount_info& mount) {
+void from_json(const nlohmann::json& j, container_mount_info& mount)
+{
     mount.m_source = j.value("Source", "");
     mount.m_dest = j.value("Destination", "");
     mount.m_mode = j.value("Mode", "");
@@ -62,7 +60,8 @@ void from_json(const nlohmann::json& j, container_mount_info& mount) {
     mount.m_propagation = j.value("Propagation", "");
 }
 
-void from_json(const nlohmann::json& j, container_port_mapping& port) {
+void from_json(const nlohmann::json& j, container_port_mapping& port)
+{
     port.m_host_ip = j.value("HostIp", 0);
     port.m_host_port = j.value("HostPort", 0);
     port.m_container_port = j.value("ContainerPort", 0);
@@ -74,16 +73,22 @@ void from_json(const nlohmann::json& j, container_port_mapping& port) {
  * actually check that key does not hold a null value
  * when accessing objects.
  */
-template <typename T>
-static inline void object_from_json(const nlohmann::json& j, const char *key, T& obj) {
-    if (j.contains(key) && !j[key].is_null()) {
+template<typename T>
+static inline void object_from_json(const nlohmann::json& j, const char* key,
+                                    T& obj)
+{
+    if(j.contains(key) && !j[key].is_null())
+    {
         obj = j[key].get<T>();
-    } else {
+    }
+    else
+    {
         obj = T();
     }
 }
 
-void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) {
+void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo)
+{
     std::shared_ptr<container_info> info = std::make_shared<container_info>();
     const nlohmann::json& container = j["container"];
     info->m_type = container.value("type", CT_UNKNOWN);
@@ -114,14 +119,20 @@ void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) 
     info->m_swap_limit = container.value("swap_limit", 0);
     info->m_pod_sandbox_id = container.value("pod_sandbox_id", "");
     info->m_privileged = container.value("privileged", false);
-    object_from_json(container, "pod_sandbox_labels", info->m_pod_sandbox_labels);
+    object_from_json(container, "pod_sandbox_labels",
+                     info->m_pod_sandbox_labels);
     object_from_json(container, "port_mappings", info->m_port_mappings);
     object_from_json(container, "Mounts", info->m_mounts);
 
-    for (int probe_type = container_health_probe::PT_HEALTHCHECK; probe_type <= container_health_probe::PT_READINESS_PROBE; probe_type++) {
-        const auto& probe_name = container_health_probe::probe_type_names[probe_type];
-        if (container.contains(probe_name)) {
-            container_health_probe probe = container.value(probe_name, container_health_probe());
+    for(int probe_type = container_health_probe::PT_HEALTHCHECK;
+        probe_type <= container_health_probe::PT_READINESS_PROBE; probe_type++)
+    {
+        const auto& probe_name =
+                container_health_probe::probe_type_names[probe_type];
+        if(container.contains(probe_name))
+        {
+            container_health_probe probe =
+                    container.value(probe_name, container_health_probe());
             probe.m_type = container_health_probe::probe_type(probe_type);
             info->m_health_probes.push_back(probe);
         }
@@ -130,12 +141,14 @@ void from_json(const nlohmann::json& j, std::shared_ptr<container_info>& cinfo) 
     cinfo = info;
 }
 
-void to_json(nlohmann::json& j, const container_health_probe& probe) {
+void to_json(nlohmann::json& j, const container_health_probe& probe)
+{
     j["args"] = probe.m_args;
     j["exe"] = probe.m_exe;
 }
 
-void to_json(nlohmann::json& j, const container_mount_info& mount) {
+void to_json(nlohmann::json& j, const container_mount_info& mount)
+{
     j["Source"] = mount.m_source;
     j["Destination"] = mount.m_dest;
     j["Mode"] = mount.m_mode;
@@ -143,13 +156,16 @@ void to_json(nlohmann::json& j, const container_mount_info& mount) {
     j["Propagation"] = mount.m_propagation;
 }
 
-void to_json(nlohmann::json& j, const container_port_mapping& port) {
+void to_json(nlohmann::json& j, const container_port_mapping& port)
+{
     j["HostIp"] = port.m_host_ip;
     j["HostPort"] = port.m_host_port;
     j["ContainerPort"] = port.m_container_port;
 }
 
-void to_json(nlohmann::json& j, const std::shared_ptr<const container_info>& cinfo) {
+void to_json(nlohmann::json& j,
+             const std::shared_ptr<const container_info>& cinfo)
+{
     auto& container = j["container"];
     j["type"] = cinfo->m_type;
     j["id"] = cinfo->m_id;
@@ -185,8 +201,10 @@ void to_json(nlohmann::json& j, const std::shared_ptr<const container_info>& cin
     j["port_mappings"] = cinfo->m_port_mappings;
     j["Mounts"] = cinfo->m_mounts;
 
-    for(auto &probe : cinfo->m_health_probes) {
-        const auto probe_type = container_health_probe::probe_type_names[probe.m_type];
+    for(auto& probe : cinfo->m_health_probes)
+    {
+        const auto probe_type =
+                container_health_probe::probe_type_names[probe.m_type];
         j[probe_type] = probe;
     }
 }

@@ -25,10 +25,11 @@ limitations under the License.
 #define ASYNC_HANDLER_GO_WORKER 1
 #define ASYNC_HANDLER_MAX 2
 
-void generate_async_event(const char *json, bool added, int async_type);
+void generate_async_event(const char* json, bool added, int async_type);
 #endif
 
-enum command_category {
+enum command_category
+{
     CAT_NONE = 0,
     CAT_CONTAINER,
     CAT_HEALTHCHECK,
@@ -38,7 +39,7 @@ enum command_category {
 
 class my_plugin
 {
-public:
+    public:
     //////////////////////////
     // General plugin API
     //////////////////////////
@@ -64,9 +65,11 @@ public:
 
     std::vector<std::string> get_async_events();
     std::vector<std::string> get_async_event_sources();
-    bool start_async_events(std::shared_ptr<falcosecurity::async_event_handler_factory> f);
+    bool start_async_events(
+            std::shared_ptr<falcosecurity::async_event_handler_factory> f);
     bool stop_async_events() noexcept;
-    void dump(std::unique_ptr<falcosecurity::async_event_handler> async_handler);
+    void
+    dump(std::unique_ptr<falcosecurity::async_event_handler> async_handler);
 #endif
 
 #ifdef _HAS_EXTRACT
@@ -89,7 +92,8 @@ public:
     bool parse_async_event(const falcosecurity::parse_event_input& in);
     bool parse_container_event(const falcosecurity::parse_event_input& in);
     bool parse_container_json_event(const falcosecurity::parse_event_input& in);
-    bool parse_container_json_2_event(const falcosecurity::parse_event_input& in);
+    bool
+    parse_container_json_2_event(const falcosecurity::parse_event_input& in);
     bool parse_new_process_event(const falcosecurity::parse_event_input& in);
     bool parse_event(const falcosecurity::parse_event_input& in);
 #endif
@@ -108,19 +112,22 @@ public:
     void on_new_process(const falcosecurity::table_entry& thread_entry,
                         const falcosecurity::table_reader& tr,
                         const falcosecurity::table_writer& tw);
-    std::string compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
-                                                const falcosecurity::table_reader& tr,
-                                                std::shared_ptr<container_info>& info);
-    void write_thread_category(const std::shared_ptr<const container_info>& cinfo,
-                               const falcosecurity::table_entry& thread_entry,
-                               const falcosecurity::table_reader& tr,
-                               const falcosecurity::table_writer& tw);
+    std::string compute_container_id_for_thread(
+            const falcosecurity::table_entry& thread_entry,
+            const falcosecurity::table_reader& tr,
+            std::shared_ptr<container_info>& info);
+    void
+    write_thread_category(const std::shared_ptr<const container_info>& cinfo,
+                          const falcosecurity::table_entry& thread_entry,
+                          const falcosecurity::table_reader& tr,
+                          const falcosecurity::table_writer& tw);
 
     falcosecurity::_internal::ss_plugin_table_input& get_table();
 
-private:
+    private:
     // State table
-    std::unordered_map<std::string, std::shared_ptr<const container_info>> m_containers;
+    std::unordered_map<std::string, std::shared_ptr<const container_info>>
+            m_containers;
     std::shared_ptr<const container_info> m_last_container;
 
     std::vector<falcosecurity::metric> m_metrics;
@@ -149,7 +156,8 @@ private:
     falcosecurity::table_field m_threads_field_exe;
     // Accessors to the thread table "cgroups" table
     falcosecurity::table_field m_threads_field_cgroups;
-    // Accessors to the thread table "cgroups" "second" field, ie: the cgroups path
+    // Accessors to the thread table "cgroups" "second" field, ie: the cgroups
+    // path
     falcosecurity::table_field m_cgroups_field_second;
     // Accessors to the thread table "container_id" foreign key field
     falcosecurity::table_field m_container_id_field;

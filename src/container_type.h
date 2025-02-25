@@ -1,11 +1,12 @@
 #pragma once
 
-enum container_type {
+enum container_type
+{
     CT_DOCKER = 0,
     CT_LXC = 1,
     CT_LIBVIRT_LXC = 2,
     CT_MESOS = 3, // deprecated
-    CT_RKT = 4, // deprecated
+    CT_RKT = 4,   // deprecated
     CT_CUSTOM = 5,
     CT_CRI = 6,
     CT_CONTAINERD = 7,
@@ -19,8 +20,10 @@ enum container_type {
     CT_UNKNOWN = 0xffff
 };
 
-static std::string inline to_string(enum container_type ct) {
-    switch(ct) {
+static std::string inline to_string(enum container_type ct)
+{
+    switch(ct)
+    {
     case CT_DOCKER:
         return "docker";
         break;
@@ -52,8 +55,8 @@ static std::string inline to_string(enum container_type ct) {
         return "podman";
         break;
     case CT_HOST:
-      	return "host";
-      	break;
+        return "host";
+        break;
     default:
         return "";
     }

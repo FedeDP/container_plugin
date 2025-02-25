@@ -20,36 +20,39 @@ limitations under the License.
 #include <re2/re2.h>
 #include "container_info.h"
 
-std::vector<std::string> container_health_probe::probe_type_names =
-        {"None", "Healthcheck", "LivenessProbe", "ReadinessProbe"};
+std::vector<std::string> container_health_probe::probe_type_names = {
+        "None", "Healthcheck", "LivenessProbe", "ReadinessProbe"};
 
-container_health_probe::container_health_probe() : m_type(PT_NONE) {}
+container_health_probe::container_health_probe(): m_type(PT_NONE) {}
 
 container_health_probe::container_health_probe(
-        const probe_type ptype,
-        const std::string &&exe,
+        const probe_type ptype, const std::string &&exe,
         const std::vector<std::string> &&args):
-        m_type(ptype),
-        m_exe(exe),
-        m_args(args) {}
+        m_type(ptype), m_exe(exe), m_args(args)
+{
+}
 
 container_health_probe::~container_health_probe() {}
 
-const container_mount_info *container_info::mount_by_idx(
-        uint32_t idx) const {
-    if(idx >= m_mounts.size()) {
+const container_mount_info *container_info::mount_by_idx(uint32_t idx) const
+{
+    if(idx >= m_mounts.size())
+    {
         return NULL;
     }
 
     return &(m_mounts[idx]);
 }
 
-const container_mount_info *container_info::mount_by_source(
-        const std::string &source) const {
+const container_mount_info *
+container_info::mount_by_source(const std::string &source) const
+{
     // note: linear search
     re2::RE2 pattern(source, re2::RE2::POSIX);
-    for(auto &mntinfo : m_mounts) {
-        if(re2::RE2::PartialMatch(mntinfo.m_source.c_str(), pattern)) {
+    for(auto &mntinfo : m_mounts)
+    {
+        if(re2::RE2::PartialMatch(mntinfo.m_source.c_str(), pattern))
+        {
             return &mntinfo;
         }
     }
@@ -57,12 +60,15 @@ const container_mount_info *container_info::mount_by_source(
     return NULL;
 }
 
-const container_mount_info *container_info::mount_by_dest(
-        const std::string &dest) const {
+const container_mount_info *
+container_info::mount_by_dest(const std::string &dest) const
+{
     // note: linear search
     re2::RE2 pattern(dest, re2::RE2::POSIX);
-    for(auto &mntinfo : m_mounts) {
-        if(re2::RE2::PartialMatch(mntinfo.m_dest.c_str(), pattern)) {
+    for(auto &mntinfo : m_mounts)
+    {
+        if(re2::RE2::PartialMatch(mntinfo.m_dest.c_str(), pattern))
+        {
             return &mntinfo;
         }
     }
@@ -70,16 +76,19 @@ const container_mount_info *container_info::mount_by_dest(
     return NULL;
 }
 
-container_health_probe::probe_type container_info::match_health_probe(
-        const std::string &exe, const std::vector<std::string> &args) const {
+container_health_probe::probe_type
+container_info::match_health_probe(const std::string &exe,
+                                   const std::vector<std::string> &args) const
+{
 
-    auto pred = [&](const container_health_probe &p) {
-        return (p.m_exe == exe && p.m_args == args);
-    };
+    auto pred = [&](const container_health_probe &p)
+    { return (p.m_exe == exe && p.m_args == args); };
 
-    auto match = std::find_if(m_health_probes.begin(), m_health_probes.end(), pred);
+    auto match =
+            std::find_if(m_health_probes.begin(), m_health_probes.end(), pred);
 
-    if(match == m_health_probes.end()) {
+    if(match == m_health_probes.end())
+    {
         return container_health_probe::PT_NONE;
     }
 

@@ -5,41 +5,41 @@
 
 #define DEFAULT_LABEL_MAX_LEN 100
 
-struct SimpleEngine {
+struct SimpleEngine
+{
     bool enabled;
 
-    SimpleEngine() {
-        enabled = true;
-    }
+    SimpleEngine() { enabled = true; }
 };
 
-struct SocketsEngine {
+struct SocketsEngine
+{
     bool enabled;
     std::vector<std::string> sockets;
 
-    SocketsEngine() {
-        enabled = true;
-    }
+    SocketsEngine() { enabled = true; }
 
-    void log_sockets() const {
-     	for (const auto& socket : sockets) {
+    void log_sockets() const
+    {
+        for(const auto& socket : sockets)
+        {
             SPDLOG_DEBUG("Enabled container runtime socket at '{}'", socket);
-     	}
+        }
     }
 };
 
-struct StaticEngine {
+struct StaticEngine
+{
     bool enabled;
     std::string id;
     std::string name;
     std::string image;
 
-    StaticEngine() {
-        enabled = false;
-    }
+    StaticEngine() { enabled = false; }
 };
 
-struct Engines {
+struct Engines
+{
     SimpleEngine bpm;
     SimpleEngine lxc;
     SimpleEngine libvirt_lxc;
@@ -50,13 +50,15 @@ struct Engines {
     StaticEngine static_ctr;
 };
 
-struct PluginConfig {
+struct PluginConfig
+{
     std::string verbosity;
     int label_max_len;
     bool with_size;
     Engines engines;
 
-    PluginConfig() {
+    PluginConfig()
+    {
         label_max_len = DEFAULT_LABEL_MAX_LEN;
         with_size = false;
     }

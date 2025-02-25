@@ -22,35 +22,25 @@ limitations under the License.
 // General plugin API
 //////////////////////////
 
-std::string my_plugin::get_name() {
-    return PLUGIN_NAME;
-}
+std::string my_plugin::get_name() { return PLUGIN_NAME; }
 
-std::string my_plugin::get_version() {
-    return PLUGIN_VERSION;
-}
+std::string my_plugin::get_version() { return PLUGIN_VERSION; }
 
-std::string my_plugin::get_description() {
-    return PLUGIN_DESCRIPTION;
-}
+std::string my_plugin::get_description() { return PLUGIN_DESCRIPTION; }
 
-std::string my_plugin::get_contact() {
-    return PLUGIN_CONTACT;
-}
+std::string my_plugin::get_contact() { return PLUGIN_CONTACT; }
 
-std::string my_plugin::get_required_api_version() {
+std::string my_plugin::get_required_api_version()
+{
     return PLUGIN_REQUIRED_API_VERSION;
 }
 
-std::string my_plugin::get_last_error() {
-    return m_lasterr;
-}
+std::string my_plugin::get_last_error() { return m_lasterr; }
 
-void my_plugin::destroy() {
-    SPDLOG_DEBUG("detach the plugin");
-}
+void my_plugin::destroy() { SPDLOG_DEBUG("detach the plugin"); }
 
-falcosecurity::init_schema my_plugin::get_init_schema() {
+falcosecurity::init_schema my_plugin::get_init_schema()
+{
     falcosecurity::init_schema init_schema;
     init_schema.schema_type =
             falcosecurity::init_schema_type::SS_PLUGIN_SCHEMA_JSON;
@@ -58,16 +48,19 @@ falcosecurity::init_schema my_plugin::get_init_schema() {
     return init_schema;
 }
 
-void my_plugin::parse_init_config(nlohmann::json& config_json) {
+void my_plugin::parse_init_config(nlohmann::json& config_json)
+{
     m_cfg = config_json.get<PluginConfig>();
     // Verbosity, the default verbosity is already set in the 'init' method
-    if (m_cfg.verbosity != "info") {
+    if(m_cfg.verbosity != "info")
+    {
         // If the user specified a verbosity we override the actual one (`info`)
         spdlog::set_level(spdlog::level::from_str(m_cfg.verbosity));
     }
 }
 
-bool my_plugin::init(falcosecurity::init_input& in) {
+bool my_plugin::init(falcosecurity::init_input& in)
+{
     using st = falcosecurity::state_value_type;
     auto& t = in.tables();
 
@@ -83,7 +76,8 @@ bool my_plugin::init(falcosecurity::init_input& in) {
     spdlog::set_pattern("%c: [%l] [container] %v");
 
     // This should never happen, the config is validated by the framework
-    if(in.get_config().empty()) {
+    if(in.get_config().empty())
+    {
         m_lasterr = "cannot find the init config for the plugin";
         SPDLOG_CRITICAL(m_lasterr);
         return false;
@@ -96,17 +90,22 @@ bool my_plugin::init(falcosecurity::init_input& in) {
 
     m_mgr = std::make_unique<matcher_manager>(m_cfg.engines);
 
-    try {
-      	// Expose containers as libsinsp state table
+    try
+    {
+        // Expose containers as libsinsp state table
         t.add_table(get_table());
 
-        m_threads_table = t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);
+        m_threads_table =
+                t.get_table(THREAD_TABLE_NAME, st::SS_PLUGIN_ST_INT64);
 
-        // pidns_init_start_ts used by TYPE_CONTAINER_START_TS and TYPE_CONTAINER_DURATION extractors
+        // pidns_init_start_ts used by TYPE_CONTAINER_START_TS and
+        // TYPE_CONTAINER_DURATION extractors
         m_threads_field_pidns_init_start_ts = m_threads_table.get_field(
-                t.fields(), PIDNS_INIT_START_TS_FIELD_NAME, st::SS_PLUGIN_ST_UINT64);
+                t.fields(), PIDNS_INIT_START_TS_FIELD_NAME,
+                st::SS_PLUGIN_ST_UINT64);
 
-        // vpid and ptid are used to attach the category field to the thread entry
+        // vpid and ptid are used to attach the category field to the thread
+        // entry
         m_threads_field_vpid = m_threads_table.get_field(
                 t.fields(), VPID_FIELD_NAME, st::SS_PLUGIN_ST_INT64);
         m_threads_field_ptid = m_threads_table.get_field(
@@ -117,7 +116,8 @@ bool my_plugin::init(falcosecurity::init_input& in) {
                 t.fields(), "args", st::SS_PLUGIN_ST_TABLE);
 
         // get the 'value' field accessor from the args table
-        m_args_field = t.get_subtable_field(m_threads_table, m_threads_field_args,
+        m_args_field =
+                t.get_subtable_field(m_threads_table, m_threads_field_args,
                                      "value", st::SS_PLUGIN_ST_STRING);
 
         // get the 'exe' field accessor from the thread table
@@ -128,9 +128,9 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         m_threads_field_cgroups = m_threads_table.get_field(
                 t.fields(), CGROUPS_TABLE_NAME, st::SS_PLUGIN_ST_TABLE);
         // get the 'second' field accessor from the cgroups table
-        m_cgroups_field_second = t.get_subtable_field(
-                m_threads_table, m_threads_field_cgroups, "second",
-                st::SS_PLUGIN_ST_STRING);
+        m_cgroups_field_second =
+                t.get_subtable_field(m_threads_table, m_threads_field_cgroups,
+                                     "second", st::SS_PLUGIN_ST_STRING);
 
         // Add the container_id field into thread table
         m_container_id_field = m_threads_table.add_field(
@@ -139,7 +139,9 @@ bool my_plugin::init(falcosecurity::init_input& in) {
         // Add the category field into thread table
         m_threads_field_category = m_threads_table.add_field(
                 t.fields(), CATEGORY_FIELD_NAME, st::SS_PLUGIN_ST_UINT16);
-    } catch(falcosecurity::plugin_exception e) {
+    }
+    catch(falcosecurity::plugin_exception e)
+    {
         m_lasterr = "cannot add the '" + std::string(CONTAINER_ID_FIELD_NAME) +
                     "' field into the '" + std::string(THREAD_TABLE_NAME) +
                     "' table: " + e.what();
@@ -149,7 +151,6 @@ bool my_plugin::init(falcosecurity::init_input& in) {
 
     // Initialize dummy host container entry
     m_containers[""] = container_info::host_container_info();
-
 
     // Initialize metrics
     falcosecurity::metric n_container(METRIC_N_CONTAINERS);
@@ -163,7 +164,8 @@ bool my_plugin::init(falcosecurity::init_input& in) {
     return true;
 }
 
-const std::vector<falcosecurity::metric>& my_plugin::get_metrics() {
+const std::vector<falcosecurity::metric>& my_plugin::get_metrics()
+{
     return m_metrics;
 }
 
@@ -171,17 +173,18 @@ FALCOSECURITY_PLUGIN(my_plugin);
 
 /* Utils */
 
-std::string my_plugin::compute_container_id_for_thread(const falcosecurity::table_entry& thread_entry,
-                                                       const falcosecurity::table_reader& tr,
-                                                       std::shared_ptr<container_info>& info) {
+std::string my_plugin::compute_container_id_for_thread(
+        const falcosecurity::table_entry& thread_entry,
+        const falcosecurity::table_reader& tr,
+        std::shared_ptr<container_info>& info)
+{
     // retrieve tid cgroups, compute container_id and store it.
     std::string container_id;
     using st = falcosecurity::state_value_type;
 
     // get the cgroups table of the thread
     auto cgroups_table = m_threads_table.get_subtable(
-            tr, m_threads_field_cgroups, thread_entry,
-            st::SS_PLUGIN_ST_UINT64);
+            tr, m_threads_field_cgroups, thread_entry, st::SS_PLUGIN_ST_UINT64);
 
     cgroups_table.iterate_entries(
             tr,
@@ -191,30 +194,36 @@ std::string my_plugin::compute_container_id_for_thread(const falcosecurity::tabl
                 // from the current entry of the cgroups table
                 std::string cgroup;
                 m_cgroups_field_second.read_value(tr, e, cgroup);
-                if(!cgroup.empty()) {
+                if(!cgroup.empty())
+                {
                     m_mgr->match_cgroup(cgroup, container_id, info);
-                    if (!container_id.empty()) {
-                        SPDLOG_DEBUG("Matched container_id: {} from cgroup {}", container_id, cgroup);
-                      	// break the loop
-                      	return false;
+                    if(!container_id.empty())
+                    {
+                        SPDLOG_DEBUG("Matched container_id: {} from cgroup {}",
+                                     container_id, cgroup);
+                        // break the loop
+                        return false;
                     }
                 }
                 return true;
-            }
-    );
+            });
     return container_id;
 }
 
-// Same logic as https://github.com/falcosecurity/libs/blob/a99a36573f59c0e25965b36f8fa4ae1b10c5d45c/userspace/libsinsp/container.cpp#L438
-void my_plugin::write_thread_category(const std::shared_ptr<const container_info>& cinfo,
-    								  const falcosecurity::table_entry& thread_entry,
-                                      const falcosecurity::table_reader& tr,
-                                      const falcosecurity::table_writer& tw) {
+// Same logic as
+// https://github.com/falcosecurity/libs/blob/a99a36573f59c0e25965b36f8fa4ae1b10c5d45c/userspace/libsinsp/container.cpp#L438
+void my_plugin::write_thread_category(
+        const std::shared_ptr<const container_info>& cinfo,
+        const falcosecurity::table_entry& thread_entry,
+        const falcosecurity::table_reader& tr,
+        const falcosecurity::table_writer& tw)
+{
     using st = falcosecurity::state_value_type;
 
     int64_t vpid;
     m_threads_field_vpid.read_value(tr, thread_entry, vpid);
-    if (vpid == 1) {
+    if(vpid == 1)
+    {
         uint16_t category = CAT_CONTAINER;
         m_threads_field_category.write_value(tw, thread_entry, category);
         return;
@@ -222,15 +231,20 @@ void my_plugin::write_thread_category(const std::shared_ptr<const container_info
 
     int64_t ptid;
     m_threads_field_ptid.read_value(tr, thread_entry, ptid);
-    try {
+    try
+    {
         auto parent_entry = m_threads_table.get_entry(tr, ptid);
         uint16_t parent_category;
         m_threads_field_category.read_value(tr, parent_entry, parent_category);
-        if (parent_category != CAT_NONE) {
-            m_threads_field_category.write_value(tw, thread_entry, parent_category);
+        if(parent_category != CAT_NONE)
+        {
+            m_threads_field_category.write_value(tw, thread_entry,
+                                                 parent_category);
             return;
         }
-    } catch (falcosecurity::plugin_exception &ex) {
+    }
+    catch(falcosecurity::plugin_exception& ex)
+    {
         // nothing
         SPDLOG_DEBUG("no parent thread found");
     }
@@ -241,31 +255,33 @@ void my_plugin::write_thread_category(const std::shared_ptr<const container_info
     // Read "args" field: collect args
     std::vector<std::string> args;
     auto args_table = m_threads_table.get_subtable(
-                    tr, m_threads_field_args, thread_entry,
-                    st::SS_PLUGIN_ST_INT64);
+            tr, m_threads_field_args, thread_entry, st::SS_PLUGIN_ST_INT64);
     args_table.iterate_entries(
-                    tr,
-                    [this, tr, &args](const falcosecurity::table_entry& e)
-                    {
-                        // read the arg field from the current entry of args
-                        // table
-                        std::string arg;
-                        m_args_field.read_value(tr, e, arg);
-                        if(!arg.empty())
-                        {
-                            args.push_back(arg);
-                        }
-                        return true;
-                    });
+            tr,
+            [this, tr, &args](const falcosecurity::table_entry& e)
+            {
+                // read the arg field from the current entry of args
+                // table
+                std::string arg;
+                m_args_field.read_value(tr, e, arg);
+                if(!arg.empty())
+                {
+                    args.push_back(arg);
+                }
+                return true;
+            });
 
     const auto ptype = cinfo->match_health_probe(exe, args);
-	if(ptype == container_health_probe::PT_NONE) {
-		return;
-	}
+    if(ptype == container_health_probe::PT_NONE)
+    {
+        return;
+    }
 
     bool found_container_init = false;
-    while (!found_container_init) {
-        try {
+    while(!found_container_init)
+    {
+        try
+        {
             // Move to parent
             auto entry = m_threads_table.get_entry(tr, ptid);
 
@@ -275,48 +291,57 @@ void my_plugin::write_thread_category(const std::shared_ptr<const container_info
             m_threads_field_vpid.read_value(tr, entry, vpid);
             m_container_id_field.read_value(tr, entry, container_id);
 
-            if (vpid == 1 && !container_id.empty()) {
+            if(vpid == 1 && !container_id.empty())
+            {
                 found_container_init = true;
-            } else {
+            }
+            else
+            {
                 // update ptid for next iteration
                 m_threads_field_ptid.read_value(tr, entry, ptid);
             }
-        } catch (falcosecurity::plugin_exception &ex) {
+        }
+        catch(falcosecurity::plugin_exception& ex)
+        {
             // end of loop
             break;
         }
     }
-    if (!found_container_init) {
+    if(!found_container_init)
+    {
         uint16_t category;
-      	// Each health probe type maps to a command category
-		switch(ptype) {
-		case container_health_probe::PT_NONE:
-			break;
-		case container_health_probe::PT_HEALTHCHECK:
+        // Each health probe type maps to a command category
+        switch(ptype)
+        {
+        case container_health_probe::PT_NONE:
+            break;
+        case container_health_probe::PT_HEALTHCHECK:
             category = CAT_HEALTHCHECK;
             m_threads_field_category.write_value(tw, thread_entry, category);
-			break;
-		case container_health_probe::PT_LIVENESS_PROBE:
+            break;
+        case container_health_probe::PT_LIVENESS_PROBE:
             category = CAT_LIVENESS_PROBE;
             m_threads_field_category.write_value(tw, thread_entry, category);
-			break;
-		case container_health_probe::PT_READINESS_PROBE:
+            break;
+        case container_health_probe::PT_READINESS_PROBE:
             category = CAT_READINESS_PROBE;
             m_threads_field_category.write_value(tw, thread_entry, category);
-			break;
-		}
+            break;
+        }
         return;
     }
 }
 
 void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
                                const falcosecurity::table_reader& tr,
-                               const falcosecurity::table_writer& tw) {
-	std::shared_ptr<container_info> info = nullptr;
+                               const falcosecurity::table_writer& tw)
+{
+    std::shared_ptr<container_info> info = nullptr;
     auto container_id = compute_container_id_for_thread(thread_entry, tr, info);
     m_container_id_field.write_value(tw, thread_entry, container_id);
 
-    if (info != nullptr) {
+    if(info != nullptr)
+    {
 #ifdef _HAS_ASYNC
         // Since the matcher also returned a container_info,
         // it means we do not expect to receive any metadata from the go-worker,
@@ -330,13 +355,19 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
     }
 
     // Write thread category field
-    if (!container_id.empty()) {
+    if(!container_id.empty())
+    {
         auto it = m_containers.find(container_id);
-        if (it != m_containers.end()) {
+        if(it != m_containers.end())
+        {
             auto cinfo = it->second;
             write_thread_category(cinfo, thread_entry, tr, tw);
-        } else {
-            SPDLOG_DEBUG("failed to write thread category, no container found for {}", container_id);
+        }
+        else
+        {
+            SPDLOG_DEBUG("failed to write thread category, no container found "
+                         "for {}",
+                         container_id);
         }
     }
 }
