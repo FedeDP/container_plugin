@@ -21,7 +21,7 @@ The `container` plugin implements the following capabilities:
 * `capture listening` -> to attach `container_id` foreign key to all pre-existing threadinfos, once they have been scraped from procfs by sinsp 
 * `extraction` -> to extract `container.X` fields
 * `parsing` -> to parse `async` and `container` events (the latter for backward compatibility with existing scap files), and clone/fork/execve events to attach `container_id` foreign key to any threads
-* `async` -> to generate events with container information and `dump` current plugin cache state when requested
+* `async` -> to generate events with container information and `dump` current plugin cache state when requested. **Linux Only!**
 
 It requires **3.10.0** plugin API version.
 
@@ -175,7 +175,7 @@ Note: leveraging latest plugin SDK features, the plugin itself will expose certa
 
 ### Running
 
-This plugin requires Falco with version >= **0.40.0**.
+This plugin requires Falco with version >= **0.41.0**.
 Modify the `falco.yaml` with the [configuration above](#configuration) and you are ready to go!
 
 ```shell
