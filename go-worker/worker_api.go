@@ -70,10 +70,9 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 			}
 		}
 	}
-	// TODO: should we leave even if there might be some inotifier attached?
-	if len(containerEngines) == 0 {
-		return false
-	}
+	// Always append the dummy engine that is required to
+	// be able to fetch container infos on the fly given other enabled engines.
+	containerEngines = append(containerEngines, container.NewDummyEngine(containerEngines))
 
 	// Start worker goroutine
 	wg.Add(1)
@@ -89,4 +88,13 @@ func StopWorker() {
 	ctxCancel()
 	wg.Wait()
 	stringBuffer.Free()
+}
+
+//export AskForContainerInfo
+func AskForContainerInfo(containerId *C.cchar_t) {
+	containerID := ptr.GoString(unsafe.Pointer(containerId))
+	ch := container.GetDummyChan()
+	if ch != nil {
+		ch <- containerID
+	}
 }
