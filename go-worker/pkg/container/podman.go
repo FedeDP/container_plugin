@@ -181,6 +181,18 @@ func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {
 	}
 }
 
+func (pc *podmanEngine) Get(_ context.Context, containerId string) (*event.Event, error) {
+	size := config.GetWithSize()
+	ctrInfo, err := containers.Inspect(pc.pCtx, containerId, &containers.InspectOptions{Size: &size})
+	if err != nil {
+		return nil, err
+	}
+	return &event.Event{
+		Info:     pc.ctrToInfo(ctrInfo),
+		IsCreate: true,
+	}, nil
+}
+
 func (pc *podmanEngine) List(_ context.Context) ([]event.Event, error) {
 	evts := make([]event.Event, 0)
 	all := true

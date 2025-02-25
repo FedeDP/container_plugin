@@ -377,6 +377,26 @@ func (c *criEngine) ctrToInfo(ctx context.Context, ctr *v1.ContainerStatus, podS
 	}
 }
 
+func (c *criEngine) Get(ctx context.Context, containerId string) (*event.Event, error) {
+	ctrs, err := c.client.ListContainers(ctx, &v1.ContainerFilter{State: &v1.ContainerStateValue{}, Id: containerId})
+	if err != nil || len(ctrs) == 0 {
+		return nil, err
+	}
+	ctr := ctrs[0]
+	container, err := c.client.ContainerStatus(ctx, ctr.Id, true)
+	if err == nil {
+		podSandboxStatus, _ := c.client.PodSandboxStatus(ctx, ctr.GetPodSandboxId(), false)
+		if podSandboxStatus == nil {
+			podSandboxStatus = &v1.PodSandboxStatusResponse{}
+		}
+		return &event.Event{
+			IsCreate: true,
+			Info:     c.ctrToInfo(ctx, container.Status, podSandboxStatus.GetStatus(), container.GetInfo(), podSandboxStatus.GetInfo()),
+		}, nil
+	}
+	return nil, nil
+}
+
 func (c *criEngine) List(ctx context.Context) ([]event.Event, error) {
 	ctrs, err := c.client.ListContainers(ctx, &v1.ContainerFilter{State: &v1.ContainerStateValue{}})
 	if err != nil {

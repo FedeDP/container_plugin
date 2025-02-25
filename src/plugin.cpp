@@ -17,6 +17,9 @@ limitations under the License.
 
 #include "plugin.h"
 #include "plugin_config_schema.h"
+#ifdef _HAS_ASYNC
+#include <libworker.h>
+#endif
 
 //////////////////////////
 // General plugin API
@@ -368,6 +371,10 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
             SPDLOG_DEBUG("failed to write thread category, no container found "
                          "for {}",
                          container_id);
+#ifdef _HAS_ASYNC
+            // Implemented by GO worker.go
+            AskForContainerInfo(container_id.c_str());
+#endif
         }
     }
 }

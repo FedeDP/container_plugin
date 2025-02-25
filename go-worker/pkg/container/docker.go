@@ -294,6 +294,17 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 }
 
+func (dc *dockerEngine) Get(ctx context.Context, containerId string) (*event.Event, error) {
+	ctrJson, _, err := dc.ContainerInspectWithRaw(ctx, containerId, config.GetWithSize())
+	if err != nil {
+		return nil, err
+	}
+	return &event.Event{
+		IsCreate: true,
+		Info:     dc.ctrToInfo(ctx, ctrJson),
+	}, nil
+}
+
 func (dc *dockerEngine) List(ctx context.Context) ([]event.Event, error) {
 	containers, err := dc.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {

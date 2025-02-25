@@ -227,6 +227,24 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 }
 
+func (c *containerdEngine) Get(ctx context.Context, containerId string) (*event.Event, error) {
+	namespacesList, err := c.client.NamespaceService().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, namespace := range namespacesList {
+		namespacedContext := namespaces.WithNamespace(ctx, namespace)
+		container, err := c.client.LoadContainer(namespacedContext, containerId)
+		if err == nil {
+			return &event.Event{
+				Info:     c.ctrToInfo(namespacedContext, container),
+				IsCreate: true,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
 func (c *containerdEngine) List(ctx context.Context) ([]event.Event, error) {
 	namespacesList, err := c.client.NamespaceService().List(ctx)
 	if err != nil {

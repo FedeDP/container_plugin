@@ -149,6 +149,8 @@ func Generators() ([]EngineGenerator, *EngineInotifier, error) {
 }
 
 type Engine interface {
+	// Get returns info about a single container
+	Get(ctx context.Context, containerId string) (*event.Event, error)
 	// List lists all running container for the engine
 	List(ctx context.Context) ([]event.Event, error)
 	// Listen returns a channel where container created/deleted events will be notified
