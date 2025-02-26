@@ -10,72 +10,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-others:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ windows-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
+  build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      caching_enabled: true
+    secrets: inherit
+
+  test:
+    # ubuntu24.04 for podman >= 4.x. x86_64 only,
+    # since podman is not shipped by beta github arm64 runners:
+    # https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-22-image.md#not-installed-software
+    # Building tests fail with: "faccessat /home/runneradmin/.config/containers/storage.conf: permission denied"
+    runs-on: 'ubuntu-24.04'
     steps:
-      # Needed by vcpkg caching
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      # Needed by podman package - build and runtime dep.
+      - name: Install go test deps
+        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'recursive'
-
-      - name: Build plugin library (without ASYNC capability)
-        run: make
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
-      - name: Upload artifact - windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: libcontainer-win
-          path: 'container.dll'
-
-      - name: Upload artifact - osx
-        if: ${{ matrix.os == 'macos-latest' }}
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: libcontainer-osx
-          path: 'libcontainer.dylib'
-
-  build-and-test:
-    name: build-and-test-${{ matrix.arch }}
-    # ubuntu24.04 for podman >= 4.x
-    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [ amd64, arm64 ]
-    steps:
-      # Needed by vcpkg caching
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: 'recursive'
-
-      # Needed by containerd go package - build time dep, no runtime.
-      - name: Install plugin deps
-        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -83,39 +39,18 @@ jobs:
           go-version-file: go-worker/go.mod
           cache-dependency-path: go-worker/go.sum
 
-      - name: Build plugin library
-        run: make
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: libcontainer-${{ matrix.arch }}
-          path: 'libcontainer.so'
-
-      # Needed by podman package - build and runtime dep.
-      # For the go-worker library, it is only a runtime dep,
-      # and is provided by plugin vcpkg configuration.
-      - name: Install go-worker executable deps
-        run: sudo apt-get install -y --no-install-recommends libgpgme-dev
-
       - name: Build go-worker executable
         run: make -C go-worker exe
 
-      # Podman is not shipped by beta github arm64 runners:
-      # https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-22-image.md#not-installed-software
-      # Building tests fail with: "faccessat /home/runneradmin/.config/containers/storage.conf: permission denied"
-      - name: Run tests (x64 only)
-        if: matrix.arch == 'amd64'
+      - name: Run tests
         run: |
           systemctl --user start podman
           make test
 
   falco-tests:
-    needs: [build-and-test]
+    needs: [build]
     name: falco-tests-${{ matrix.arch }}
-    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
+    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-22.04-arm') || 'ubuntu-22.04' }}
     strategy:
       fail-fast: false
       matrix:
