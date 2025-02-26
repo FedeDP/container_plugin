@@ -294,7 +294,7 @@ func (dc *dockerEngine) ctrToInfo(ctx context.Context, ctr types.ContainerJSON) 
 	}
 }
 
-func (dc *dockerEngine) Get(ctx context.Context, containerId string) (*event.Event, error) {
+func (dc *dockerEngine) get(ctx context.Context, containerId string) (*event.Event, error) {
 	ctrJson, _, err := dc.ContainerInspectWithRaw(ctx, containerId, config.GetWithSize())
 	if err != nil {
 		return nil, err

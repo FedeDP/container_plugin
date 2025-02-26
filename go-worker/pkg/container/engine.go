@@ -148,9 +148,13 @@ func Generators() ([]EngineGenerator, *EngineInotifier, error) {
 	return generators, &engineNotifier, nil
 }
 
-type Engine interface {
+type getter interface {
 	// Get returns info about a single container
-	Get(ctx context.Context, containerId string) (*event.Event, error)
+	get(ctx context.Context, containerId string) (*event.Event, error)
+}
+
+type Engine interface {
+	getter // Package-private since it is useless outside of this package. Only used by fetcher.
 	// List lists all running container for the engine
 	List(ctx context.Context) ([]event.Event, error)
 	// Listen returns a channel where container created/deleted events will be notified

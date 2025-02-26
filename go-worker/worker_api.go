@@ -72,7 +72,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 	}
 	// Always append the dummy engine that is required to
 	// be able to fetch container infos on the fly given other enabled engines.
-	containerEngines = append(containerEngines, container.NewDummyEngine(containerEngines))
+	containerEngines = append(containerEngines, container.NewFetcherEngine(containerEngines))
 
 	// Start worker goroutine
 	wg.Add(1)
@@ -93,7 +93,7 @@ func StopWorker() {
 //export AskForContainerInfo
 func AskForContainerInfo(containerId *C.cchar_t) {
 	containerID := ptr.GoString(unsafe.Pointer(containerId))
-	ch := container.GetDummyChan()
+	ch := container.GetFetcherChan()
 	if ch != nil {
 		ch <- containerID
 	}

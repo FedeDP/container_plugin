@@ -227,7 +227,7 @@ func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, containe
 	}
 }
 
-func (c *containerdEngine) Get(ctx context.Context, containerId string) (*event.Event, error) {
+func (c *containerdEngine) get(ctx context.Context, containerId string) (*event.Event, error) {
 	namespacesList, err := c.client.NamespaceService().List(ctx)
 	if err != nil {
 		return nil, err
