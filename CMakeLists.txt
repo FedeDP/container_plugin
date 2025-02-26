@@ -51,6 +51,9 @@ set_property(TARGET container PROPERTY POSITION_INDEPENDENT_CODE ON)
 if (NOT MSVC)
     target_compile_options(container PRIVATE "-Wl,-z,relro,-z,now")
     target_compile_options(container PRIVATE "-fstack-protector-strong")
+else()
+    # Workaround https://github.com/golang/go/issues/71921
+    target_compile_definitions(container PRIVATE "_CRT_USE_C_COMPLEX_H")
 endif()
 # When compiling in Debug mode, this will define the DEBUG symbol for use in your code.
 target_compile_options(container PUBLIC "$<$<CONFIG:DEBUG>:-DDEBUG>")
