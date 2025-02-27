@@ -8,7 +8,8 @@
 #include "libvirt_lxc.h"
 #include "static_container.h"
 
-matcher_manager::matcher_manager(const Engines& cfg)
+matcher_manager::matcher_manager(const Engines& cfg,
+                                 const std::string& host_root)
 {
     if(cfg.static_ctr.enabled)
     {
@@ -28,28 +29,28 @@ matcher_manager::matcher_manager(const Engines& cfg)
         auto podman_engine = std::make_shared<podman>();
         m_matchers.push_back(podman_engine);
         SPDLOG_DEBUG("Enabled 'podman' container engine.");
-        cfg.podman.log_sockets();
+        cfg.podman.log_sockets(host_root);
     }
     if(cfg.docker.enabled)
     {
         auto docker_engine = std::make_shared<docker>();
         m_matchers.push_back(docker_engine);
         SPDLOG_DEBUG("Enabled 'docker' container engine.");
-        cfg.docker.log_sockets();
+        cfg.docker.log_sockets(host_root);
     }
     if(cfg.cri.enabled)
     {
         auto cri_engine = std::make_shared<cri>();
         m_matchers.push_back(cri_engine);
         SPDLOG_DEBUG("Enabled 'cri' container engine.");
-        cfg.cri.log_sockets();
+        cfg.cri.log_sockets(host_root);
     }
     if(cfg.containerd.enabled)
     {
         auto containerd_engine = std::make_shared<containerd>();
         m_matchers.push_back(containerd_engine);
         SPDLOG_DEBUG("Enabled 'containerd' container engine.");
-        cfg.containerd.log_sockets();
+        cfg.containerd.log_sockets(host_root);
     }
     if(cfg.lxc.enabled)
     {

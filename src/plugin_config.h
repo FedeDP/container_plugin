@@ -19,11 +19,12 @@ struct SocketsEngine
 
     SocketsEngine() { enabled = true; }
 
-    void log_sockets() const
+    void log_sockets(const std::string& host_root) const
     {
         for(const auto& socket : sockets)
         {
-            SPDLOG_DEBUG("Enabled container runtime socket at '{}'", socket);
+            SPDLOG_DEBUG("* enabled container runtime socket at '{}'",
+                         host_root + socket);
         }
     }
 };

@@ -91,7 +91,7 @@ bool my_plugin::init(falcosecurity::init_input& in)
 
     SPDLOG_DEBUG("init the plugin");
 
-    m_mgr = std::make_unique<matcher_manager>(m_cfg.engines);
+    m_mgr = std::make_unique<matcher_manager>(m_cfg.engines, m_cfg.host_root);
 
     try
     {
