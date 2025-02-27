@@ -43,11 +43,18 @@ jobs:
           name: libcontainer-win
           path: container-${{ github.ref_name }}-win-x86_64
 
+      - name: Create tarballs for release
+        run: |
+          tar -czvf container-${{ github.ref_name }}-linux-x86_64.tar.gz container-${{ github.ref_name }}-linux-x86_64/
+          tar -czvf container-${{ github.ref_name }}-linux-aarch64.tar.gz container-${{ github.ref_name }}-linux-aarch64/
+          tar -czvf container-${{ github.ref_name }}-osx-aarch64.tar.gz container-${{ github.ref_name }}-osx-aarch64/
+          tar -czvf container-${{ github.ref_name }}-win-x86_64.tar.gz container-${{ github.ref_name }}-win-x86_64/
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            container-${{ github.ref_name }}-linux-x86_64
-            container-${{ github.ref_name }}-linux-aarch64
-            container-${{ github.ref_name }}-osx-aarch64
-            container-${{ github.ref_name }}-win-x86_64
+            container-${{ github.ref_name }}-linux-x86_64.tar.gz
+            container-${{ github.ref_name }}-linux-aarch64.tar.gz
+            container-${{ github.ref_name }}-osx-aarch64.tar.gz
+            container-${{ github.ref_name }}-win-x86_64.tar.gz
