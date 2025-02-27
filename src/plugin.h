@@ -19,6 +19,7 @@ limitations under the License.
 #include "macros.h"
 #include "matchers/matcher.h"
 #include <unordered_map>
+#include <unordered_set>
 
 #ifdef _HAS_ASYNC
 #define ASYNC_HANDLER_DEFAULT 0
@@ -128,7 +129,12 @@ class my_plugin
     // State table
     std::unordered_map<std::string, std::shared_ptr<const container_info>>
             m_containers;
+    // Last container enriched from an async event parsing.
+    // Used to extract container info from aforementioned async events.
     std::shared_ptr<const container_info> m_last_container;
+    // Cache being asked containers to go-worker through AskForContainerInfo()
+    // API. Avoids repeatedly calling the API.
+    std::unordered_set<std::string> m_asked_containers;
 
     std::vector<falcosecurity::metric> m_metrics;
 

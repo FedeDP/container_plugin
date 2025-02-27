@@ -372,8 +372,14 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
                          "for {}",
                          container_id);
 #ifdef _HAS_ASYNC
-            // Implemented by GO worker.go
-            AskForContainerInfo(container_id.c_str());
+            // Check if already asked
+            if(m_asked_containers.find(container_id) ==
+               m_asked_containers.end())
+            {
+                m_asked_containers.insert(container_id);
+                // Implemented by GO worker.go
+                AskForContainerInfo(container_id.c_str());
+            }
 #endif
         }
     }
