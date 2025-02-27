@@ -26,6 +26,10 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+      - name: Export env variables for vcpkg caching
+        if: inputs.caching_enabled
+        run: echo "VCPKG_BINARY_SOURCES=clear;x-gha,readwrite" >> $GITHUB_ENV
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -38,14 +42,7 @@ jobs:
           go-version-file: go-worker/go.mod
           cache-dependency-path: go-worker/go.sum
 
-      - name: Build plugin library - CACHED
-        if: inputs.caching_enabled
-        run: make
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
       - name: Build plugin library
-        if: inputs.caching_enabled != true
         run: make
 
       - name: Upload artifact - windows
@@ -80,6 +77,14 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+      - name: Export env variables for vcpkg caching
+        if: inputs.caching_enabled
+        run: echo "VCPKG_BINARY_SOURCES=clear;x-gha,readwrite" >> $GITHUB_ENV
+
+      - name: Export env variable for arm64 build
+        if: matrix.arch == 'arm64'
+        run: echo "VCPKG_FORCE_SYSTEM_BINARIES=true" >> $GITHUB_ENV
+
       # Needed by containerd go package - build time dep, no runtime.
       - name: Install plugin deps
         run: apt-get update && apt-get install -y --no-install-recommends git make build-essential autotools-dev automake libtool pkg-config libbtrfs-dev curl zip unzip tar ninja-build
@@ -101,18 +106,8 @@ jobs:
       - name: Safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - name: Build plugin library - CACHED
-        run: make
-        if: inputs.caching_enabled
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-          VCPKG_FORCE_SYSTEM_BINARIES: 'true'
-
       - name: Build plugin library
         run: make
-        if: inputs.caching_enabled != true
-        env:
-          VCPKG_FORCE_SYSTEM_BINARIES: 'true'
 
       - name: Upload artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
