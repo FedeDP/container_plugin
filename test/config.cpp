@@ -133,6 +133,7 @@ TEST(plugin_config, to_json)
       ]
     }
   },
+  "host_root": "",
   "label_max_len": 120,
   "with_size": true
 })";

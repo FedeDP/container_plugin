@@ -50,16 +50,20 @@ void from_json(const nlohmann::json& j, PluginConfig& cfg)
         cfg.engines.podman.sockets.emplace_back("/run/podman/podman.sock");
         try
         {
-            for(const auto& entry :
-                std::filesystem::directory_iterator("/run/user"))
+            for(const auto& entry : std::filesystem::directory_iterator(
+                        cfg.host_root + "/run/user"))
             {
                 if(entry.is_directory())
                 {
                     if(std::filesystem::exists(entry.path().string() +
                                                "/podman/podman.sock"))
                     {
+                        // Remove host root since it will be later added by
+                        // go-worker itself
+                        auto root = entry.path().string().substr(
+                                cfg.host_root.length());
                         cfg.engines.podman.sockets.emplace_back(
-                                entry.path().string() + "/podman/podman.sock");
+                                root + "/podman/podman.sock");
                     }
                 }
             }
@@ -106,5 +110,6 @@ void to_json(nlohmann::json& j, const PluginConfig& cfg)
 {
     j["label_max_len"] = cfg.label_max_len;
     j["with_size"] = cfg.with_size;
+    j["host_root"] = cfg.host_root;
     j["engines"] = cfg.engines;
 }
