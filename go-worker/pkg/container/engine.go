@@ -66,7 +66,9 @@ func Generators() ([]EngineGenerator, *EngineInotifier, error) {
 		// For each specified socket, return a closure to generate its engine
 		for _, socket := range eCfg.Sockets {
 			// Properly account for HOST_ROOT env variable
-			socket = filepath.Join(config.GetHostRoot(), socket)
+			if config.GetHostRoot() != "" {
+				socket = filepath.Join(config.GetHostRoot(), socket)
+			}
 			if _, statErr := os.Stat(socket); os.IsNotExist(statErr) {
 				// Does not exist; emplace back an inotify listener
 				if engineNotifier.watcher == nil {

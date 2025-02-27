@@ -55,12 +55,17 @@ struct PluginConfig
     std::string verbosity;
     int label_max_len;
     bool with_size;
+    std::string host_root;
     Engines engines;
 
     PluginConfig()
     {
         label_max_len = DEFAULT_LABEL_MAX_LEN;
         with_size = false;
+        if(const char* hroot = std::getenv("HOST_ROOT"))
+        {
+            host_root = hroot;
+        }
     }
 };
 

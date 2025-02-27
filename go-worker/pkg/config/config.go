@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"os"
 )
 
 const defaultLabelMaxLen = 100
@@ -16,7 +15,7 @@ type EngineCfg struct {
 	SocketsEngines map[string]SocketsEngine `json:"engines"`
 	LabelMaxLen    int                      `json:"label_max_len"`
 	WithSize       bool                     `json:"with_size"`
-	HostRoot       string
+	HostRoot       string                   `json:"host_root"`
 }
 
 var c EngineCfg
@@ -25,7 +24,6 @@ var c EngineCfg
 func init() {
 	c.LabelMaxLen = defaultLabelMaxLen
 	c.WithSize = false
-	c.HostRoot = os.Getenv("HOST_ROOT")
 }
 
 func Load(initCfg string) error {
