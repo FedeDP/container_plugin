@@ -77,6 +77,7 @@ bool my_plugin::parse_async_event(const falcosecurity::parse_event_input& in)
         SPDLOG_TRACE("Adding container: {}", cinfo->m_id);
         m_containers[cinfo->m_id] = cinfo;
         m_last_container = cinfo;
+        m_asked_containers.erase(cinfo->m_id);
     }
     else
     {
