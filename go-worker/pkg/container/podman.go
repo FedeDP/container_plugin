@@ -27,7 +27,8 @@ func init() {
 }
 
 type podmanEngine struct {
-	pCtx context.Context
+	pCtx   context.Context
+	socket string
 }
 
 func newPodmanEngine(ctx context.Context, socket string) (Engine, error) {
@@ -35,7 +36,11 @@ func newPodmanEngine(ctx context.Context, socket string) (Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &podmanEngine{conn}, nil
+	return &podmanEngine{pCtx: conn, socket: socket}, nil
+}
+
+func (pc *podmanEngine) copy(ctx context.Context) (Engine, error) {
+	return newPodmanEngine(ctx, pc.socket)
 }
 
 func (pc *podmanEngine) ctrToInfo(ctr *define.InspectContainerData) event.Info {

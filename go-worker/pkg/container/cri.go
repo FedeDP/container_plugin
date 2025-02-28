@@ -28,6 +28,7 @@ func init() {
 type criEngine struct {
 	client  internalapi.RuntimeService
 	runtime int // as CT_FOO value
+	socket  string
 }
 
 // See https://github.com/falcosecurity/libs/blob/4d04cad02cd27e53cb18f431361a4d031836bb75/userspace/libsinsp/cri.hpp#L71
@@ -51,7 +52,12 @@ func newCriEngine(ctx context.Context, socket string) (Engine, error) {
 	return &criEngine{
 		client:  client,
 		runtime: getRuntime(version.RuntimeName),
+		socket:  socket,
 	}, nil
+}
+
+func (c *criEngine) copy(ctx context.Context) (Engine, error) {
+	return newCriEngine(ctx, c.socket)
 }
 
 // Structures that maps container.Info() map

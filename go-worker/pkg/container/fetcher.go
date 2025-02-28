@@ -27,23 +27,27 @@ type fetcher struct {
 // NewFetcherEngine returns a fetcher engine.
 // The fetcher engine is responsible to allow us to get() single container
 // trying all container engines enabled.
-func NewFetcherEngine(containerEngines []Engine) Engine {
+func NewFetcherEngine(ctx context.Context, containerEngines []Engine) Engine {
 	f := fetcher{
 		getters: make([]getter, len(containerEngines)),
 	}
-	for i, e := range containerEngines {
-		// No type check since Engine interface extends getter.
-		f.getters[i] = e.(getter)
+	for i, engine := range containerEngines {
+		copyEngine, ok := engine.(copier)
+		if !ok {
+			// We need all engines to implement the copier interface to be copied by fetcher.
+			panic("not a copier")
+		}
+		e, _ := copyEngine.copy(ctx)
+		if e != nil {
+			// No type check since Engine interface extends getter.
+			f.getters[i] = e.(getter)
+		}
 	}
 	return &f
 }
 
-func (f *fetcher) get(_ context.Context, _ string) (*event.Event, error) {
-	return nil, nil
-}
-
 func (f *fetcher) List(_ context.Context) ([]event.Event, error) {
-	return nil, nil
+	panic("do not call")
 }
 
 func (f *fetcher) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.Event, error) {

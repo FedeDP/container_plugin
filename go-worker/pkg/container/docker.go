@@ -27,6 +27,7 @@ func init() {
 
 type dockerEngine struct {
 	*client.Client
+	socket string
 }
 
 func newDockerEngine(_ context.Context, socket string) (Engine, error) {
@@ -36,7 +37,11 @@ func newDockerEngine(_ context.Context, socket string) (Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &dockerEngine{cl}, nil
+	return &dockerEngine{Client: cl, socket: socket}, nil
+}
+
+func (dc *dockerEngine) copy(ctx context.Context) (Engine, error) {
+	return newDockerEngine(ctx, dc.socket)
 }
 
 type Probe struct {
