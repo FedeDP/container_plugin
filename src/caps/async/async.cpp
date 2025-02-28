@@ -81,7 +81,7 @@ bool my_plugin::stop_async_events() noexcept
 void my_plugin::dump(
         std::unique_ptr<falcosecurity::async_event_handler> async_handler)
 {
-    m_logger.log(std::format("dumping plugin internal state: {} containers",
+    m_logger.log(fmt::format("dumping plugin internal state: {} containers",
                              m_containers.size()),
                  falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     for(const auto &container : m_containers)

@@ -22,7 +22,7 @@ bool my_plugin::capture_open(const falcosecurity::capture_listen_input& in)
                 catch(falcosecurity::plugin_exception& e)
                 {
                     m_logger.log(
-                            std::format(
+                            fmt::format(
                                     "cannot attach container_id to process: {}",
                                     e.what()),
                             falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);
