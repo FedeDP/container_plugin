@@ -40,7 +40,11 @@ std::string my_plugin::get_required_api_version()
 
 std::string my_plugin::get_last_error() { return m_lasterr; }
 
-void my_plugin::destroy() { SPDLOG_DEBUG("detach the plugin"); }
+void my_plugin::destroy()
+{
+    m_logger.log("detach the plugin",
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
+}
 
 falcosecurity::init_schema my_plugin::get_init_schema()
 {
@@ -54,12 +58,7 @@ falcosecurity::init_schema my_plugin::get_init_schema()
 void my_plugin::parse_init_config(nlohmann::json& config_json)
 {
     m_cfg = config_json.get<PluginConfig>();
-    // Verbosity, the default verbosity is already set in the 'init' method
-    if(m_cfg.verbosity != "info")
-    {
-        // If the user specified a verbosity we override the actual one (`info`)
-        spdlog::set_level(spdlog::level::from_str(m_cfg.verbosity));
-    }
+    m_cfg.log_engines(m_logger);
 }
 
 bool my_plugin::init(falcosecurity::init_input& in)
@@ -67,31 +66,24 @@ bool my_plugin::init(falcosecurity::init_input& in)
     using st = falcosecurity::state_value_type;
     auto& t = in.tables();
 
-    // The default logger is already multithread.
-    // The initial verbosity is `info`, after parsing the plugin config, this
-    // value could change
-    spdlog::set_level(spdlog::level::info);
-
-    // Alternatives logs:
-    // spdlog::set_pattern("%a %b %d %X %Y: [%l] [container] %v");
-    //
-    // We use local time like in Falco, not UTC
-    spdlog::set_pattern("%c: [%l] [container] %v");
+    m_logger = in.get_logger();
 
     // This should never happen, the config is validated by the framework
     if(in.get_config().empty())
     {
         m_lasterr = "cannot find the init config for the plugin";
-        SPDLOG_CRITICAL(m_lasterr);
+        m_logger.log(m_lasterr,
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_CRITICAL);
         return false;
     }
 
     auto cfg = nlohmann::json::parse(in.get_config());
     parse_init_config(cfg);
 
-    SPDLOG_DEBUG("init the plugin");
+    m_logger.log("init the plugin",
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
 
-    m_mgr = std::make_unique<matcher_manager>(m_cfg.engines, m_cfg.host_root);
+    m_mgr = std::make_unique<matcher_manager>(m_cfg.engines);
 
     try
     {
@@ -148,7 +140,8 @@ bool my_plugin::init(falcosecurity::init_input& in)
         m_lasterr = "cannot add the '" + std::string(CONTAINER_ID_FIELD_NAME) +
                     "' field into the '" + std::string(THREAD_TABLE_NAME) +
                     "' table: " + e.what();
-        SPDLOG_CRITICAL(m_lasterr);
+        m_logger.log(m_lasterr,
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_CRITICAL);
         return false;
     }
 
@@ -202,8 +195,11 @@ std::string my_plugin::compute_container_id_for_thread(
                     m_mgr->match_cgroup(cgroup, container_id, info);
                     if(!container_id.empty())
                     {
-                        SPDLOG_DEBUG("Matched container_id: {} from cgroup {}",
-                                     container_id, cgroup);
+                        m_logger.log(std::format("Matched container_id: {} "
+                                                 "from cgroup {}",
+                                                 container_id, cgroup),
+                                     falcosecurity::_internal::
+                                             SS_PLUGIN_LOG_SEV_TRACE);
                         // break the loop
                         return false;
                     }
@@ -249,7 +245,8 @@ void my_plugin::write_thread_category(
     catch(falcosecurity::plugin_exception& ex)
     {
         // nothing
-        SPDLOG_DEBUG("no parent thread found");
+        m_logger.log("no parent thread found",
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     }
 
     // Read "exe" field
@@ -368,9 +365,11 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
         }
         else
         {
-            SPDLOG_DEBUG("failed to write thread category, no container found "
-                         "for {}",
-                         container_id);
+            m_logger.log(std::format("failed to write thread category, no "
+                                     "container found "
+                                     "for {}",
+                                     container_id),
+                         falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
 #ifdef _HAS_ASYNC
             // Check if already asked
             if(m_asked_containers.find(container_id) ==

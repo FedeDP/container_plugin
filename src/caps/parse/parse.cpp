@@ -67,21 +67,24 @@ bool my_plugin::parse_async_event(const falcosecurity::parse_event_input& in)
     if(json_charbuf_pointer == nullptr)
     {
         m_lasterr = "there is no payload in the async event";
-        SPDLOG_ERROR(m_lasterr);
+        m_logger.log(m_lasterr,
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);
         return false;
     }
     auto json_event = nlohmann::json::parse(json_charbuf_pointer);
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
     if(added)
     {
-        SPDLOG_TRACE("Adding container: {}", cinfo->m_id);
+        m_logger.log(std::format("Adding container: {}", cinfo->m_id),
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_TRACE);
         m_containers[cinfo->m_id] = cinfo;
         m_last_container = cinfo;
         m_asked_containers.erase(cinfo->m_id);
     }
     else
     {
-        SPDLOG_TRACE("Removing container: {}", cinfo->m_id);
+        m_logger.log(std::format("Removing container: {}", cinfo->m_id),
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_TRACE);
         m_containers.erase(cinfo->m_id);
     }
 
@@ -116,7 +119,9 @@ bool my_plugin::parse_container_event(
     cinfo->m_type = tp;
     cinfo->m_name = name;
     cinfo->m_image = image;
-    SPDLOG_TRACE("Adding container from old container event: {}", cinfo->m_id);
+    m_logger.log(std::format("Adding container from old container event: {}",
+                             cinfo->m_id),
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_TRACE);
     m_containers[id] = cinfo;
     m_last_container = cinfo;
     return true;
@@ -132,8 +137,10 @@ bool my_plugin::parse_container_json_event(
     auto json_event = nlohmann::json::parse(json_str);
 
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
-    SPDLOG_TRACE("Adding container from old container_json event: {}",
-                 cinfo->m_id);
+    m_logger.log(
+            std::format("Adding container from old container_json event: {}",
+                        cinfo->m_id),
+            falcosecurity::_internal::SS_PLUGIN_LOG_SEV_TRACE);
     m_containers[cinfo->m_id] = cinfo;
     m_last_container = cinfo;
     return true;
@@ -149,8 +156,10 @@ bool my_plugin::parse_container_json_2_event(
     auto json_event = nlohmann::json::parse(json_str);
 
     auto cinfo = json_event.get<std::shared_ptr<container_info>>();
-    SPDLOG_TRACE("Adding container from old container_json_2 event: {}",
-                 cinfo->m_id);
+    m_logger.log(
+            std::format("Adding container from old container_json_2 event: {}",
+                        cinfo->m_id),
+            falcosecurity::_internal::SS_PLUGIN_LOG_SEV_TRACE);
     m_containers[cinfo->m_id] = cinfo;
     m_last_container = cinfo;
     return true;
@@ -185,9 +194,11 @@ bool my_plugin::parse_new_process_event(
     }
     catch(falcosecurity::plugin_exception& e)
     {
-        SPDLOG_ERROR("cannot attach container_id to new process event for the "
-                     "thread id '{}': {}",
-                     thread_id, e.what());
+        m_logger.log(std::format("cannot attach container_id to new process "
+                                 "event for the "
+                                 "thread id '{}': {}",
+                                 thread_id, e.what()),
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);
         return false;
     }
 }
@@ -220,8 +231,9 @@ bool my_plugin::parse_event(const falcosecurity::parse_event_input& in)
     case PPME_SYSCALL_CHROOT_X:
         return parse_new_process_event(in);
     default:
-        SPDLOG_ERROR("received an unknown event type {}",
-                     int32_t(evt.get_type()));
+        m_logger.log(std::format("received an unknown event type {}",
+                                 int32_t(evt.get_type())),
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);
         return false;
     }
 }

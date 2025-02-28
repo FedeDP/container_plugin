@@ -561,9 +561,12 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
         {
             // Debug here since many events do not have thread id info (eg:
             // schedswitch)
-            SPDLOG_DEBUG("cannot extract the container_id for the thread id "
-                         "'{}': {}",
-                         thread_id, e.what());
+            m_logger.log(
+                    std::format(
+                            "cannot extract the container_id for the thread id "
+                            "'{}': {}",
+                            thread_id, e.what()),
+                    falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
             return false;
         }
 
@@ -571,8 +574,11 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
         auto it = m_containers.find(container_id);
         if(it == m_containers.end())
         {
-            SPDLOG_DEBUG("the plugin has no info for the container id '{}'",
-                         container_id);
+            m_logger.log(
+                    std::format(
+                            "the plugin has no info for the container id '{}'",
+                            container_id),
+                    falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
             if(field_id != TYPE_CONTAINER_ID &&
                field_id != TYPE_CONTAINER_START_TS &&
                field_id != TYPE_CONTAINER_DURATION &&
@@ -970,9 +976,10 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
         // Deprecated fields don't extract anything
         break;
     default:
-        SPDLOG_ERROR("unknown extraction request on field '{}' for "
-                     "container_id '{}'",
-                     req.get_field_id(), container_id);
+        m_logger.log(std::format("unknown extraction request on field '{}' for "
+                                 "container_id '{}'",
+                                 req.get_field_id(), container_id),
+                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);
         return false;
     }
     return true;

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <spdlog/spdlog.h>
+#include <format>
+#include <falcosecurity/sdk.h>
 
 #define DEFAULT_LABEL_MAX_LEN 100
 
@@ -19,12 +20,13 @@ struct SocketsEngine
 
     SocketsEngine() { enabled = true; }
 
-    void log_sockets(const std::string& host_root) const
+    void log_sockets(falcosecurity::logger& logger,
+                     const std::string& host_root) const
     {
         for(const auto& socket : sockets)
         {
-            SPDLOG_DEBUG("* enabled container runtime socket at '{}'",
-                         host_root + socket);
+            logger.log(std::format("* enabled container runtime socket at '{}'",
+                                   host_root + socket));
         }
     }
 };
@@ -53,7 +55,6 @@ struct Engines
 
 struct PluginConfig
 {
-    std::string verbosity;
     int label_max_len;
     bool with_size;
     std::string host_root;
@@ -66,6 +67,53 @@ struct PluginConfig
         if(const char* hroot = std::getenv("HOST_ROOT"))
         {
             host_root = hroot;
+        }
+    }
+
+    void log_engines(falcosecurity::logger& logger) const
+    {
+        if(engines.static_ctr.enabled)
+        {
+            // Configured with a static engine; add it and return.
+            logger.log(std::format(
+                    "Enabled static container engine with id: '{}', name: "
+                    "'{}', image: '{}'.",
+                    engines.static_ctr.id, engines.static_ctr.name,
+                    engines.static_ctr.image));
+            return;
+        }
+
+        if(engines.podman.enabled)
+        {
+            logger.log("Enabled 'podman' container engine.");
+            engines.podman.log_sockets(logger, host_root);
+        }
+        if(engines.docker.enabled)
+        {
+            logger.log("Enabled 'docker' container engine.");
+            engines.docker.log_sockets(logger, host_root);
+        }
+        if(engines.cri.enabled)
+        {
+            logger.log("Enabled 'cri' container engine.");
+            engines.cri.log_sockets(logger, host_root);
+        }
+        if(engines.containerd.enabled)
+        {
+            logger.log("Enabled 'containerd' container engine.");
+            engines.containerd.log_sockets(logger, host_root);
+        }
+        if(engines.lxc.enabled)
+        {
+            logger.log("Enabled 'lxc' container engine.");
+        }
+        if(engines.libvirt_lxc.enabled)
+        {
+            logger.log("Enabled 'libvirt_lxc' container engine.");
+        }
+        if(engines.bpm.enabled)
+        {
+            logger.log("Enabled 'bpm' container engine.");
         }
     }
 };
