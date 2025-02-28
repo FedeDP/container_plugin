@@ -7,7 +7,7 @@
       "name": "re2"
     },
     {
-      "name": "spdlog"
+      "name": "fmt"
     }
   ],
   "features": {
