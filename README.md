@@ -133,8 +133,6 @@ plugins:
     # path to the plugin .so file
     library_path: libcontainer.so
     init_config:
-      # verbosity level for the plugin logger
-      verbosity: warning # (optional, default: info)
       label_max_len: 100 # (optional, default: 100; container labels larger than this won't be reported)
       with_size: false # (optional, default: false; whether to enable container size inspection, which is inherently slow)
       engines:
@@ -176,11 +174,7 @@ Note: leveraging latest plugin SDK features, the plugin itself will expose certa
 ### Running
 
 This plugin requires Falco with version >= **0.41.0**.
-Modify the `falco.yaml` with the [configuration above](#configuration) and you are ready to go!
-
-```shell
-falco -c falco.yaml -r falco_rules.yaml
-```
+The plugin is bundled within Falco, so you only need to run Falco as you would do normally.
 
 ## Local development
 
