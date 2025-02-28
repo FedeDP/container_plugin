@@ -68,6 +68,9 @@ jobs:
         arch: [ amd64, arm64 ]
     container: golang:1.23-bullseye
     steps:
+      - name: Install zig
+        uses: falcosecurity/libs/.github/actions/install-zig@master
+
       # Needed by vcpkg caching
       - name: Export GitHub Actions cache environment variables
         if: inputs.caching_enabled
