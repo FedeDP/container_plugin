@@ -24,6 +24,7 @@ func init() {
 
 type containerdEngine struct {
 	client *containerd.Client
+	socket string
 }
 
 func newContainerdEngine(_ context.Context, socket string) (Engine, error) {
@@ -31,7 +32,11 @@ func newContainerdEngine(_ context.Context, socket string) (Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &containerdEngine{client: client}, nil
+	return &containerdEngine{client: client, socket: socket}, nil
+}
+
+func (c *containerdEngine) copy(ctx context.Context) (Engine, error) {
+	return newContainerdEngine(ctx, c.socket)
 }
 
 func (c *containerdEngine) ctrToInfo(namespacedContext context.Context, container containerd.Container) event.Info {

@@ -72,7 +72,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 	}
 	// Always append the dummy engine that is required to
 	// be able to fetch container infos on the fly given other enabled engines.
-	containerEngines = append(containerEngines, container.NewFetcherEngine(containerEngines))
+	containerEngines = append(containerEngines, container.NewFetcherEngine(ctx, containerEngines))
 
 	// Start worker goroutine
 	wg.Add(1)
