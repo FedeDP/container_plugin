@@ -42,36 +42,40 @@ jobs:
 
   build-linux:
     name: build-linux-${{ matrix.arch }}
-    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-22.04-arm') || 'ubuntu-22.04' }}
+    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
         arch: [ amd64, arm64 ]
-    container: golang:1.23-bullseye
     steps:
-      # Needed by containerd go package - build time dep, no runtime.
-      - name: Install plugin deps
-        run: apt-get update && apt-get install -y --no-install-recommends git make build-essential autotools-dev automake libtool pkg-config curl zip unzip tar ninja-build
-
-      - name: Install updated cmake version ⛓️
-        run: |
-          curl -L -o /tmp/cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.31.4/cmake-3.31.4-linux-$(uname -m).tar.gz
-          gzip -d /tmp/cmake.tar.gz
-          tar -xpf /tmp/cmake.tar --directory=/tmp
-          cp -R /tmp/cmake-3.31.4-linux-$(uname -m)/* /usr
-          rm -rf /tmp/cmake-3.31.4-linux-$(uname -m)  
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'recursive'
 
-      - name: Safe directory
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go-worker/go.mod
+          cache-dependency-path: go-worker/go.sum
+
+      - name: Install zig
+        uses: falcosecurity/libs/.github/actions/install-zig@master
 
       - name: Build plugin library
         run: make
+
+      # Make sure we link the correct glibc version.
+      - name: Test library glibc version
+        run: |
+          cd build
+          objdump -T libcontainer.so | grep -Eo 'GLIBC_\S+' | sort -u -t "." -k1,1n -k2,2n -k3,3n
+          linked_glibc=$(objdump -T libcontainer.so | grep -Eo 'GLIBC_\S+' | sort -u -t "." -k1,1n -k2,2n -k3,3n | tail -n1 | tr -d ')')
+          if [ "$linked_glibc" != "GLIBC_2.17" ]; then
+            echo "Expected glibc 2.17; found $linked_glibc"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
