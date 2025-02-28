@@ -562,7 +562,7 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
             // Debug here since many events do not have thread id info (eg:
             // schedswitch)
             m_logger.log(
-                    std::format(
+                    fmt::format(
                             "cannot extract the container_id for the thread id "
                             "'{}': {}",
                             thread_id, e.what()),
@@ -575,7 +575,7 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
         if(it == m_containers.end())
         {
             m_logger.log(
-                    std::format(
+                    fmt::format(
                             "the plugin has no info for the container id '{}'",
                             container_id),
                     falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
@@ -976,7 +976,7 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
         // Deprecated fields don't extract anything
         break;
     default:
-        m_logger.log(std::format("unknown extraction request on field '{}' for "
+        m_logger.log(fmt::format("unknown extraction request on field '{}' for "
                                  "container_id '{}'",
                                  req.get_field_id(), container_id),
                      falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);

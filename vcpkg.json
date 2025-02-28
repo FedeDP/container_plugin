@@ -5,6 +5,9 @@
   "dependencies": [
     {
       "name": "re2"
+    },
+    {
+      "name": "fmt"
     }
   ],
   "features": {
