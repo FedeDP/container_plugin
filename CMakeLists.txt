@@ -44,7 +44,6 @@ include(plugin-sdk-cpp)
 
 # vcpkg dependencies
 find_package(re2 REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
 
 # project compilation options
 set_property(TARGET container PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -63,7 +62,7 @@ target_compile_features(container PUBLIC cxx_std_20)
 target_include_directories(container PRIVATE src/ ${PLUGIN_SDK_INCLUDE} ${PLUGIN_SDK_DEPS_INCLUDE} ${WORKER_INCLUDE})
 
 # project linked libraries
-target_link_libraries(container PRIVATE spdlog::spdlog_header_only re2::re2 ${WORKER_DEP} ${WORKER_LIB})
+target_link_libraries(container PRIVATE re2::re2 ${WORKER_DEP} ${WORKER_LIB})
 
 if(ENABLE_TESTS)
     add_subdirectory(${CMAKE_SOURCE_DIR}/test/)

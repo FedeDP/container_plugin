@@ -5,9 +5,6 @@
   "dependencies": [
     {
       "name": "re2"
-    },
-    {
-      "name": "spdlog"
     }
   ],
   "features": {

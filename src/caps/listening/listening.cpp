@@ -6,7 +6,8 @@
 
 bool my_plugin::capture_open(const falcosecurity::capture_listen_input& in)
 {
-    SPDLOG_DEBUG("enriching initial thread table entries");
+    m_logger.log("enriching initial thread table entries",
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     auto& tr = in.get_table_reader();
     auto& tw = in.get_table_writer();
     m_threads_table.iterate_entries(
@@ -20,8 +21,11 @@ bool my_plugin::capture_open(const falcosecurity::capture_listen_input& in)
                 }
                 catch(falcosecurity::plugin_exception& e)
                 {
-                    SPDLOG_ERROR("cannot attach container_id to process: {}",
-                                 e.what());
+                    m_logger.log(
+                            std::format(
+                                    "cannot attach container_id to process: {}",
+                                    e.what()),
+                            falcosecurity::_internal::SS_PLUGIN_LOG_SEV_ERROR);
                     return false;
                 }
             });

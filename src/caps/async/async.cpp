@@ -60,7 +60,8 @@ bool my_plugin::start_async_events(
     }
 
     // Implemented by GO worker.go
-    SPDLOG_DEBUG("starting async go-worker");
+    m_logger.log("starting async go-worker",
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     nlohmann::json j(m_cfg);
     return StartWorker(generate_async_event, j.dump().c_str(),
                        ASYNC_HANDLER_GO_WORKER);
@@ -70,7 +71,8 @@ bool my_plugin::start_async_events(
 // `set_async_event_handler` plugin API will be called.
 bool my_plugin::stop_async_events() noexcept
 {
-    SPDLOG_DEBUG("stopping async go-worker");
+    m_logger.log("stopping async go-worker",
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     // Implemented by GO worker.go
     StopWorker();
     return true;
@@ -79,8 +81,9 @@ bool my_plugin::stop_async_events() noexcept
 void my_plugin::dump(
         std::unique_ptr<falcosecurity::async_event_handler> async_handler)
 {
-    SPDLOG_DEBUG("dumping plugin internal state: {} containers",
-                 m_containers.size());
+    m_logger.log(std::format("dumping plugin internal state: {} containers",
+                             m_containers.size()),
+                 falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     for(const auto &container : m_containers)
     {
         falcosecurity::events::asyncevent_e_encoder enc;

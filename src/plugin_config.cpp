@@ -35,7 +35,6 @@ void from_json(const nlohmann::json& j, Engines& engines)
 
 void from_json(const nlohmann::json& j, PluginConfig& cfg)
 {
-    cfg.verbosity = j.value("verbosity", "info");
     cfg.label_max_len = j.value("label_max_len", DEFAULT_LABEL_MAX_LEN);
     cfg.with_size = j.value("with_size", false);
     cfg.engines = j.value("engines", Engines{});
