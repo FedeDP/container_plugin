@@ -68,6 +68,9 @@ jobs:
         arch: [ amd64, arm64 ]
     container: golang:1.23-bullseye
     steps:
+      - name: Install xz - required for zig action
+        run: apt-get update && apt-get install -y --no-install-recommends xz-utils
+
       - name: Install zig
         uses: falcosecurity/libs/.github/actions/install-zig@eafdfe51618653f2639eff96e133c7a597bf5c43
 
@@ -90,7 +93,7 @@ jobs:
 
       # Needed by containerd go package - build time dep, no runtime.
       - name: Install plugin deps
-        run: apt-get update && apt-get install -y --no-install-recommends git make build-essential autotools-dev automake libtool pkg-config libbtrfs-dev curl zip unzip tar ninja-build
+        run: apt-get install -y --no-install-recommends git make build-essential autotools-dev automake libtool pkg-config libbtrfs-dev curl zip unzip tar ninja-build
 
       - name: Install updated cmake version ⛓️
         run: |
