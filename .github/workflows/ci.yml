@@ -14,39 +14,8 @@ jobs:
     uses: ./.github/workflows/reusable_build.yml
     with:
       caching_enabled: true
+      run-tests: true
     secrets: inherit
-
-  test:
-    name: test-${{ matrix.arch }}
-    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [ amd64, arm64 ]
-    steps:
-      # Needed by podman package - build and runtime dep.
-      - name: Install go test deps
-        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: 'recursive'
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go-worker/go.mod
-          cache-dependency-path: go-worker/go.sum
-
-      - name: Build go-worker executable
-        run: make -C go-worker exe
-
-      - name: Run tests
-        run: |
-          systemctl --user start podman
-          make test
 
   falco-tests:
     needs: [build]
@@ -78,7 +47,7 @@ jobs:
           sudo: ''
 
   libs-tests:
-    needs: [ build ]
+    needs: [build]
     runs-on: ubuntu-22.04
     steps:
       - name: Install deps ⛓️
