@@ -17,11 +17,12 @@ jobs:
     secrets: inherit
 
   test:
-    # ubuntu24.04 for podman >= 4.x. x86_64 only,
-    # since podman is not shipped by beta github arm64 runners:
-    # https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-22-image.md#not-installed-software
-    # Building tests fail with: "faccessat /home/runneradmin/.config/containers/storage.conf: permission denied"
-    runs-on: 'ubuntu-24.04'
+    name: test-${{ matrix.arch }}
+    runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ amd64, arm64 ]
     steps:
       # Needed by podman package - build and runtime dep.
       - name: Install go test deps
