@@ -2,6 +2,12 @@ name: Build plugin on all supported platforms
 
 on:
   workflow_call:
+    inputs:
+      run-tests:
+        description: 'whether to also run tests'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build-others:
@@ -13,9 +19,11 @@ jobs:
           - os: windows-latest
             artifact-name: 'libcontainer-win'
             artifact-path: 'container.dll'
+            test-path: 'build\test\Release\test.exe'
           - os: macos-latest
             artifact-name: 'libcontainer-osx'
             artifact-path: 'libcontainer.dylib'
+            test-path: 'build/test/test'
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -39,6 +47,12 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
+
+      - name: Run library test
+        if: inputs.run-tests
+        run: |
+          cmake --build build --target test --parallel 6 --config Release
+          ${{ matrix.test-path }}
 
   build-linux:
     name: build-linux-${{ matrix.arch }}
@@ -82,3 +96,37 @@ jobs:
         with:
           name: libcontainer-${{ matrix.arch }}
           path: 'libcontainer.so'
+
+      - name: Run library test
+        if: inputs.run-tests
+        run: make -C build/ test && build/test/test
+
+      # libbtrfs: needed by podman package - build dep.
+      # libgpgme: needed by github.com/containers/image, build dep since our go build tags use opengpg instead.
+      - name: Install go-worker test deps
+        if: inputs.run-tests
+        run: sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
+
+      - name: Build go-worker executable
+        if: inputs.run-tests
+        # Disable zig - we are not building an artifact anymore
+        env:
+          CC: ''
+          CXX: ''
+          AR: ''
+          RANLIB: ''
+        working-directory: ./go-worker
+        run: make exe
+
+      - name: Run go-worker tests
+        if: inputs.run-tests
+        # Disable zig - we are not building an artifact anymore
+        env:
+          CC: ''
+          CXX: ''
+          AR: ''
+          RANLIB: ''
+        working-directory: ./go-worker
+        run: |
+          systemctl --user start podman
+          make test
