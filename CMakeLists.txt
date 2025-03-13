@@ -9,6 +9,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 # compiler related configs
 include(compiler)
 
+# From now on, we have VCPKG_ARCH variable
+include(arch)
+
 # Vcpkg related configs
 include(vcpkg)
 

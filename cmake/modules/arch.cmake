@@ -1,6 +1,9 @@
+cmake_host_system_information(RESULT ARCH QUERY OS_PLATFORM)
+string(TOLOWER ${ARCH} arch)
 execute_process(
-        COMMAND uname -m
+        COMMAND echo "${arch}"
         COMMAND sed "s/x86_64/x64/"
+        COMMAND sed "s/amd64/x64/"
         COMMAND sed "s/aarch64/arm64/"
         OUTPUT_VARIABLE ARCH_output
         ERROR_VARIABLE ARCH_error
