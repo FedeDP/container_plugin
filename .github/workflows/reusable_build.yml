@@ -64,6 +64,12 @@ jobs:
           name: libcontainer-osx
           path: 'libcontainer.dylib'
 
+      - name: Run library test
+        if: inputs.run-tests
+        run: |
+          cmake --build build --target test --parallel 6 --config Release
+          build/test/test || build\test\Release\test.exe
+
   build-linux:
     name: build-linux-${{ matrix.arch }}
     runs-on: ${{ (matrix.arch == 'arm64' && 'ubuntu-24.04-arm') || 'ubuntu-24.04' }}
@@ -84,10 +90,6 @@ jobs:
       - name: Export env variables for vcpkg caching
         if: inputs.caching_enabled
         run: echo "VCPKG_BINARY_SOURCES=clear;x-gha,readwrite" >> $GITHUB_ENV
-
-      - name: Export env variable for arm64 build
-        if: matrix.arch == 'arm64'
-        run: echo "VCPKG_FORCE_SYSTEM_BINARIES=true" >> $GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,8 +126,12 @@ jobs:
           name: libcontainer-${{ matrix.arch }}
           path: 'libcontainer.so'
 
+      - name: Run library test
+        if: inputs.run-tests
+        run: make -C build/ test && build/test/test
+
       # Needed by podman package - build and runtime dep.
-      - name: Install go test deps
+      - name: Install go-worker test deps
         if: inputs.run-tests
         run: sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
 
@@ -137,9 +143,10 @@ jobs:
           CXX: ''
           AR: ''
           RANLIB: ''
-        run: make -C go-worker exe
+        working-directory: ./go-worker
+        run: make exe
 
-      - name: Run tests
+      - name: Run go-worker tests
         if: inputs.run-tests
         # Disable zig - we are not building an artifact anymore
         env:
@@ -147,6 +154,7 @@ jobs:
           CXX: ''
           AR: ''
           RANLIB: ''
+        working-directory: ./go-worker
         run: |
           systemctl --user start podman
           make test
