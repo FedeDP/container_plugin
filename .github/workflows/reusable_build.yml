@@ -20,6 +20,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-latest, macos-latest ]
+        include:
+          - os: windows-latest
+            artifact-name: 'libcontainer-win'
+            artifact-path: 'container.dll'
+            test-path: 'build\test\Release\test.exe'
+          - os: macos-latest
+            artifact-name: 'libcontainer-osx'
+            artifact-path: 'libcontainer.dylib'
+            test-path: 'build/test/test'
+
     runs-on: ${{ matrix.os }}
     steps:
       # Needed by vcpkg caching
@@ -50,25 +60,17 @@ jobs:
       - name: Build plugin library
         run: make
 
-      - name: Upload artifact - windows
-        if: ${{ matrix.os == 'windows-latest' }}
+      - name: Upload artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: libcontainer-win
-          path: 'container.dll'
-
-      - name: Upload artifact - osx
-        if: ${{ matrix.os == 'macos-latest' }}
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: libcontainer-osx
-          path: 'libcontainer.dylib'
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
 
       - name: Run library test
         if: inputs.run-tests
         run: |
           cmake --build build --target test --parallel 6 --config Release
-          build/test/test || build\test\Release\test.exe
+          ${{ matrix.test-path }}
 
   build-linux:
     name: build-linux-${{ matrix.arch }}
