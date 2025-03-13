@@ -1,8 +1,5 @@
 include(ExternalProject)
 
-# From now on, we have VCPKG_ARCH variable
-include(arch)
-
 message(STATUS "Building go-worker static library")
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
@@ -16,7 +13,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
 
     # Pkg config paths to all gpgme libs (libgpgme, libgpg-error and libassuan)
     # to be passed down to go-worker to let it find the needed deps.
-    set(VCPKG_PKGCONFIG_PATH "${CMAKE_SOURCE_DIR}/vcpkg/packages/gpgme_${VCPKG_ARCH}-linux/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libgpg-error_${VCPKG_ARCH}-linux/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libassuan_${VCPKG_ARCH}-linux/lib/pkgconfig/")
+    set(VCPKG_PKGCONFIG_PATH "${CMAKE_SOURCE_DIR}/vcpkg/packages/gpgme_${VCPKG_ARCH}-linux-release/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libgpg-error_${VCPKG_ARCH}-linux-release/lib/pkgconfig/:${CMAKE_SOURCE_DIR}/vcpkg/packages/libassuan_${VCPKG_ARCH}-linux-release/lib/pkgconfig/")
     set(WORKER_DEP PkgConfig::GPGME)
 endif()
 
