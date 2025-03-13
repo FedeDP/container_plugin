@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"runtime"
 	"sync"
 	"testing"
 )
@@ -51,6 +52,11 @@ func TestDocker(t *testing.T) {
 	events, err := engine.List(context.Background())
 	assert.NoError(t, err)
 
+	imageId := "63b790fccc9078ab8bb913d94a5d869e19fca9b77712b315da3fa45bb8f14636"
+	if runtime.GOARCH == "arm64" {
+		imageId = "511a44083d3a23416fadc62847c45d14c25cbace86e7a72b2b350436978a0450"
+	}
+
 	expectedEvent := event.Event{
 		Info: event.Info{
 			Container: event.Container{
@@ -59,7 +65,7 @@ func TestDocker(t *testing.T) {
 				Name:           "test_container",
 				Image:          "alpine:3.20.3",
 				ImageDigest:    "sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a",
-				ImageID:        "63b790fccc9078ab8bb913d94a5d869e19fca9b77712b315da3fa45bb8f14636",
+				ImageID:        imageId,
 				ImageRepo:      "alpine",
 				ImageTag:       "3.20.3",
 				User:           "testuser",
