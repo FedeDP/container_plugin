@@ -84,10 +84,6 @@ jobs:
         if: matrix.arch == 'arm64'
         run: echo "VCPKG_FORCE_SYSTEM_BINARIES=true" >> $GITHUB_ENV
 
-      # Needed by containerd go package - build time dep, no runtime.
-      - name: Install plugin deps
-        run: sudo apt update && sudo apt install -y --no-install-recommends libbtrfs-dev
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -105,6 +101,17 @@ jobs:
 
       - name: Build plugin library
         run: make
+
+      # Make sure we link the correct glibc version.
+      - name: Test library glibc version
+        run: |
+          cd build
+          objdump -T libcontainer.so | grep -Eo 'GLIBC_\S+' | sort -u -t "." -k1,1n -k2,2n -k3,3n
+          linked_glibc=$(objdump -T libcontainer.so | grep -Eo 'GLIBC_\S+' | sort -u -t "." -k1,1n -k2,2n -k3,3n | tail -n1 | tr -d ')')
+          if [ "$linked_glibc" != "GLIBC_2.17" ]; then
+            echo "Expected glibc 2.17; found $linked_glibc"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
