@@ -1,12 +1,10 @@
 #include "containerd.h"
 #include "runc.h"
-#include <iostream>
-#include <sstream> // for ostringstream
-#include <re2/re2.h>
+#include <reflex/matcher.h>
 
 using namespace libsinsp::runc;
 
-static re2::RE2 pattern("/([A-Za-z0-9]+(?:[._-](?:[A-Za-z0-9]+))*)/");
+static reflex::Pattern pattern("/([A-Za-z0-9]+(?:[._-](?:[A-Za-z0-9]+))*)/");
 static cgroup_layout CONTAINERD_CGROUP_LAYOUT[] = {{"SET BY RESOLVE()", ""},
                                                    {nullptr, nullptr}};
 static std::string containerd_namespace;
@@ -18,9 +16,10 @@ bool containerd::resolve(const std::string& cgroup, std::string& container_id)
     // Since we cannot know the namespace in advance, we try to
     // extract it from the cgroup path by following provided regex,
     // and use that to eventually extract the container id.
-    if(re2::RE2::PartialMatch(cgroup, pattern, &containerd_namespace))
+    reflex::Matcher matcher(pattern, cgroup);
+    if(matcher.find())
     {
-        containerd_namespace = "/" + containerd_namespace + "/";
+        containerd_namespace = std::string(matcher[0].first, matcher[0].second);
         CONTAINERD_CGROUP_LAYOUT[0].prefix = containerd_namespace.c_str();
         return matches_runc_cgroup(cgroup, CONTAINERD_CGROUP_LAYOUT,
                                    container_id, true);
