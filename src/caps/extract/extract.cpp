@@ -663,7 +663,16 @@ bool my_plugin::extract(const falcosecurity::extract_fields_input &in)
         else
         {
             auto arg_key = req.get_arg_key();
-            mntinfo = cinfo->mount_by_source(arg_key);
+            // See
+            // https://github.com/falcosecurity/libs/blob/d87c96b50545bb192fa2a517afce76383877cab5/userspace/libsinsp/sinsp_filtercheck_container.cpp#L617
+            if(field_id == TYPE_CONTAINER_MOUNT_SOURCE)
+            {
+                mntinfo = cinfo->mount_by_dest(arg_key);
+            }
+            else
+            {
+                mntinfo = cinfo->mount_by_source(arg_key);
+            }
         }
         if(mntinfo)
         {
