@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 #include <utility>
-#include <re2/re2.h>
+#include <reflex/matcher.h>
 #include "container_info.h"
 
 std::vector<std::string> container_health_probe::probe_type_names = {
@@ -48,15 +48,16 @@ const container_mount_info *
 container_info::mount_by_source(const std::string &source) const
 {
     // note: linear search
-    re2::RE2 pattern(source, re2::RE2::POSIX);
+    // enable multiline matching to match "^..."
+    reflex::Pattern pattern(source, "(?m)");
     for(auto &mntinfo : m_mounts)
     {
-        if(re2::RE2::PartialMatch(mntinfo.m_source.c_str(), pattern))
+        reflex::Matcher matcher(pattern, mntinfo.m_source.c_str());
+        if(matcher.find())
         {
             return &mntinfo;
         }
     }
-
     return NULL;
 }
 
@@ -64,15 +65,16 @@ const container_mount_info *
 container_info::mount_by_dest(const std::string &dest) const
 {
     // note: linear search
-    re2::RE2 pattern(dest, re2::RE2::POSIX);
+    // enable multiline matching to match "^..."
+    reflex::Pattern pattern(dest, "(?m)");
     for(auto &mntinfo : m_mounts)
     {
-        if(re2::RE2::PartialMatch(mntinfo.m_dest.c_str(), pattern))
+        reflex::Matcher matcher(pattern, mntinfo.m_dest.c_str());
+        if(matcher.find())
         {
             return &mntinfo;
         }
     }
-
     return NULL;
 }
 

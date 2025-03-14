@@ -4,9 +4,6 @@
   "license": "MIT",
   "dependencies": [
     {
-      "name": "re2"
-    },
-    {
       "name": "fmt"
     }
   ],
