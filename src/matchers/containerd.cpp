@@ -5,9 +5,6 @@
 using namespace libsinsp::runc;
 
 static reflex::Pattern pattern("/([A-Za-z0-9]+(?:[._-](?:[A-Za-z0-9]+))*)/");
-static cgroup_layout CONTAINERD_CGROUP_LAYOUT[] = {{"SET BY RESOLVE()", ""},
-                                                   {nullptr, nullptr}};
-static std::string containerd_namespace;
 
 bool containerd::resolve(const std::string& cgroup, std::string& container_id)
 {
@@ -19,8 +16,10 @@ bool containerd::resolve(const std::string& cgroup, std::string& container_id)
     reflex::Matcher matcher(pattern, cgroup);
     if(matcher.find())
     {
-        containerd_namespace = std::string(matcher[0].first, matcher[0].second);
-        CONTAINERD_CGROUP_LAYOUT[0].prefix = containerd_namespace.c_str();
+        const auto containerd_namespace =
+                std::string(matcher[0].first, matcher[0].second);
+        const cgroup_layout CONTAINERD_CGROUP_LAYOUT[] = {
+                {containerd_namespace.c_str(), ""}, {nullptr, nullptr}};
         return matches_runc_cgroup(cgroup, CONTAINERD_CGROUP_LAYOUT,
                                    container_id, true);
     }
