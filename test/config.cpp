@@ -38,7 +38,6 @@ TEST(plugin_config, from_json)
     }
   },
   "label_max_len": 120,
-  "verbosity": "debug",
   "with_size": true
 })";
     auto config_json = nlohmann::json::parse(config);
@@ -53,7 +52,6 @@ TEST(plugin_config, from_json)
     EXPECT_FALSE(cfg.engines.libvirt_lxc.enabled);
     EXPECT_FALSE(cfg.engines.bpm.enabled);
 
-    EXPECT_EQ(cfg.verbosity, "debug");
     EXPECT_TRUE(cfg.with_size);
     EXPECT_EQ(cfg.label_max_len, 120);
 }
@@ -77,7 +75,6 @@ TEST(plugin_config, from_json_missing_engines)
     EXPECT_TRUE(cfg.engines.libvirt_lxc.enabled);
     EXPECT_TRUE(cfg.engines.bpm.enabled);
 
-    EXPECT_EQ(cfg.verbosity, "info"); // missing, default value info
     EXPECT_TRUE(cfg.with_size);
     EXPECT_EQ(cfg.label_max_len, 120);
 }
@@ -98,7 +95,6 @@ TEST(plugin_config, from_json_empty_json)
     EXPECT_TRUE(cfg.engines.libvirt_lxc.enabled);
     EXPECT_TRUE(cfg.engines.bpm.enabled);
 
-    EXPECT_EQ(cfg.verbosity, "info"); // missing, default value info
     EXPECT_FALSE(cfg.with_size);
     EXPECT_EQ(cfg.label_max_len, DEFAULT_LABEL_MAX_LEN);
 }

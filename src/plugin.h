@@ -142,6 +142,8 @@ class my_plugin
 
     std::unique_ptr<matcher_manager> m_mgr;
 
+    falcosecurity::logger m_logger;
+
     // Last error of the plugin
     std::string m_lasterr;
     // Accessor to the thread table

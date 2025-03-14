@@ -8,18 +8,6 @@ const char plugin_schema_string[] = LONG_STRING_CONST(
    "$schema":"http://json-schema.org/draft-04/schema#",
    "required":[],
    "properties":{
-      "verbosity":{
-         "enum":[
-            "trace",
-            "debug",
-            "info",
-            "warning",
-            "error",
-            "critical"
-         ],
-         "title":"The plugin logging verbosity",
-         "description":"The verbosity that the plugin will use when printing logs."
-      },
       "label_max_len":{
          "type":"integer",
          "title":"Max label length",
