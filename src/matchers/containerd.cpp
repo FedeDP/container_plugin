@@ -7,12 +7,10 @@
 using namespace libsinsp::runc;
 
 static re2::RE2 pattern("/([A-Za-z0-9]+(?:[._-](?:[A-Za-z0-9]+))*)/");
-static cgroup_layout CONTAINERD_CGROUP_LAYOUT[] = {{"SET BY RESOLVE()", ""},
-                                                   {nullptr, nullptr}};
-static std::string containerd_namespace;
 
 bool containerd::resolve(const std::string& cgroup, std::string& container_id)
 {
+    static std::string containerd_namespace;
     // Containers created via ctr
     // use a cgroup path like: `0::/namespace/container_id`
     // Since we cannot know the namespace in advance, we try to
@@ -21,7 +19,8 @@ bool containerd::resolve(const std::string& cgroup, std::string& container_id)
     if(re2::RE2::PartialMatch(cgroup, pattern, &containerd_namespace))
     {
         containerd_namespace = "/" + containerd_namespace + "/";
-        CONTAINERD_CGROUP_LAYOUT[0].prefix = containerd_namespace.c_str();
+        static cgroup_layout CONTAINERD_CGROUP_LAYOUT[] = {{containerd_namespace.c_str(), ""},
+                                                   {nullptr, nullptr}};
         return matches_runc_cgroup(cgroup, CONTAINERD_CGROUP_LAYOUT,
                                    container_id, true);
     }
