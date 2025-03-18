@@ -4,6 +4,10 @@ all: lib
 
 .PHONY: lib
 lib:
+	go env -w CGO_CFLAGS="${CFLAGS}"
+	go env -w CGO_CPPFLAGS="${CFLAGS}"
+	go env -w CGO_CXXFLAGS="${CFLAGS}"
+	go env -w CGO_LDFLAGS="-O3"
 	CGO_ENABLED=1 go build -tags containers_image_openpgp -ldflags="-s -w" -v -o libworker.a -buildmode=c-archive .
 
 .PHONY: exe
