@@ -1,7 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <fmt/core.h>
+#include <format>
 #include <falcosecurity/sdk.h>
 
 #define DEFAULT_LABEL_MAX_LEN 100
@@ -25,7 +25,7 @@ struct SocketsEngine
     {
         for(const auto& socket : sockets)
         {
-            logger.log(fmt::format("* enabled container runtime socket at '{}'",
+            logger.log(std::format("* enabled container runtime socket at '{}'",
                                    host_root + socket));
         }
     }
@@ -75,7 +75,7 @@ struct PluginConfig
         if(engines.static_ctr.enabled)
         {
             // Configured with a static engine; add it and return.
-            logger.log(fmt::format(
+            logger.log(std::format(
                     "Enabled static container engine with id: '{}', name: "
                     "'{}', image: '{}'.",
                     engines.static_ctr.id, engines.static_ctr.name,

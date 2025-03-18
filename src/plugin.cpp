@@ -195,7 +195,7 @@ std::string my_plugin::compute_container_id_for_thread(
                     m_mgr->match_cgroup(cgroup, container_id, info);
                     if(!container_id.empty())
                     {
-                        m_logger.log(fmt::format("Matched container_id: {} "
+                        m_logger.log(std::format("Matched container_id: {} "
                                                  "from cgroup {}",
                                                  container_id, cgroup),
                                      falcosecurity::_internal::
@@ -365,7 +365,7 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
         }
         else
         {
-            m_logger.log(fmt::format("failed to write thread category, no "
+            m_logger.log(std::format("failed to write thread category, no "
                                      "container found "
                                      "for {}",
                                      container_id),
