@@ -28,11 +28,8 @@ const (
 
 type asyncCb func(string, bool)
 
-func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.Engine, inotifier *container.EngineInotifier) {
-	var (
-		evt      event.Event
-		listenWg sync.WaitGroup
-	)
+func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.Engine, inotifier *container.EngineInotifier, wg *sync.WaitGroup) {
+	var evt event.Event
 
 	// We need to use a reflect.SelectCase here since
 	// we will need to select a variable number of channels
@@ -55,7 +52,7 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 
 	// Emplace back cases for each container engine listener
 	for _, engine := range containerEngines {
-		ch, err := engine.Listen(ctx, &listenWg)
+		ch, err := engine.Listen(ctx, wg)
 		if err != nil {
 			continue
 		}
@@ -74,7 +71,7 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 			// inotifier!
 			engine := inotifier.Process(ctx, val.Interface())
 			if engine != nil {
-				ch, err := engine.Listen(ctx, &listenWg)
+				ch, err := engine.Listen(ctx, wg)
 				if err != nil {
 					continue
 				}
@@ -90,5 +87,4 @@ func workerLoop(ctx context.Context, cb asyncCb, containerEngines []container.En
 	}
 
 	inotifier.Close()
-	listenWg.Wait()
 }
