@@ -78,7 +78,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) bool {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		workerLoop(ctx, goCb, containerEngines, inotifier)
+		workerLoop(ctx, goCb, containerEngines, inotifier, &wg)
 	}()
 	return true
 }

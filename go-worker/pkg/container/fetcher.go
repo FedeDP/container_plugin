@@ -55,8 +55,12 @@ func (f *fetcher) Listen(ctx context.Context, wg *sync.WaitGroup) (<-chan event.
 	wg.Add(1)
 	fetcherChan = make(chan string)
 	go func() {
-		defer close(outCh)
-		defer wg.Done()
+		defer func() {
+			close(outCh)
+			close(fetcherChan)
+			fetcherChan = nil
+			wg.Done()
+		}()
 		for {
 			select {
 			case <-ctx.Done():
