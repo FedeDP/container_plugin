@@ -58,7 +58,8 @@ func main() {
 	fmt.Println("Starting worker")
 	cstr := C.CString(initCfg)
 	asyncID := C.int(0)
-	if !StartWorker((*[0]byte)(C.echo_cb), cstr, asyncID) {
+	ptr := StartWorker((*[0]byte)(C.echo_cb), cstr, asyncID)
+	if ptr == nil {
 		fmt.Println("Failed to start worker; nothing configured?")
 		os.Exit(1)
 	}
@@ -69,5 +70,5 @@ func main() {
 	<-done
 
 	fmt.Println("Stopping worker")
-	StopWorker()
+	StopWorker(ptr)
 }
