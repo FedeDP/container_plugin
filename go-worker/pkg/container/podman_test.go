@@ -145,6 +145,9 @@ func TestPodman(t *testing.T) {
 
 	listCh, err := engine.Listen(cancelCtx, &wg)
 
+	// Give some time to podman Listen to start up its goroutines
+	time.Sleep(1 * time.Second)
+
 	_, err = containers.Remove(podmanCtx, ctr.ID, nil)
 	assert.NoError(t, err)
 
