@@ -1,12 +1,5 @@
 package main
 
-import (
-	"github.com/FedeDP/container-worker/pkg/container"
-	"github.com/FedeDP/container-worker/pkg/event"
-	"reflect"
-	"sync"
-)
-
 /*
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,6 +12,10 @@ import "C"
 
 import (
 	"context"
+	"github.com/FedeDP/container-worker/pkg/container"
+	"github.com/FedeDP/container-worker/pkg/event"
+	"reflect"
+	"sync"
 )
 
 const (

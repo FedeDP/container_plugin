@@ -8,6 +8,7 @@
 
 static std::unique_ptr<falcosecurity::async_event_handler>
         s_async_handler[ASYNC_HANDLER_MAX];
+static void *s_async_ctx;
 
 std::vector<std::string> my_plugin::get_async_events()
 {
@@ -63,8 +64,9 @@ bool my_plugin::start_async_events(
     m_logger.log("starting async go-worker",
                  falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     nlohmann::json j(m_cfg);
-    return StartWorker(generate_async_event, j.dump().c_str(),
-                       ASYNC_HANDLER_GO_WORKER);
+    s_async_ctx = StartWorker(generate_async_event, j.dump().c_str(),
+                              ASYNC_HANDLER_GO_WORKER);
+    return s_async_ctx != nullptr;
 }
 
 // We need this API to stop the async thread when the
@@ -73,14 +75,18 @@ bool my_plugin::stop_async_events() noexcept
 {
     m_logger.log("stopping async go-worker",
                  falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
-    // Implemented by GO worker.go
-    StopWorker();
-
-    for(int i = 0; i < ASYNC_HANDLER_MAX; i++)
+    if(s_async_ctx != nullptr)
     {
-        s_async_handler[i].reset();
+        // Implemented by GO worker.go
+        StopWorker(s_async_ctx);
+        s_async_ctx = nullptr;
+
+        for(int i = 0; i < ASYNC_HANDLER_MAX; i++)
+        {
+            s_async_handler[i].reset();
+        }
+        return true;
     }
-    return true;
 }
 
 void my_plugin::dump(
