@@ -75,6 +75,11 @@ bool my_plugin::stop_async_events() noexcept
                  falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     // Implemented by GO worker.go
     StopWorker();
+
+    for(int i = 0; i < ASYNC_HANDLER_MAX; i++)
+    {
+        s_async_handler[i].reset();
+    }
     return true;
 }
 
