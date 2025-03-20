@@ -3,8 +3,8 @@ package main
 /*
 #include <stdbool.h>
 typedef const char cchar_t;
-typedef void (*async_cb)(const char *json, bool added, int async_id);
-void makeCallback(const char *json, bool added, int async_id, async_cb cb);
+typedef void (*async_cb)(const char *json, bool added);
+void makeCallback(const char *json, bool added, async_cb cb);
 */
 import "C"
 
@@ -27,7 +27,7 @@ type PluginCtx struct {
 }
 
 //export StartWorker
-func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) unsafe.Pointer {
+func StartWorker(cb C.async_cb, initCfg *C.cchar_t) unsafe.Pointer {
 	var (
 		pluginCtx PluginCtx
 		ctx       context.Context
@@ -44,7 +44,7 @@ func StartWorker(cb C.async_cb, initCfg *C.cchar_t, asyncID C.int) unsafe.Pointe
 		pluginCtx.stringBuffer.Write(containerJson)
 		cbool := C.bool(added)
 		cStr := (*C.char)(pluginCtx.stringBuffer.CharPtr())
-		C.makeCallback(cStr, cbool, asyncID, cb)
+		C.makeCallback(cStr, cbool, cb)
 	}
 
 	err := config.Load(ptr.GoString(unsafe.Pointer(initCfg)))

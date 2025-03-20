@@ -1,12 +1,11 @@
 #include <plugin.h>
-#include <libworker.h>
-#include <chrono>
+#include "async.tpp"
 
 //////////////////////////
 // Async capability
 //////////////////////////
 
-static std::unique_ptr<falcosecurity::async_event_handler>
+std::unique_ptr<falcosecurity::async_event_handler>
         s_async_handler[ASYNC_HANDLER_MAX];
 static void *s_async_ctx;
 
@@ -18,36 +17,6 @@ std::vector<std::string> my_plugin::get_async_events()
 std::vector<std::string> my_plugin::get_async_event_sources()
 {
     return ASYNC_EVENT_SOURCES;
-}
-
-static inline uint64_t get_current_time_ns(int sec_shift)
-{
-    std::chrono::nanoseconds ns =
-            std::chrono::system_clock::now().time_since_epoch();
-    return ns.count();
-}
-
-void generate_async_event(const char *json, bool added, int async_type)
-{
-    falcosecurity::events::asyncevent_e_encoder enc;
-    enc.set_tid(1);
-    std::string msg = json;
-    if(added)
-    {
-        // leave ts=-1 (default value) to ensure that the event is grabbed asap
-        enc.set_name(ASYNC_EVENT_NAME_ADDED);
-    }
-    else
-    {
-        // set ts = now + 1s to leave some space for enqueued syscalls to be
-        // enriched
-        enc.set_ts(get_current_time_ns(1));
-        enc.set_name(ASYNC_EVENT_NAME_REMOVED);
-    }
-    enc.set_data((void *)msg.c_str(), msg.size() + 1);
-
-    enc.encode(s_async_handler[async_type]->writer());
-    s_async_handler[async_type]->push();
 }
 
 // We need this API to start the async thread when the
@@ -64,8 +33,8 @@ bool my_plugin::start_async_events(
     m_logger.log("starting async go-worker",
                  falcosecurity::_internal::SS_PLUGIN_LOG_SEV_DEBUG);
     nlohmann::json j(m_cfg);
-    s_async_ctx = StartWorker(generate_async_event, j.dump().c_str(),
-                              ASYNC_HANDLER_GO_WORKER);
+    s_async_ctx = StartWorker(generate_async_event<ASYNC_HANDLER_GO_WORKER>,
+                              j.dump().c_str());
     return s_async_ctx != nullptr;
 }
 
@@ -85,8 +54,8 @@ bool my_plugin::stop_async_events() noexcept
         {
             s_async_handler[i].reset();
         }
-        return true;
     }
+    return true;
 }
 
 void my_plugin::dump(
