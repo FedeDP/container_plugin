@@ -21,14 +21,6 @@ limitations under the License.
 #include <unordered_map>
 #include <unordered_set>
 
-#ifdef _HAS_ASYNC
-#define ASYNC_HANDLER_DEFAULT 0
-#define ASYNC_HANDLER_GO_WORKER 1
-#define ASYNC_HANDLER_MAX 2
-
-void generate_async_event(const char* json, bool added, int async_type);
-#endif
-
 enum command_category
 {
     CAT_NONE = 0,

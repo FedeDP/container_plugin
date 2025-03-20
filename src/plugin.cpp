@@ -18,7 +18,7 @@ limitations under the License.
 #include "plugin.h"
 #include "plugin_config_schema.h"
 #ifdef _HAS_ASYNC
-#include <libworker.h>
+#include "caps/async/async.tpp"
 #endif
 
 //////////////////////////
@@ -348,7 +348,7 @@ void my_plugin::on_new_process(const falcosecurity::table_entry& thread_entry,
         // since the engine has no listener SDK.
         // Just send the event now.
         nlohmann::json j(info);
-        generate_async_event(j.dump().c_str(), true, ASYNC_HANDLER_DEFAULT);
+        generate_async_event<ASYNC_HANDLER_DEFAULT>(j.dump().c_str(), true);
 #endif
         // Immediately cache the container metadata
         m_containers[info->m_id] = info;
