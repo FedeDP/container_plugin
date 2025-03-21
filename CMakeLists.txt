@@ -16,9 +16,7 @@ include(arch)
 include(vcpkg)
 
 # Include capabilities module.
-# This also defines CAPS_SOURCES and
-# eventually appends `gpgme` dep to vcpkg VCPKG_MANIFEST_FEATURES,
-# only if CAP_ASYNC is enabled, since it is required by go-worker.
+# This also defines CAPS_SOURCES.
 include(caps)
 
 option(ENABLE_TESTS "Enable build of unit tests" ON)

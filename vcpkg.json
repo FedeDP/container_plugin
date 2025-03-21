@@ -8,15 +8,6 @@
     }
   ],
   "features": {
-    "async": {
-      "description": "Enable ASYNC capability",
-      "dependencies": [
-        {
-          "name": "gpgme",
-          "platform": "linux"
-        }
-      ]
-    },
     "tests": {
       "description": "Enable tests",
       "dependencies": [

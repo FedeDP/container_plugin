@@ -24,7 +24,8 @@ jobs:
       matrix:
         arch: [ amd64, arm64 ]
     steps:
-      # Needed by podman package - build and runtime dep.
+      # libbtrfs: needed by podman package - build dep.
+      # libgpgme: needed by github.com/containers/image, build dep since our go build tags use opengpg instead.
       - name: Install go test deps
         run: sudo apt-get install -y --no-install-recommends libbtrfs-dev libgpgme-dev
 
