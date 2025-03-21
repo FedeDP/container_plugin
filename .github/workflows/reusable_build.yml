@@ -81,10 +81,6 @@ jobs:
         if: inputs.caching_enabled
         run: echo "VCPKG_BINARY_SOURCES=clear;x-gha,readwrite" >> $GITHUB_ENV
 
-      - name: Export env variable for arm64 build
-        if: matrix.arch == 'arm64'
-        run: echo "VCPKG_FORCE_SYSTEM_BINARIES=true" >> $GITHUB_ENV
-
       # Needed by containerd go package - build time dep, no runtime.
       - name: Install plugin deps
         run: apt-get update && apt-get install -y --no-install-recommends git make build-essential autotools-dev automake libtool pkg-config curl zip unzip tar ninja-build
