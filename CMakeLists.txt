@@ -6,30 +6,19 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
-# compiler related configs
-include(compiler)
-
-# From now on, we have VCPKG_ARCH variable
-include(arch)
-
-# Vcpkg related configs
-include(vcpkg)
-
-# Include capabilities module.
-# This also defines CAPS_SOURCES.
-include(caps)
-
-option(ENABLE_TESTS "Enable build of unit tests" ON)
-if(ENABLE_TESTS)
-    list(APPEND VCPKG_MANIFEST_FEATURES "tests")
-endif()
-
 # project metadata
 project(
         container-plugin
         VERSION 0.1.0
         DESCRIPTION "Falco container metadata enrichment Plugin"
         LANGUAGES CXX)
+
+# compiler related configs
+include(compiler)
+
+# Include capabilities module.
+# This also defines CAPS_SOURCES.
+include(caps)
 
 file(GLOB SOURCES src/*.cpp src/matchers/*.cpp)
 
@@ -43,9 +32,7 @@ if(ENABLE_ASYNC)
 endif()
 include(plugin-sdk-cpp)
 include(reflex)
-
-# vcpkg dependencies
-find_package(fmt CONFIG REQUIRED)
+include(fmt)
 
 # project compilation options
 set_property(TARGET container PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -66,6 +53,7 @@ target_include_directories(container PRIVATE src/ ${PLUGIN_SDK_INCLUDE} ${PLUGIN
 # project linked libraries
 target_link_libraries(container PRIVATE fmt::fmt-header-only ReflexLibStatic ${WORKER_DEP} ${WORKER_LIB})
 
+option(ENABLE_TESTS "Enable build of unit tests" ON)
 if(ENABLE_TESTS)
     add_subdirectory(${CMAKE_SOURCE_DIR}/test/)
 endif()

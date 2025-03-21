@@ -11,7 +11,7 @@ ExternalProject_Add(go-worker
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/go-worker
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND make -e PKG_CONFIG_PATH=${VCPKG_PKGCONFIG_PATH} ${BTRFS_CGO_CFLAG} lib
+        BUILD_COMMAND make ${BTRFS_CGO_CFLAG} lib
         BUILD_BYPRODUCTS libworker.a libworker.h
         INSTALL_COMMAND ""
 )
