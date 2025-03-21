@@ -2,16 +2,19 @@ include(ExternalProject)
 
 message(STATUS "Building go-worker static library")
 
+set(WORKER_CFLAGS -O3)
+
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     # btrfs cmake dep
     include(btrfs)
+    set(WORKER_CFLAGS "${WORKER_CFLAGS} ${BTRFS_CGO_CFLAG}")
 endif()
 
 ExternalProject_Add(go-worker
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/go-worker
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND make ${BTRFS_CGO_CFLAG} lib
+        BUILD_COMMAND make -e CFLAGS=${WORKER_CFLAGS} lib
         BUILD_BYPRODUCTS libworker.a libworker.h
         INSTALL_COMMAND ""
 )
