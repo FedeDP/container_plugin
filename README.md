@@ -1,3 +1,5 @@
+**THE PLUGIN HAS BEEN DONATED TO THE FALCOSECURITY AND ITS UPSTREAM DEVELOPMENT NOW HAPPENS AT https://github.com/falcosecurity/plugins/tree/main/plugins/container**
+
 # Container metadata enrichment Plugin
 
 ## Experimental
